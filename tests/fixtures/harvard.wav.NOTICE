@@ -1,0 +1,9 @@
+Source: https://github.com/realpython/python-speech-recognition/blob/master/audio_files/harvard.wav
+Retrieved: 2026-09-25
+Source repository license: MIT
+Fixture type: public speech example; source WAV is stereo, 44.1 kHz, 16-bit PCM.
+Test preparation: downmixed and resampled in memory to mono, 16 kHz, PCM16LE;
+no derived recording is stored.
+Expected wording includes: "the stale smell of old beer lingers".
+The source repository documents the full expected passage beginning:
+"the stale smell of old beer lingers it takes heat to bring out the odor".

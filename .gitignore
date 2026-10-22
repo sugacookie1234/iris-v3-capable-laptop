@@ -1,0 +1,15 @@
+# Local secrets, personal records, generated artifacts
+.local/
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+*.log
+*.sqlite*
+*.db
+*.bak
+*Zone.Identifier
+.pytest_cache/
+node_modules/

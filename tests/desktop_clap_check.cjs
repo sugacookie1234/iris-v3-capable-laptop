@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const { DoubleClapDetector } = require('../web/clap.js');
+const d = new DoubleClapDetector();
+assert.equal(d.feed(.001, 0), false);
+assert.equal(d.feed(.2, .1), false);
+assert.equal(d.feed(.001, .15), false);
+assert.equal(d.feed(.2, .3), true);
+assert.equal(d.feed(.001, .4), false);
+assert.equal(d.feed(.2, .5), false);
+d.reset();
+assert.equal(d.feed(.2, 0), false);
+assert.equal(d.feed(.001, .1), false);
+assert.equal(d.feed(.2, 1), false);
+assert.equal(d.feed(NaN, 1.2), false);
+console.log('Double-clap timing, rearm, cooldown, and invalid inputs passed.');
