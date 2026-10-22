@@ -21,7 +21,7 @@ async function recordingToWav(blob) {
   return encodeWav(samples);
 }
 class RecordedVoiceInput {
-  constructor({onState,onText,onError,devices=navigator.mediaDevices,Recorder=MediaRecorder,request=fetch,convert=recordingToWav}) {
+  constructor({onState,onText,onError,devices=navigator.mediaDevices,Recorder=MediaRecorder,request=(...args)=>globalThis.fetch(...args),convert=recordingToWav}) {
     Object.assign(this,{onState,onText,onError,devices,Recorder,request,convert});
     this.version=0;this.active=false;
   }

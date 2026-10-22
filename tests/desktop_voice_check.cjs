@@ -17,6 +17,20 @@ function fixture(overrides={}) {
   return result;
 }
 (async()=>{
+  // Browser fetch requires Window as its receiver; a method on the recorder
+  // must not pass the recorder instance as `this` to the native function.
+  const originalFetch=globalThis.fetch;
+  let nativeCalls=0;
+  try {
+    globalThis.fetch=async function(path,options){
+      assert.equal(this,globalThis,'Native fetch must retain its global receiver');
+      assert.equal(path,'/api/transcribe');assert.equal(options.method,'POST');nativeCalls++;
+      return {ok:true,json:async()=>({text:'default transport works'})};
+    };
+    const native=fixture({request:undefined});await native.input.start();native.input.stop();await tick();
+    assert.deepEqual(native.errors,[]);assert.deepEqual(native.texts,['default transport works']);
+    assert.equal(nativeCalls,1);
+  } finally {globalThis.fetch=originalFetch;}
   const f=fixture();await f.input.start();f.input.stop();await tick();
   assert.deepEqual(f.texts,['hello iris']);assert.equal(f.requests[0].path,'/api/transcribe');
   assert.equal(f.requests[0].options.headers['Content-Type'],'audio/wav');assert.ok(f.stops>0);
