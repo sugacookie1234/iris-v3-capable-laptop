@@ -1,12 +1,28 @@
 # Validation — October 22, 2026
 
+## Voice-input repair
+
+Browser speech recognition returned a network error. Fish transcription was
+also tested with a public fixture but required account credit. Neither is used
+for the repaired voice-input path: MediaRecorder captures microphone audio,
+the browser converts it to mono 16 kHz WAV, and the loopback server transcribes
+it locally with Vosk small English 0.15. Raw audio is not saved or sent to a cloud
+service. The resulting chat transcript still goes to the configured chat provider.
+
+The official model archive is downloaded during setup and checked against a pinned
+SHA-256 digest. A six-second public speech fixture was correctly transcribed
+both directly and through the running authenticated `/api/transcribe` endpoint.
+JavaScript tests cover capture, WAV encoding, denied permissions, early key
+release, cancellation during conversion, and suppressing cancelled requests.
+Actual microphone quality remains a user/device acceptance check.
+
 Target: HP OMEN 16, Intel Core 7 240H, 16 GB RAM, RTX 5060, 1 TB SSD.
 Development checks ran on the available Windows Dell Latitude, using Python 3.13.1.
 The OMEN itself has not been available for hardware acceptance.
 
 ## Automated checks
 
-- Windows unit/integration suite: **421 tests run, OK, 4 skipped**, in 87.13 s.
+- Windows unit/integration suite: **425 tests run, OK, 4 skipped**, in 71.93 s.
   GitHub Actions repeats the suite for future commits. Four legacy
   POSIX-only modules are skipped (private POSIX file permissions, PTY setup,
   signal-alarm readiness, and pipe-select reminder runner). The supported Windows
@@ -46,8 +62,9 @@ The OMEN itself has not been available for hardware acceptance.
 - Run setup and launch on the actual OMEN. Keys must be entered on that machine;
   Windows account encryption is not portable with a repository download.
 - Native Edge automation could not be initialized on the development host.
-  UI checks used the Codex in-app browser. Its speech recognition reported a
-  network error, so microphone recognition is not declared verified.
+  UI checks used the Codex in-app browser. Its original speech service reported a
+  network error and has now been replaced with local recognition. Actual microphone
+  capture still needs a user/device check.
 - Check audible playback, interruptions, microphone permission, push-to-talk,
   and double-clap thresholds in Edge with the OMEN microphone. Synthetic clap
   tests do not establish real-room detection accuracy.

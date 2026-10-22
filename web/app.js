@@ -7,7 +7,10 @@ let clapStream = null, clapTimer = null, clapSource = null, micAnalyser = null;
 let captureTimer = null, toastTimer = null, pendingId = null, latestCouncil = null, status = null;
 let state = 'idle', statusLoaded = false;
 const detector = new DoubleClapDetector();
-const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recordedInput = typeof MediaRecorder!=='undefined' && navigator.mediaDevices ? new RecordedVoiceInput({
+  onState:value=>{listening=value!=='idle';setState(value);},
+  onText:text=>send(text),onError:message=>{toast(message);addLine('IRIS',message);}
+}) : null;
 
 async function api(path, data) {
   const response = await fetch(path, data === undefined ? {} : {
@@ -39,7 +42,7 @@ async function loadStatus() {
     status=await api('/api/status'); statusLoaded=true;
     $('dotBrain').className='dot '+(status.brain?'on':'off');
     $('dotVoice').className='dot '+(status.voice?'on':'off');
-    $('details').textContent='IRIS · '+status.model+' · memories stored locally';
+    $('details').textContent='IRIS · '+status.model+' · voice input processed locally';
   } catch(err) { toast(err.message); }
 }
 loadStatus();
@@ -95,6 +98,7 @@ async function speak(text) {
 }
 async function send(text) {
   text=text.trim(); if (!text || busy) return;
+  if(recordedInput&&recordedInput.active)recordedInput.cancel();
   if(listening){rec.onend=null;rec.abort();listening=false;clearTimeout(captureTimer);}
   stopSpeaking();busy=true;$('typeForm').querySelector('button').disabled=true;
   addLine('YOU',text);const answer=addLine('IRIS','…');setState('thinking');
@@ -110,32 +114,14 @@ async function send(text) {
 
 function startListening(timed=false) {
   if(busy||listening||muted)return;
-  if(!Recognition){toast('Use Edge or Chrome for speech recognition, or type your message.');return;}
-  stopSpeaking(); let heard='',interim='',failed=false;rec=new Recognition();
-  rec.lang='en-US';rec.interimResults=true;rec.continuous=true;
-  rec.onresult=e=>{
-    interim='';for(let i=e.resultIndex;i<e.results.length;i++) {
-      if(e.results[i].isFinal) heard+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;
-    }
-    $('status').textContent=(heard+interim).trim()||'Listening';
-  };
-  rec.onerror=e=>{
-    if(e.error!=='no-speech'&&e.error!=='aborted') {
-      failed=true;toast('Voice input: '+e.error+'. Check microphone permission; typing remains available.');
-    }
-  };
-  rec.onend=()=>{
-    listening=false;clearTimeout(captureTimer);detector.reset();
-    const said=(heard+interim).trim(); if(said&&!failed&&!muted)send(said);else setState('idle');
-  };
-  try {rec.start();listening=true;setState('listening');captureTimer=setTimeout(stopListening,timed?8000:30000);}
-  catch(err){listening=false;toast(err.message);setState('idle');}
+  if(!recordedInput){toast('This browser cannot record microphone audio. Open IRIS in Edge or Chrome.');return;}
+  stopSpeaking();recordedInput.start(timed?8000:30000);
 }
-function stopListening(){if(rec&&listening){try{rec.stop();}catch{}}}
-function editable(target){return target.closest('input,textarea,select,button,dialog')||target.isContentEditable;}
+function stopListening(){if(recordedInput&&recordedInput.active){recordedInput.stop();return;}if(rec&&listening){try{rec.stop();}catch{}}}
+function editable(target){return target!==reactor&&(target.closest('input,textarea,select,button,dialog')||target.isContentEditable);}
 document.addEventListener('keydown',e=>{
   if(e.code==='Space'&&!e.repeat&&!editable(e.target)&&!$('wake')){e.preventDefault();startListening();}
-  if(e.code==='Escape'){stopSpeaking();if(rec)rec.abort();setState(busy?'thinking':'idle');}
+  if(e.code==='Escape'){stopSpeaking();if(recordedInput)recordedInput.cancel();if(rec)rec.abort();setState(busy?'thinking':'idle');}
 });
 document.addEventListener('keyup',e=>{if(e.code==='Space'&&!editable(e.target)){e.preventDefault();stopListening();}});
 reactor.addEventListener('click',()=>listening?stopListening():startListening(true));
@@ -172,11 +158,12 @@ $('clapBtn').addEventListener('click',async()=>{
   } catch(err){stopClap();toast('Could not enable clap detection: '+err.message);}
 });
 $('muteBtn').addEventListener('click',()=>{
+  if(recordedInput)recordedInput.cancel();
   muted=!muted;stopSpeaking();stopClap();if(rec){rec.onend=null;rec.abort();}listening=false;clearTimeout(captureTimer);
   $('muteBtn').textContent=muted?'Unmute':'Mute';$('muteBtn').setAttribute('aria-pressed',String(muted));setState(busy?'thinking':'idle');
 });
-window.addEventListener('pagehide',()=>{stopClap();stopSpeaking();if(rec)rec.abort();});
-window.addEventListener('blur',()=>{if(listening)stopListening();});
+window.addEventListener('pagehide',()=>{stopClap();stopSpeaking();if(recordedInput)recordedInput.cancel();if(rec)rec.abort();});
+window.addEventListener('blur',()=>{if(recordedInput&&recordedInput.active)return;if(listening)stopListening();});
 
 function panel(title){$('panelTitle').textContent=title;$('panelBody').replaceChildren();$('panel').showModal();return $('panelBody');}
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);return p;}
@@ -211,11 +198,11 @@ $('infoBtn').onclick=()=>{
   paragraph(body,'Target: HP OMEN 16 · Core 7 240H · 16 GB RAM · RTX 5060 · 1 TB SSD. The default uses cloud inference; no GPU model is installed.');
   paragraph(body,'Run setup.bat to change models, voice, keys, timezone, or Obsidian path. Windows keys are encrypted for this account and excluded from GitHub.');
   paragraph(body,'Council runs five requests and may take longer. It uses the models you configure; the initial seats can share one model.');
-  paragraph(body,'Browser speech recognition may use Microsoft/Google services. Clap detection only measures audio levels locally until it activates speech recognition.');
+  paragraph(body,'Microphone recordings are transcribed locally with Vosk, then the transcript is sent to your configured chat provider. Audio recordings are not saved. Fish Audio receives reply text for spoken output.');
   paragraph(body,'Connected here: IRIS reasoning, council, memory, tasks, goals, and optional read-only Obsidian. External Google accounts and general desktop control are not connected.');
   if(statusLoaded)paragraph(body,'Model: '+status.model+'\nVoice: '+status.voice_id);
 };
-$('resetBtn').onclick=async()=>{try{await api('/api/reset',{});stopSpeaking();logEl.replaceChildren();latestCouncil=null;$('councilBtn').hidden=true;setState('idle');toast('Conversation cleared. Saved memories and tasks are retained.');}catch(err){toast(err.message);}};
+$('resetBtn').onclick=async()=>{if(recordedInput)recordedInput.cancel();try{await api('/api/reset',{});stopSpeaking();logEl.replaceChildren();latestCouncil=null;$('councilBtn').hidden=true;setState('idle');toast('Conversation cleared. Saved memories and tasks are retained.');}catch(err){toast(err.message);}};
 
 async function pollApproval(){
   try {

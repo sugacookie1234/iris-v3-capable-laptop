@@ -4,7 +4,7 @@ IRIS's identity, reasoning council, persistent memory and local tools, connected
 the Edge voice interface and streaming Fish Audio playback from the JARVIS prototype.
 
 Target laptop: **HP OMEN 16 · Intel Core 7 240H · 16 GB RAM · NVIDIA RTX 5060 · 1 TB SSD**.
-The default runs cloud models and does not need CUDA, Ollama, WSL, Vosk or a GPU download.
+The default runs cloud models and does not need CUDA, Ollama, WSL or a GPU model download. Voice input uses a small local Vosk model.
 It can also run on less powerful Windows computers. It has not yet been tested on the OMEN itself.
 
 ## Install on the OMEN
@@ -13,7 +13,7 @@ It can also run on less powerful Windows computers. It has not yet been tested o
    Enable the Python launcher/PATH option. Edge is the recommended browser.
 2. Clone this private repository with your GitHub account, or use **Code → Download ZIP**
    and extract it to a normal local folder, such as `C:\Users\you\Projects\iris-v3-capable-laptop`.
-3. Double-click **`setup.bat`**. It creates an isolated environment and installs timezone data.
+3. Double-click **`setup.bat`**. It creates an isolated environment, installs dependencies, and downloads a verified 40 MB English speech model.
 4. Enter your provider key and Fish Audio key at the hidden prompts. Choose the model and voice.
 5. Double-click **`start-iris.bat`**. Keep its launcher running. Edge opens IRIS automatically.
 6. Click **Wake IRIS**, allow microphone access, and hold **Space** to speak. Typing also works.
@@ -44,8 +44,8 @@ Run `setup.bat` again to change model IDs, voice, timezone or Obsidian path.
 Try: “What is your name?”, “Add a task to test IRIS on my OMEN”, or select Council and
 ask “Compare a cloud-first and local-first assistant for my laptop.”
 
-The browser recognition engine may send speech to Microsoft/Google services. It is not offline STT.
-Fish Audio receives spoken response text; your configured reasoning provider receives the request
+Microphone audio is recorded in the browser, converted to WAV and transcribed locally with Vosk.
+Recordings are kept in memory only; no cloud transcription account is needed. Fish Audio receives spoken response text; your configured reasoning provider receives the request
 and relevant memory/context. Clap level detection itself stays in the browser.
 
 ## Models and hardware
@@ -96,6 +96,7 @@ No automatic startup, always-on background listening or autonomous desktop missi
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s tests -q
 node tests/desktop_clap_check.cjs
+node tests/desktop_voice_check.cjs
 .venv\Scripts\python.exe -m iris.desktop.server --no-browser
 ```
 
@@ -111,3 +112,13 @@ The HUD design originated in [AKCodez/make-your-own-jarvis](https://github.com/A
 its MIT license is preserved in `docs/JARVIS-LICENSE.txt`.
 The council has an existing custom IRIS implementation; see `docs/council-reference.md` for the
 comparison with Karpathy's project. No third-party assistant stack was wholesale imported.
+
+## Voice input troubleshooting
+
+Refresh the page after updating. Click the core, allow microphone access, speak, then click it again
+to submit; the timed window also stops after eight seconds. Hold Space away from the text box for
+push-to-talk (up to 30 seconds). Escape or Mute discards the recording.
+If the model is missing, run `setup.bat` again. Speech input uses the default Windows microphone.
+Local English recognition needs no Fish credit, but accents/noise can affect accuracy.
+The speech model is [Vosk small English 0.15](https://alphacephei.com/vosk/models), licensed Apache 2.0,
+downloaded into ignored local storage; it is not bundled into the repository.

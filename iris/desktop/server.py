@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 from iris.desktop.runtime import DesktopRuntime, BusyError, ROOT
 from iris.brain.providers.openai_compatible import OpenAICompatibleError
 from iris.brain.council import CouncilExecutionError
+from iris.desktop.transcription import transcribe, MAX_AUDIO_BYTES
 
 
 def voice_request(settings, text):
@@ -135,6 +136,7 @@ class Handler(BaseHTTPRequestHandler):
         assets = {'/': ('index.html', 'text/html; charset=utf-8'),
                   '/app.js': ('app.js', 'text/javascript'),
                   '/clap.js': ('clap.js', 'text/javascript'),
+                    '/voice-input.js': ('voice-input.js', 'text/javascript'),
                   '/desktop.css': ('desktop.css', 'text/css')}
         if path in assets:
             if self.headers.get('Sec-Fetch-Site') == 'cross-site' and path != '/':
@@ -205,6 +207,16 @@ class Handler(BaseHTTPRequestHandler):
             return
         app = self.server.runtime
         try:
+            if urlsplit(self.path).path == '/api/transcribe':
+                size = int(self.headers.get('Content-Length', '0'))
+                if self.headers.get('Transfer-Encoding') or not 32 <= size <= MAX_AUDIO_BYTES:
+                    raise ValueError('Recording is empty or too large. Keep speech under 30 seconds.')
+                audio = self.rfile.read(size)
+                self._body_read = True
+                if len(audio) != size:
+                    raise ValueError('Recording upload was incomplete.')
+                self._json(200, {'text': transcribe(app.settings, audio, self.headers.get('Content-Type', ''))})
+                return
             value = self._body()
             path = urlsplit(self.path).path
             if path == '/api/chat':

@@ -17,6 +17,8 @@ if not exist ".venv\Scripts\python.exe" %IRIS_PY% -m venv .venv
 if errorlevel 1 goto failed
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 if errorlevel 1 goto failed
+.venv\Scripts\python.exe -m iris.desktop.install_speech
+if errorlevel 1 goto failed
 .venv\Scripts\python.exe -m iris.desktop.setup
 if errorlevel 1 goto failed
 echo Setup complete. Double-click start-iris.bat.
