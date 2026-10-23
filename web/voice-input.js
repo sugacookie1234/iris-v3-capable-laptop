@@ -21,8 +21,8 @@ async function recordingToWav(blob) {
   return encodeWav(samples);
 }
 class RecordedVoiceInput {
-  constructor({onState,onText,onError,devices=navigator.mediaDevices,Recorder=MediaRecorder,request=(...args)=>globalThis.fetch(...args),convert=recordingToWav}) {
-    Object.assign(this,{onState,onText,onError,devices,Recorder,request,convert});
+  constructor({onState,onText,onError,onBackend=()=>{},devices=navigator.mediaDevices,Recorder=MediaRecorder,request=(...args)=>globalThis.fetch(...args),convert=recordingToWav}) {
+    Object.assign(this,{onState,onText,onError,onBackend,devices,Recorder,request,convert});
     this.version=0;this.active=false;
   }
   async start(duration=30000) {
@@ -55,6 +55,7 @@ class RecordedVoiceInput {
           if(version!==this.version)return;
           if(!response.ok)throw new Error(result.error||'Transcription failed.');
           this.active=false;this.onState('idle');
+          if(result.speech)this.onBackend(result.speech);
           if(result.text&&result.text.trim())this.onText(result.text.trim());
           else this.onError('No speech detected. Check your microphone and try again.');
         }catch(error){

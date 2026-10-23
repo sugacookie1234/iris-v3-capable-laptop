@@ -5,6 +5,7 @@ import os
 from zoneinfo import ZoneInfo
 from iris.local_config import read_saved, save_updates
 from iris.brain.providers.configuration import validate_provider_url, validate_model_id
+from iris.desktop.speech_config import speech_options
 
 
 def main():
@@ -21,6 +22,13 @@ def main():
     fish = getpass('Fish Audio API key (blank keeps saved key; optional): ').strip() or current.get('IRIS_FISH_API_KEY', '')
     voice = ask('Fish voice ID', 'IRIS_FISH_VOICE_ID', '41f0953d7a6b4c078445c7e65d620eeb')
     fish_model = ask('Fish speech model', 'IRIS_FISH_MODEL', 's2.1-pro-free')
+    stt_provider = ask('Voice recognition (fish with local fallback, or local)', 'IRIS_STT_PROVIDER', 'fish').lower()
+    if stt_provider not in ('fish', 'local'):
+        raise ValueError('Voice recognition must be fish or local.')
+    stt_model = ask('Local speech model (large-v3-turbo for OMEN; small.en for lighter English)', 'IRIS_STT_MODEL', 'large-v3-turbo')
+    stt_device = ask('Local speech device (auto, cpu, cuda)', 'IRIS_STT_DEVICE', 'auto').lower()
+    stt_language = ask('Local speech language (en or auto)', 'IRIS_STT_LANGUAGE', 'en').lower()
+    speech_options({'IRIS_STT_MODEL': stt_model, 'IRIS_STT_DEVICE': stt_device, 'IRIS_STT_LANGUAGE': stt_language})
     zone = ask('Timezone', 'IRIS_TIMEZONE', 'America/New_York')
     ZoneInfo(zone)
     deep = ask('Deep reasoning model', 'IRIS_DEEP_MODEL', model)
@@ -35,6 +43,8 @@ def main():
         raise ValueError('The Obsidian vault folder does not exist.')
     updates = {'IRIS_PROVIDER_URL': base, 'IRIS_MODEL': model, 'IRIS_API_KEY': key,
                'IRIS_FISH_API_KEY': fish, 'IRIS_FISH_VOICE_ID': voice, 'IRIS_FISH_MODEL': fish_model,
+               'IRIS_STT_PROVIDER': stt_provider, 'IRIS_STT_MODEL': stt_model,
+               'IRIS_STT_DEVICE': stt_device, 'IRIS_STT_LANGUAGE': stt_language,
                'IRIS_TIMEZONE': zone, 'IRIS_TIMEOUT_SECONDS': '60',
                'IRIS_FAST_MODEL': model, 'IRIS_DEEP_MODEL': deep,
                'IRIS_COUNCIL_STRATEGIST_MODEL': strategist, 'IRIS_COUNCIL_SKEPTIC_MODEL': skeptic,
@@ -57,5 +67,5 @@ if __name__ == '__main__':
     try:
         raise SystemExit(main())
     except (ValueError, OSError, KeyboardInterrupt, EOFError):
-        print('\nSetup did not complete. Check the provider URL, model IDs, timezone and optional vault path.')
+        print('\nSetup did not complete. Check the provider URL, model IDs, speech settings, timezone and optional vault path.')
         raise SystemExit(1)

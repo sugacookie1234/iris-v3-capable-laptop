@@ -9,6 +9,7 @@ let state = 'idle', statusLoaded = false;
 const detector = new DoubleClapDetector();
 const recordedInput = typeof MediaRecorder!=='undefined' && navigator.mediaDevices ? new RecordedVoiceInput({
   onState:value=>{listening=value!=='idle';setState(value);},
+  onBackend:speech=>{if(status)status.speech=speech;renderSpeechStatus();if(speech.fallback)toast(speech.fallback);},
   onText:text=>send(text),onError:message=>{toast(message);addLine('IRIS',message);}
 }) : null;
 
@@ -42,8 +43,18 @@ async function loadStatus() {
     status=await api('/api/status'); statusLoaded=true;
     $('dotBrain').className='dot '+(status.brain?'on':'off');
     $('dotVoice').className='dot '+(status.voice?'on':'off');
-    $('details').textContent='IRIS · '+status.model+' · voice input processed locally';
+    renderSpeechStatus();
   } catch(err) { toast(err.message); }
+}
+function renderSpeechStatus() {
+  if(!status)return;
+  const speech=status.speech||{};
+  let label=speech.configured_provider==='local'?'Local Whisper selected':'Fish recognition · local Whisper fallback';
+  if(speech.engine==='fish')label='Voice recognition: Fish Audio';
+  else if(speech.engine==='faster-whisper')label='Voice recognition: Whisper '+speech.model+' · '+(speech.device==='cuda'?'NVIDIA GPU':'CPU')+(speech.fallback?' · fallback active':'');
+  else if(speech.device==='unavailable')label='Voice recognition unavailable · check setup';
+  $('details').textContent='IRIS · '+status.model+' · '+label;
+  $('details').title=speech.fallback||'Fish receives recordings when selected. Local Whisper processes fallback recordings on this computer.';
 }
 loadStatus();
 setInterval(() => { $('clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); },1000);
@@ -195,10 +206,11 @@ $('councilBtn').onclick=()=>{
 };
 $('infoBtn').onclick=()=>{
   const body=panel('Your IRIS setup');
-  paragraph(body,'Target: HP OMEN 16 · Core 7 240H · 16 GB RAM · RTX 5060 · 1 TB SSD. The default uses cloud inference; no GPU model is installed.');
+  paragraph(body,'Target: HP OMEN 16 · Core 7 240H · 16 GB RAM · RTX 5060 · 1 TB SSD. Reasoning uses your cloud provider. Local Whisper can use NVIDIA acceleration when available.');
   paragraph(body,'Run setup.bat to change models, voice, keys, timezone, or Obsidian path. Windows keys are encrypted for this account and excluded from GitHub.');
   paragraph(body,'Council runs five requests and may take longer. It uses the models you configure; the initial seats can share one model.');
-  paragraph(body,'Microphone recordings are transcribed locally with Vosk, then the transcript is sent to your configured chat provider. Audio recordings are not saved. Fish Audio receives reply text for spoken output.');
+  paragraph(body,'Voice recognition uses Fish Audio first, with local Whisper if Fish is unavailable, out of credit or too slow. Choose local in setup.bat to keep recognition on this computer. IRIS does not save recordings. The transcript goes to your chat provider; Fish receives reply text for spoken output.');
+  if(status?.speech?.fallback)paragraph(body,status.speech.fallback);
   paragraph(body,'Connected here: IRIS reasoning, council, memory, tasks, goals, and optional read-only Obsidian. External Google accounts and general desktop control are not connected.');
   if(statusLoaded)paragraph(body,'Model: '+status.model+'\nVoice: '+status.voice_id);
 };

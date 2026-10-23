@@ -1,47 +1,48 @@
-"""Install the pinned official Vosk English model into ignored local storage."""
-import hashlib
+"""Download pinned Whisper models; optionally install NVIDIA's Windows runtime."""
+import argparse
+import os
 from pathlib import Path
-import tempfile
-import urllib.request
-import zipfile
-from iris.desktop.transcription import MODEL_PATH
-
-URL = 'https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip'
-SHA256 = '30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498'
+import subprocess
+import sys
+from iris.desktop.speech_config import MODELS, model_path, speech_options
+from iris.local_config import effective_environment
 
 
-def install(archive=None):
-    if (MODEL_PATH / 'am/final.mdl').is_file() and (MODEL_PATH / 'conf/model.conf').is_file():
-        print('Local speech model is ready.')
-        return
-    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=MODEL_PATH.parent) as temporary:
-        root = Path(temporary)
-        source = Path(archive) if archive else root / 'model.zip'
-        if not archive:
-            print('Downloading the 40 MB local English speech model...')
-            with urllib.request.urlopen(URL, timeout=120) as response, source.open('wb') as output:
-                total = 0
-                while chunk := response.read(1024 * 1024):
-                    total += len(chunk)
-                    if total > 60 * 1024 * 1024:
-                        raise ValueError('Speech model download exceeded its size limit.')
-                    output.write(chunk)
-        if hashlib.sha256(source.read_bytes()).hexdigest() != SHA256:
-            raise ValueError('Speech model checksum did not match. No model installed.')
-        with zipfile.ZipFile(source) as bundle:
-            for entry in bundle.infolist():
-                target = (root / entry.filename).resolve()
-                if not target.is_relative_to(root.resolve()):
-                    raise ValueError('Invalid speech model archive path.')
-            bundle.extractall(root)
-        (root / MODEL_PATH.name).rename(MODEL_PATH)
-    print('Local speech model installed. Microphone audio stays on this computer.')
+def install(settings=None, gpu_libraries=False):
+    settings = effective_environment() if settings is None else settings
+    name, device, _ = speech_options(settings)
+    if gpu_libraries and os.name == 'nt' and device != 'cpu':
+        import ctranslate2
+        try:
+            has_gpu = ctranslate2.get_cuda_device_count() > 0
+        except (RuntimeError, OSError):
+            has_gpu = False
+        if has_gpu or device == 'cuda':
+            print('Installing the NVIDIA speech runtime...')
+            subprocess.run([sys.executable, '-m', 'pip', 'install', '-r',
+                            str(Path(__file__).resolve().parents[2] / 'requirements-gpu.txt')], check=True)
+        else:
+            print('No NVIDIA device detected here. The local model can use CPU.')
+    from huggingface_hub import snapshot_download
+    repository, revision = MODELS[name]
+    destination = model_path(name)
+    print(f'Downloading/verifying {name}. The large model is about 1.6 GB; small.en about 0.5 GB.')
+    snapshot_download(repo_id=repository, revision=revision, local_dir=str(destination),
+                      allow_patterns=['model.bin', 'config.json', 'tokenizer.json',
+                                      'vocabulary.*', 'preprocessor_config.json'])
+    if not all((destination / part).is_file() and (destination / part).stat().st_size > 0
+               for part in ('model.bin', 'config.json', 'tokenizer.json')):
+        raise ValueError('Speech model download is incomplete. Run setup again.')
+    print('Local Whisper fallback installed. Run check-speech.bat to verify inference on this computer.')
+    return destination
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--gpu-libraries', action='store_true')
+    args = parser.parse_args()
     try:
-        install()
-    except (OSError, ValueError, zipfile.BadZipFile) as error:
-        print('Speech setup failed:', error)
+        install(gpu_libraries=args.gpu_libraries)
+    except Exception:
+        print('Speech setup failed. Check the connection, free disk space and Python installation, then retry.')
         raise SystemExit(1)

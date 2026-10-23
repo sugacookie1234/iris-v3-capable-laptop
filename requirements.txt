@@ -1,2 +1,5 @@
 tzdata==2026.2
-vosk==0.3.45
+faster-whisper==1.2.1
+ctranslate2==4.8.3
+# PyAV 19 removed the decoder argument used by faster-whisper 1.2.1.
+av==16.1.0

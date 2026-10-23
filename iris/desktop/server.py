@@ -17,7 +17,7 @@ from urllib.parse import urlsplit
 from iris.desktop.runtime import DesktopRuntime, BusyError, ROOT
 from iris.brain.providers.openai_compatible import OpenAICompatibleError
 from iris.brain.council import CouncilExecutionError
-from iris.desktop.transcription import transcribe, MAX_AUDIO_BYTES
+from iris.desktop.recognition import transcribe, speech_status, MAX_AUDIO_BYTES
 
 
 def voice_request(settings, text):
@@ -156,6 +156,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == '/api/status':
                 cfg = app.settings
                 self._json(200, {'name': 'IRIS', 'brain': True, 'voice': bool(cfg.get('IRIS_FISH_API_KEY')),
+                    'speech': speech_status(cfg),
                     'model': app.config.model, 'voice_id': cfg.get('IRIS_FISH_VOICE_ID', ''),
                     'last_route': app.last_route, 'last_seconds': app.last_seconds,
                     'council': True, 'memory': True, 'tasks': True,
@@ -215,7 +216,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._body_read = True
                 if len(audio) != size:
                     raise ValueError('Recording upload was incomplete.')
-                self._json(200, {'text': transcribe(app.settings, audio, self.headers.get('Content-Type', ''))})
+                text = transcribe(app.settings, audio, self.headers.get('Content-Type', ''))
+                self._json(200, {'text': text, 'speech': speech_status(app.settings)})
                 return
             value = self._body()
             path = urlsplit(self.path).path

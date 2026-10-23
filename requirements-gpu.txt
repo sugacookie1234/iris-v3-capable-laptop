@@ -1,0 +1,2 @@
+# Official NVIDIA Windows runtime for the pinned CTranslate2 wheel.
+nvidia-cublas-cu12==12.9.2.10; sys_platform == "win32"

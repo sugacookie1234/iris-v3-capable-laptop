@@ -4,23 +4,25 @@ IRIS's identity, reasoning council, persistent memory and local tools, connected
 the Edge voice interface and streaming Fish Audio playback from the JARVIS prototype.
 
 Target laptop: **HP OMEN 16 · Intel Core 7 240H · 16 GB RAM · NVIDIA RTX 5060 · 1 TB SSD**.
-The default runs cloud models and does not need CUDA, Ollama, WSL or a GPU model download. Voice input uses a small local Vosk model.
+The default uses cloud reasoning and Fish Audio voice recognition, with local faster-whisper as a fallback.
+Setup downloads the local speech model and installs the NVIDIA runtime when a compatible GPU is detected.
 It can also run on less powerful Windows computers. It has not yet been tested on the OMEN itself.
 
 ## Install on the OMEN
 
-1. Install **Python 3.11 or newer** from [python.org](https://www.python.org/downloads/windows/).
+1. Install **64-bit Python 3.13** from [python.org](https://www.python.org/downloads/windows/) (3.11–3.13 supported).
    Enable the Python launcher/PATH option. Edge is the recommended browser.
 2. Clone this private repository with your GitHub account, or use **Code → Download ZIP**
    and extract it to a normal local folder, such as `C:\Users\you\Projects\iris-v3-capable-laptop`.
-3. Double-click **`setup.bat`**. It creates an isolated environment, installs dependencies, and downloads a verified 40 MB English speech model.
+3. Double-click **`setup.bat`**. It creates an isolated environment, configures recognition, and downloads a pinned Whisper model (about 1.6 GB for the OMEN default).
 4. Enter your provider key and Fish Audio key at the hidden prompts. Choose the model and voice.
 5. Double-click **`start-iris.bat`**. Keep its launcher running. Edge opens IRIS automatically.
 6. Click **Wake IRIS**, allow microphone access, and hold **Space** to speak. Typing also works.
 
 Keys are deliberately **not included in the repository**. Enter them again on the OMEN;
 the current computer's encrypted configuration cannot be decrypted by another Windows account.
-Run `setup.bat` again to change model IDs, voice, timezone or Obsidian path.
+Run `setup.bat` again to change model IDs, voice, recognition provider, timezone or Obsidian path.
+Run **`check-speech.bat`** to test the local fallback on a public recording and see the actual GPU/CPU device.
 
 ## What works through the unified interface
 
@@ -44,9 +46,13 @@ Run `setup.bat` again to change model IDs, voice, timezone or Obsidian path.
 Try: “What is your name?”, “Add a task to test IRIS on my OMEN”, or select Council and
 ask “Compare a cloud-first and local-first assistant for my laptop.”
 
-Microphone audio is recorded in the browser, converted to WAV and transcribed locally with Vosk.
-Recordings are kept in memory only; no cloud transcription account is needed. Fish Audio receives spoken response text; your configured reasoning provider receives the request
-and relevant memory/context. Clap level detection itself stays in the browser.
+Microphone audio is recorded in the browser and converted to WAV. By default it goes to Fish Audio's
+`transcribe-1-pro` API. Missing credit, rejected keys, rate limits, network failures and invalid responses
+automatically fall back to local faster-whisper. Each new recording tries Fish again, so adding credit
+restores cloud recognition without changing settings. The UI reports which engine handled the last recording.
+Choose **local** recognition in setup to keep audio on the computer. IRIS does not save recordings;
+Fish's own data handling applies to cloud requests. Your chat provider receives the transcript and relevant
+memory/context. Fish Audio receives reply text for spoken output. Clap level detection stays in the browser.
 
 ## Models and hardware
 
@@ -63,8 +69,9 @@ Voice IDs: `41f0953d7a6b4c078445c7e65d620eeb` is the voice from the working JARV
 `88b183bfbdda44a09ad4474712b967f4` was used in the earlier IRIS configuration. Choose either in setup.
 Changing voice does not change IRIS's identity.
 
-The RTX 5060 is not required for this version. A local model endpoint can be configured later;
-model sizing must be based on actual GPU VRAM and available system memory. No VRAM amount is assumed.
+Local speech defaults to **large-v3-turbo**, with NVIDIA float16 acceleration and CPU int8 fallback.
+The smaller **small.en** model is available in setup for lighter English recognition. GPU memory and drivers
+still matter; no VRAM amount or OMEN performance is assumed. See [OMEN speech setup](docs/SPEECH-OMEN.md).
 
 ## Local data and boundaries
 
@@ -119,6 +126,8 @@ Refresh the page after updating. Click the core, allow microphone access, speak,
 to submit; the timed window also stops after eight seconds. Hold Space away from the text box for
 push-to-talk (up to 30 seconds). Escape or Mute discards the recording.
 If the model is missing, run `setup.bat` again. Speech input uses the default Windows microphone.
-Local English recognition needs no Fish credit, but accents/noise can affect accuracy.
-The speech model is [Vosk small English 0.15](https://alphacephei.com/vosk/models), licensed Apache 2.0,
-downloaded into ignored local storage; it is not bundled into the repository.
+Fish recognition requires API credit, separate from its website subscription. Local Whisper needs no
+transcription key or credits. The first local request loads the model and can be slower; CPU fallback
+with the large model can be slow on older computers. The footer shows Fish, NVIDIA GPU or CPU and
+reports fallback reasons. Run `check-speech.bat` after setup on the OMEN; microphone accuracy still
+needs checking with your voice. Models are downloaded into ignored local storage, not committed.

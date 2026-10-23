@@ -177,6 +177,28 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(response.status, 200)
         self.assertEqual(json.loads(response.read())['reply'], 'Iris is ready.')
 
+    def test_transcription_endpoint_requires_session_and_reports_engine(self):
+        from tests.test_desktop_transcription import wav
+        server = DesktopServer(('127.0.0.1', 0), self.app)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        connection = http.client.HTTPConnection(*server.server_address)
+        self.addCleanup(connection.close)
+        speech = {'engine': 'fish', 'device': 'cloud', 'fallback': None}
+        with patch('iris.desktop.server.transcribe', return_value='hello') as recognize, \
+             patch('iris.desktop.server.speech_status', return_value=speech):
+            connection.request('POST', '/api/transcribe', wav(), {'Content-Type': 'audio/wav'})
+            response = connection.getresponse()
+            self.assertEqual(response.status, 403); response.read()
+            recognize.assert_not_called()
+            headers = {'Cookie': 'iris_session=' + server.session, 'X-IRIS-Request': '1',
+                       'Content-Type': 'audio/wav'}
+            connection.request('POST', '/api/transcribe', wav(), headers)
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            self.assertEqual(json.loads(response.read()), {'text': 'hello', 'speech': speech})
+
 
 @unittest.skipUnless(os.name == 'nt', 'Windows DPAPI contract')
 class WindowsConfigurationTests(unittest.TestCase):

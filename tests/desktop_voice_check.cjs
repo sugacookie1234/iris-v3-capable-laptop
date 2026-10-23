@@ -35,6 +35,13 @@ function fixture(overrides={}) {
   assert.deepEqual(f.texts,['hello iris']);assert.equal(f.requests[0].path,'/api/transcribe');
   assert.equal(f.requests[0].options.headers['Content-Type'],'audio/wav');assert.ok(f.stops>0);
   assert.equal(f.input.active,false);assert.deepEqual(f.errors,[]);
+  for(const speech of [{engine:'fish',device:'cloud'},{engine:'faster-whisper',device:'cpu',fallback:'Fish unavailable'}]){
+    const order=[];
+    const withStatus=fixture({request:async()=>({ok:true,json:async()=>({text:'recognized',speech})}),
+      onBackend:s=>{assert.deepEqual(s,speech);order.push('backend');},onText:()=>order.push('text')});
+    await withStatus.input.start();withStatus.input.stop();await tick();
+    assert.deepEqual(order,['backend','text']);
+  }
   let permission;const pending=fixture({devices:{getUserMedia:()=>new Promise(r=>permission=r)}});
   const starting=pending.input.start();pending.input.stop();let stopped=false;
   permission({getTracks:()=>[{stop:()=>stopped=true}]});await starting;

@@ -1,4 +1,60 @@
-# Validation — October 22, 2026
+# Validation — October 23, 2026
+
+## Fish recognition with local Whisper fallback
+
+The supported Windows interface now records mono 16 kHz WAV and tries Fish Audio
+`transcribe-1-pro` first. It disables speaker labels, emotion tags and timestamps
+for short assistant requests. API credit, authentication, rate-limit, network and
+response-format failures fall back to local faster-whisper. A local-only setting
+skips the cloud request. Each new recording retries Fish.
+
+A real six-second public recording succeeded against the saved Fish key after
+credit was added: 0.85 seconds for the API request in one observed run. It returned
+“The stale smell of old beer lingers. It takes heat to bring out the...”
+This establishes that ASR credit was usable at test time, not an account-balance
+estimate or a promise about future latency. See the
+[Fish ASR contract](https://docs.fish.audio/api-reference/endpoint/openapi-v1/speech-to-text).
+
+Local `large-v3-turbo` also recognized the same sample using CPU int8, taking
+100.0 seconds including model load on the development Dell. The current Dell is
+configured with `small.en`; the repository's OMEN default remains `large-v3-turbo`
+with automatic NVIDIA float16 selection and CPU int8 recovery. Model download and
+successful CPU inference do not establish RTX 5060 compatibility in practice;
+run `check-speech.bat` on the actual OMEN.
+
+The running authenticated `/api/transcribe` endpoint also used real Fish ASR
+successfully in 0.82 seconds. A simulated Fish credit failure then exercised the
+actual local `small.en` model (no simulated transcript): the sample was recognized
+in 18.44 seconds including model load on this Dell, and status identified CPU
+fallback. These are individual measurements, not latency guarantees.
+
+Final Windows suite: **451 tests, OK, 4 skipped**, in 156.26 seconds. The first
+full run hit an automation worker timeout and a Windows connection reset; both
+passed individually and the complete rerun passed. Browser voice/clap checks,
+JavaScript syntax and dependency consistency checks passed. No configured API
+keys were found in publishable files. The four skipped modules are legacy
+POSIX-only tests. No real OMEN GPU or microphone acceptance is claimed.
+
+The initial live check exposed PyAV 19 removing an argument used by faster-whisper
+1.2.1. The environment and requirements now pin the compatible PyAV 16.1.0.
+Whisper runtime tests cover CPU/GPU selection, missing GPU libraries, failures
+while loading and while consuming the inference generator, bounded fallback,
+model caching, language selection, malformed audio and concurrent requests.
+Fish routing tests cover successful cloud requests, silence, local-only mode,
+missing keys, 401/402/403/429/5xx responses, timeout recovery, malformed responses,
+redirect rejection, and a missing local model. Browser tests retain fetch-receiver
+and microphone cancellation checks and verify recognition-status callbacks.
+
+The running interface displayed “Fish recognition · local Whisper fallback”.
+Microphone accuracy with the user's own voice and actual OMEN GPU operation remain
+manual acceptance checks. Fish receives microphone recordings in the default
+mode; IRIS does not save them locally. Local-only mode does not upload audio.
+The reasoning provider still receives the recognized transcript and context.
+
+## Previous validation — October 22, 2026
+
+The following records describe the earlier Vosk build and the existing reasoning,
+voice-output and local-tool integration. The recognition path above supersedes Vosk.
 
 ## Voice-input repair
 

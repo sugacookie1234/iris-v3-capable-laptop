@@ -49,7 +49,9 @@ class DesktopRuntime:
             'and desktop automation are not connected in this build. Never claim those actions succeeded. '
             'The user can select Council for a deliberation. Only report facts supported by context. '
             'The configured language model runs at the user-selected provider endpoint; the default is cloud OpenRouter. '
-            'Local memory storage does not make cloud inference private or offline. No local GPU model is installed. '
+            'Local memory storage does not make cloud reasoning private or offline. '
+            'Voice recognition supports Fish Audio with a local faster-whisper fallback, or a local-only setting. '
+            'Whisper can use NVIDIA acceleration when available; do not assume the active speech engine or device. '
             'Council mode offers advice only and cannot execute tools. '
             'Current local date: ' + time.strftime('%Y-%m-%d')
         )
