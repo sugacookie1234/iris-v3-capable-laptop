@@ -17,4 +17,7 @@ jobs:
       - run: python -m unittest discover -s tests -q
       - run: node tests/desktop_clap_check.cjs
       - run: node tests/desktop_voice_check.cjs
+      - run: node tests/desktop_standby_check.cjs
+      - run: node tests/desktop_app_check.cjs
+      - run: node tests/desktop_dashboard_check.cjs
       - run: node --check web/app.js

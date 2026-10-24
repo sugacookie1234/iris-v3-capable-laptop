@@ -3,236 +3,62 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#050d15">
 <title>I.R.I.S.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600&display=swap">
-<style>
-  :root {
-    --bg: #02060c;
-    --cyan: #3fd8ff;
-    --glow: rgba(63, 216, 255, 0.35);
-    --amber: #ffb347;
-    --red: #ff5a5f;
-    --text: #d9f6ff;
-    --muted: #6f93a6;
-    --panel: rgba(10, 30, 45, 0.55);
-    --accent: var(--cyan);
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
-  body {
-    background: radial-gradient(ellipse at center, #062033 0%, var(--bg) 70%);
-    color: var(--text);
-    font-family: "Rajdhani", "Segoe UI", system-ui, sans-serif;
-    overflow: hidden;
-  }
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(63, 216, 255, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(63, 216, 255, 0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-  }
-  header {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    display: flex;
-    justify-content: space-between;
-    padding: 18px 26px;
-    font-family: "Orbitron", sans-serif;
-    font-size: 12px;
-    letter-spacing: 0.18em;
-    color: var(--muted);
-  }
-  .pill { display: inline-flex; align-items: center; gap: 8px; margin-right: 22px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-  .dot.on { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
-  .dot.off { background: var(--red); box-shadow: 0 0 10px var(--red); }
-  main {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 22px;
-    padding-bottom: 120px;
-  }
-  h1 {
-    margin: 0;
-    padding-left: 0.5em;
-    font-family: "Orbitron", sans-serif;
-    font-weight: 700;
-    font-size: clamp(22px, 3vw, 34px);
-    letter-spacing: 0.5em;
-    color: var(--cyan);
-    text-shadow: 0 0 18px var(--glow);
-  }
-  .sub { margin-top: -14px; font-size: 12px; letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase; }
-  .reactor { position: relative; width: min(42vh, 360px); aspect-ratio: 1; cursor: pointer; --level: 0; }
-  .ring { position: absolute; border-radius: 50%; }
-  .r1 { inset: 0; border: 2px dashed var(--accent); opacity: 0.45; animation: spin 24s linear infinite; }
-  .r2 { inset: 7%; border: 3px solid transparent; border-top-color: var(--accent); border-bottom-color: var(--accent); opacity: 0.75; animation: spin 9s linear infinite reverse; }
-  .r3 { inset: 15%; border: 1px solid var(--accent); opacity: 0.35; }
-  .r4 { inset: 20%; border: 6px solid transparent; border-left-color: var(--accent); border-right-color: var(--accent); opacity: 0.6; animation: spin 5s linear infinite; }
-  .core {
-    position: absolute;
-    inset: 31%;
-    border-radius: 50%;
-    background: radial-gradient(circle, #ffffff 0%, var(--accent) 35%, rgba(63, 216, 255, 0.15) 70%, transparent 72%);
-    box-shadow: 0 0 calc(30px + var(--level) * 90px) var(--accent), inset 0 0 30px rgba(255, 255, 255, 0.4);
-    transform: scale(calc(1 + var(--level) * 0.35));
-    transition: transform 0.06s linear, box-shadow 0.06s linear;
-  }
-  .state-listening { --accent: #7ff3ff; }
-  .state-listening .r2 { animation-duration: 2.5s; }
-  .state-listening .r4 { animation-duration: 1.6s; }
-  .state-listening .core { animation: breathe 1s ease-in-out infinite; }
-  .state-thinking { --accent: var(--amber); }
-  .state-thinking .r2, .state-thinking .r4 { animation-duration: 1.2s; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes breathe { 50% { filter: brightness(1.35); } }
-  .status {
-    min-height: 18px;
-    font-family: "Orbitron", sans-serif;
-    font-size: 13px;
-    letter-spacing: 0.35em;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-  .log {
-    width: min(760px, 92vw);
-    min-height: 86px;
-    padding: 14px 18px;
-    background: var(--panel);
-    border: 1px solid rgba(63, 216, 255, 0.18);
-    border-radius: 14px;
-    backdrop-filter: blur(6px);
-  }
-  .line { margin: 2px 0; font-size: 19px; line-height: 1.4; }
-  .who { margin-right: 10px; font-family: "Orbitron", sans-serif; font-size: 11px; letter-spacing: 0.25em; color: var(--muted); }
-  .you .txt { color: #a9c7d6; }
-  footer {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 16px;
-  }
-  .hint { font-size: 15px; letter-spacing: 0.08em; color: var(--muted); }
-  kbd { padding: 2px 7px; border: 1px solid var(--muted); border-radius: 5px; font-family: "Orbitron", sans-serif; font-size: 11px; color: var(--text); }
-  form { display: flex; gap: 8px; width: min(560px, 92vw); }
-  input {
-    flex: 1;
-    padding: 10px 14px;
-    background: rgba(5, 18, 28, 0.8);
-    border: 1px solid rgba(63, 216, 255, 0.25);
-    border-radius: 10px;
-    color: var(--text);
-    font: inherit;
-    font-size: 16px;
-    outline: none;
-  }
-  input:focus { border-color: var(--cyan); }
-  button {
-    padding: 0 16px;
-    background: transparent;
-    border: 1px solid var(--cyan);
-    border-radius: 10px;
-    color: var(--cyan);
-    font-family: "Orbitron", sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    cursor: pointer;
-  }
-  .credit { font-size: 12px; letter-spacing: 0.12em; color: var(--muted); }
-  .toast {
-    position: fixed;
-    top: 60px; left: 50%;
-    transform: translateX(-50%);
-    display: none;
-    max-width: 90vw;
-    padding: 10px 16px;
-    background: rgba(40, 12, 14, 0.92);
-    border: 1px solid var(--red);
-    border-radius: 10px;
-    color: #ffd6d6;
-    font-size: 15px;
-    z-index: 5;
-  }
-  .wake {
-    position: fixed;
-    inset: 0;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    background: rgba(1, 5, 10, 0.88);
-    cursor: pointer;
-    font-family: "Orbitron", sans-serif;
-    letter-spacing: 0.4em;
-    color: var(--cyan);
-    text-align: center;
-  }
-  .wake small { font-family: "Rajdhani", sans-serif; font-size: 14px; letter-spacing: 0.15em; color: var(--muted); }
-  @media (prefers-reduced-motion: reduce) { .ring, .core { animation: none !important; } }
-</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="/desktop.css">
 </head>
 <body class="state-idle">
-  <div class="wake" id="wake">CLICK TO WAKE I.R.I.S.<small>Your browser needs one click to enable audio</small></div>
-
-  <header>
-    <div>
-      <span class="pill"><span class="dot" id="dotVoice"></span>VOICE &middot; FISH AUDIO</span>
-      <span class="pill"><span class="dot" id="dotBrain"></span>REASONING &middot; CONFIGURED</span>
-    </div>
-    <div id="clock"></div>
+  <header class="topbar">
+    <div class="brand"><h1>I.R.I.S.</h1><span>PERSONAL INTELLIGENCE</span></div>
+    <div class="timepiece" aria-label="Current local time"><div class="time-digits"><time id="clock">--:--</time><span id="clockSeconds">--</span></div><div id="clockDate" class="eyebrow"></div></div>
+    <div class="connection"><span class="signal-dot" id="standbyDot"></span><span id="standbyLabel">READY TO CONNECT</span></div>
   </header>
-
-  <nav class="toolbar" aria-label="IRIS controls">
-  <label>Reasoning <select id="mode"><option value="auto">Auto</option><option value="council">Council</option></select></label>
-  <button id="memoriesBtn">Memories</button><button id="tasksBtn">Tasks</button>
-  <button id="councilBtn" hidden>Council review</button><button id="clapBtn" aria-pressed="false">Double clap: off</button>
-  <button id="muteBtn" aria-pressed="false">Mute</button><button id="resetBtn">New chat</button><button id="infoBtn">Setup info</button>
-</nav>
-<main>
-    <h1>I.R.I.S.</h1>
-    <div class="sub">Integrated Reasoning & Intelligence System</div>
-    <div class="reactor" id="reactor" role="button" tabindex="0" aria-label="Start or stop listening" title="Click to talk">
-      <div class="ring r1"></div>
-      <div class="ring r2"></div>
-      <div class="ring r3"></div>
-      <div class="ring r4"></div>
-      <div class="core"></div>
+  <main>
+    <div class="dashboard">
+      <section class="widget weather-widget" aria-labelledby="weatherTitle">
+        <div class="widget-heading"><h2 id="weatherTitle">LOCAL WEATHER</h2><span class="widget-mark">01</span></div>
+        <div class="weather-glyph" aria-hidden="true"><svg viewBox="0 0 64 48"><circle cx="25" cy="19" r="9"/><path d="M25 2v4M25 32v4M8 19h4M38 19h4M13 7l3 3M34 28l3 3M13 31l3-3M34 10l3-3"/><path d="M21 40h27a9 9 0 0 0 0-18 13 13 0 0 0-24-1 10 10 0 0 0-3 19Z" class="cloud"/></svg></div>
+        <div class="temperature"><span id="weatherTemp">—</span><span class="unit">°C</span></div>
+        <p id="weatherCondition" class="widget-primary">Weather near you</p>
+        <p id="weatherDetail" class="widget-secondary">Use your location to get started.</p>
+        <button id="locationBtn" class="text-button">Use my location <span aria-hidden="true">↗</span></button>
+        <p id="weatherStamp" class="data-stamp"></p>
+        <a class="source-link" href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a>
+      </section>
+      <section class="presence" aria-label="IRIS voice companion">
+        <div class="orbital-label" aria-hidden="true"><span></span> VOICE INTERFACE <span></span></div>
+        <div class="reactor" id="reactor" role="button" tabindex="0" aria-label="Start IRIS or record a request" title="Click to speak">
+          <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="ring r4"></div><div class="core"></div>
+        </div>
+        <div class="status" id="status" role="status">Ready when you are</div>
+        <p class="wake-hint" id="wakeHint">One click to enable your microphone.</p>
+        <button id="wake" class="start-button">START STANDBY <span aria-hidden="true">↗</span></button>
+        <div class="presence-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </section>
+      <section class="widget markets-widget" aria-labelledby="marketTitle">
+        <div class="widget-heading"><h2 id="marketTitle">U.S. MARKETS</h2><span class="widget-mark">02</span></div>
+        <p class="market-caption">Broad-market ETFs</p>
+        <div id="marketRows" class="market-rows"><p class="widget-secondary">Loading latest daily closes…</p></div>
+        <p id="marketStamp" class="data-stamp">Daily closes · USD · not live</p>
+        <a id="marketSource" class="source-link" href="https://finance.yahoo.com/" target="_blank" rel="noreferrer">Yahoo Finance</a>
+      </section>
     </div>
-    <div class="status" id="status">Standing by</div>
-    <div class="log" id="log" role="log" aria-live="polite"></div>
+    <section class="conversation" aria-label="Conversation">
+      <div class="conversation-heading"><span class="eyebrow">CONVERSATION</span><span id="routeLabel" class="route-label">AUTOMATIC REASONING</span></div>
+      <div class="log" id="log" role="log" aria-live="polite"><p id="emptyLog" class="empty-log">A quiet space. Just ask.</p></div>
+    </section>
   </main>
-
   <footer>
-    <div class="hint">Hold <kbd>SPACE</kbd> or click the core to talk</div>
-    <form id="typeForm">
-      <input id="typeBox" placeholder="Or type to IRIS..." autocomplete="off">
-      <button type="submit">SEND</button>
-    </form>
-    <div class="credit" id="details">Your memories stay local. Speech recognition is provided by your browser.</div>
+    <form id="typeForm"><label for="typeBox" class="sr-only">Message IRIS</label><input id="typeBox" placeholder="Or type a request…" autocomplete="off"><button type="submit" aria-label="Send message">↗</button></form>
+    <div class="footer-line"><span id="details">Fish voice · local fallback</span><div class="quiet-actions"><button id="muteBtn" class="text-button" aria-pressed="false">Pause mic</button><span>·</span><button id="infoBtn" class="text-button">Voice commands</button></div></div>
   </footer>
-
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status"></div>
   <audio id="voice" preload="none"></audio>
-<dialog id="panel"><div class="dialog-head"><h2 id="panelTitle"></h2><button id="closePanel">Close</button></div><div id="panelBody"></div></dialog>
-<dialog id="approval"><h2>Review action</h2><pre id="approvalText"></pre><p>This approval applies only to the action shown.</p><button id="approveBtn">Approve</button><button id="declineBtn">Decline</button></dialog>
-
-<script src="/clap.js"></script>
-<script src="/voice-input.js"></script>
-<script src="/app.js"></script>
+  <dialog id="panel"><div class="dialog-head"><h2 id="panelTitle"></h2><button id="closePanel">Close</button></div><div id="panelBody"></div></dialog>
+  <dialog id="approval"><div class="eyebrow">YOUR CONFIRMATION</div><h2>Review action</h2><pre id="approvalText"></pre><p>Double clap, then say “approve” or “cancel”.</p><button id="approveBtn">Approve</button><button id="declineBtn">Decline</button></dialog>
+  <script src="/clap.js"></script><script src="/voice-input.js"></script><script src="/standby.js"></script><script src="/dashboard.js"></script><script src="/app.js"></script>
 </body>
 </html>

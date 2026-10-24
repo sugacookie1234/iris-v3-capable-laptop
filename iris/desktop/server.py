@@ -18,6 +18,7 @@ from iris.desktop.runtime import DesktopRuntime, BusyError, ROOT
 from iris.brain.providers.openai_compatible import OpenAICompatibleError
 from iris.brain.council import CouncilExecutionError
 from iris.desktop.recognition import transcribe, speech_status, MAX_AUDIO_BYTES
+from iris.desktop.dashboard import dashboard_weather, dashboard_markets
 
 
 def voice_request(settings, text):
@@ -136,6 +137,8 @@ class Handler(BaseHTTPRequestHandler):
         assets = {'/': ('index.html', 'text/html; charset=utf-8'),
                   '/app.js': ('app.js', 'text/javascript'),
                   '/clap.js': ('clap.js', 'text/javascript'),
+                  '/standby.js': ('standby.js', 'text/javascript'),
+                  '/dashboard.js': ('dashboard.js', 'text/javascript'),
                     '/voice-input.js': ('voice-input.js', 'text/javascript'),
                   '/desktop.css': ('desktop.css', 'text/css')}
         if path in assets:
@@ -165,6 +168,8 @@ class Handler(BaseHTTPRequestHandler):
                     'provider_verified': False})
             elif path == '/api/approval':
                 self._json(200, {'pending': app.pending_approval()})
+            elif path == '/api/markets':
+                self._json(200, dashboard_markets())
             elif path == '/api/memories':
                 self._json(200, {'items': app.memories()})
             elif path == '/api/tasks':
@@ -221,7 +226,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             value = self._body()
             path = urlsplit(self.path).path
-            if path == '/api/chat':
+            if path == '/api/weather':
+                self._json(200, dashboard_weather(value.get('latitude'), value.get('longitude')))
+            elif path == '/api/chat':
                 self._json(200, app.chat(value.get('text'), value.get('mode', 'auto')))
             elif path == '/api/approval':
                 if type(value.get('approved')) is not bool:

@@ -17,7 +17,8 @@ It can also run on less powerful Windows computers. It has not yet been tested o
 3. Double-click **`setup.bat`**. It creates an isolated environment, configures recognition, and downloads a pinned Whisper model (about 1.6 GB for the OMEN default).
 4. Enter your provider key and Fish Audio key at the hidden prompts. Choose the model and voice.
 5. Double-click **`start-iris.bat`**. Keep its launcher running. Edge opens IRIS automatically.
-6. Click **Wake IRIS**, allow microphone access, and hold **Space** to speak. Typing also works.
+6. Click **Start standby** and allow microphone access. Double clap to speak, or hold **Space**.
+   Click **Use my location** to enable local weather. Typing also works.
 
 Keys are deliberately **not included in the repository**. Enter them again on the OMEN;
 the current computer's encrypted configuration cannot be decrypted by another Windows account.
@@ -29,8 +30,9 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 - IRIS's own personality and behavior modes; no JARVIS roleplay prompt.
 - Text and browser speech use the same conversation history, memory context and tool boundary.
 - Fish Audio streams to the browser without waiting for the complete audio file.
-- **Auto** uses normal routing; **Council** forces independent answers, anonymous reviews and synthesis.
-  The review button shows candidate answers and evaluations. Council makes five provider requests.
+- **Automatic reasoning:** routine requests use FAST; analysis uses DEEP; complex decisions may use
+  COUNCIL for independent answers, anonymous reviews and synthesis. You can explicitly ask for the council.
+  Say “show council review” to inspect the results. Council makes five provider requests.
   The initial seats may use the same model with distinct roles; setup supports different model IDs.
 - **Memories:** propose a fact, confirm it, retrieve it in later conversations, or forget it.
   `/remember ...` and `/memories` work from the chat as well.
@@ -38,13 +40,17 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
   Mutations require a browser approval tied to the actual action. Tasks and goals persist locally.
 - **Optional Obsidian:** read/search a configured vault. Knowledge retrieval starts from `vault index.md`.
   No Obsidian app/plugin is necessary for these existing read-only tools.
-- **Optional double clap:** enable it explicitly in the interface. Two claps activate an eight-second
-  recognition window. It monitors levels only while the tab is visible and IRIS is idle.
-  **Mute** stops clap monitoring, speech input and playback. Detection needs testing with your microphone.
+- **Double-clap standby:** enabled after the initial microphone permission/Start standby click.
+  Two claps activate an eight-second recognition window. Idle monitoring measures levels locally;
+  speech playback and request capture suspend clap detection. “Mute” silences replies; **Pause mic**
+  stops listening. Detection needs testing with your microphone.
+- Minimal HUD with a larger local clock, location-based weather and SPY/QQQ/DIA/IWM daily closes.
+  Market prices are dated, in USD and **not live quotes**. See [HUD and standby](docs/HUD-STANDBY.md)
+  for voice commands, sources, location handling and future SMS/call integration.
 - **New chat** clears session history, not saved memories or tasks.
 
-Try: “What is your name?”, “Add a task to test IRIS on my OMEN”, or select Council and
-ask “Compare a cloud-first and local-first assistant for my laptop.”
+Try: “What is your name?”, “Add a task to test IRIS on my OMEN”, or
+“Ask the council to compare a cloud-first and local-first assistant for my laptop.”
 
 Microphone audio is recorded in the browser and converted to WAV. By default it goes to Fish Audio's
 `transcribe-1-pro` API. Missing credit, rejected keys, rate limits, network failures and invalid responses
@@ -96,7 +102,8 @@ general desktop automation and unrestricted shell execution are not connected. I
 
 The retained v2 code includes experimental WSL one-shot voice, standalone HUD, readiness and reminder
 entry points. They are not the supported Windows launch path; use `start-iris.bat` for the merged app.
-No automatic startup, always-on background listening or autonomous desktop missions are enabled.
+Standby works while the interface is running and the computer is awake. Windows startup, a system
+background service, voice wake words, SMS/calls and autonomous desktop missions are not connected.
 
 ## Development and validation
 
@@ -104,6 +111,9 @@ No automatic startup, always-on background listening or autonomous desktop missi
 .venv\Scripts\python.exe -m unittest discover -s tests -q
 node tests/desktop_clap_check.cjs
 node tests/desktop_voice_check.cjs
+node tests/desktop_standby_check.cjs
+node tests/desktop_app_check.cjs
+node tests/desktop_dashboard_check.cjs
 .venv\Scripts\python.exe -m iris.desktop.server --no-browser
 ```
 
@@ -124,7 +134,7 @@ comparison with Karpathy's project. No third-party assistant stack was wholesale
 
 Refresh the page after updating. Click the core, allow microphone access, speak, then click it again
 to submit; the timed window also stops after eight seconds. Hold Space away from the text box for
-push-to-talk (up to 30 seconds). Escape or Mute discards the recording.
+push-to-talk (up to 30 seconds). Escape or Pause mic discards the recording.
 If the model is missing, run `setup.bat` again. Speech input uses the default Windows microphone.
 Fish recognition requires API credit, separate from its website subscription. Local Whisper needs no
 transcription key or credits. The first local request loads the model and can be slower; CPU fallback

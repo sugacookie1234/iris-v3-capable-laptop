@@ -1,4 +1,22 @@
-# Validation — October 23, 2026
+# Validation — October 24, 2026
+
+## Minimal HUD, automatic routing and standby
+
+Windows unit/integration suite: **476 tests, OK, 4 skipped**, in 77.43 seconds.
+The four skips remain legacy POSIX modules. JavaScript checks cover automatic
+routing requests, microphone permission races, stopping tracks, output mute versus
+microphone pause, playback replacement, and rejecting voice approvals recorded
+before an action appeared or for a replaced action. Synthetic clap tests are not
+real-room microphone acceptance.
+
+Weather tests cover coordinate validation/rounding, bounded fixed upstream requests,
+cache expiration and unavailable data. Market tests reject intraday bars and expose
+dated daily closes and partial failures. Live read-only checks returned Open-Meteo
+weather for an explicit test coordinate (not the user's location) and daily closes
+for SPY, QQQ, DIA and IWM from Yahoo Finance. Browser location permission and actual
+microphone/clap accuracy still require checks on the user's hardware.
+
+## Previous validation — October 23, 2026
 
 ## Fish recognition with local Whisper fallback
 
