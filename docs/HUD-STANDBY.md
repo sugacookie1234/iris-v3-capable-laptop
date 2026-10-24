@@ -1,10 +1,10 @@
 # IRIS desktop HUD and standby
 
-The desktop keeps the animated core and gives the surrounding screen a quieter layout: a large clock, local weather, a broad U.S. market watchlist, and the conversation. Reasoning selection is automatic. Most controls are available as spoken or typed commands; microphone and location permissions still need browser interaction.
+The desktop keeps the animated core and gives the surrounding screen a quieter layout: a large clock, local weather, a broad U.S. market watchlist, and the conversation. Reasoning selection is automatic. Most controls are available as spoken or typed commands; microphone and location permissions still need an initial click.
 
 ## Start standby
 
-1. Run `start.bat` and open the local IRIS page in Edge.
+1. Run `start-iris.bat` to open the standalone Windows app. Optional Chrome mode uses `start-iris-browser.bat`.
 2. Click **Start Standby** and allow microphone access.
 3. Double clap, wait for **Listening**, then speak. A clap wake records up to eight seconds before sending the request for transcription. Clicking the core also starts an eight-second request; clicking again stops it sooner. Holding Space records until release, with a thirty-second limit, when the cursor is outside a text field or dialog.
 
@@ -12,7 +12,7 @@ Double-clap detection stays enabled after activation. Standby checks sound level
 
 Clap detection pauses while IRIS records, transcribes, processes a normal request, prepares a reply, or speaks. It resumes when IRIS is ready again. A pending approval is an exception: after IRIS finishes reading the action, double clap can wake it to receive the approval or cancellation.
 
-Keep the page open, the IRIS server running, and the laptop awake. This is browser standby, not a Windows background service. It cannot wake a sleeping laptop, and saying “IRIS” alone is not a wake word. Browser suspension, microphone disconnection, and OS permissions can interrupt standby; tap the core to resume after fixing the interruption.
+Keep the IRIS app open and the laptop awake. Closing the app stops its server and microphone. The desktop window disables background timer throttling for its clap sampler, but microphone disconnection, device sleep and OS permissions can still interrupt standby; tap the core to resume after fixing the interruption. This is not a Windows background service, cannot wake a sleeping laptop, and saying “IRIS” alone is not a wake word. See [desktop app](DESKTOP-APP.md).
 
 **Mute** silences spoken replies while retaining double-clap standby. **Pause mic** stops monitoring and cancels recording; use the core or **Resume mic** to restore it. A paused microphone cannot hear “unmute.” Escape stops the current recording or speech without permanently pausing standby.
 

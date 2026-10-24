@@ -30,7 +30,7 @@ class DashboardWidgets {
   }
   async locate() {
     if(this.locating)return this.weather;
-    if(!this.geolocation){this.element('weatherDetail').textContent='Location is unavailable in this browser.';return null;}
+    if(!this.geolocation){this.element('weatherDetail').textContent='Location is unavailable on this device.';return null;}
     this.locating=true;this.element('locationBtn').disabled=true;
     this.element('weatherDetail').textContent='Finding weather near you…';
     try {
@@ -39,7 +39,7 @@ class DashboardWidgets {
       this.coords={latitude:Math.round(position.coords.latitude*100)/100,longitude:Math.round(position.coords.longitude*100)/100};
       return await this.loadWeather();
     }catch(error){
-      this.element('weatherDetail').textContent=error.code===1?'Allow location in your browser to show local weather.':'Your location is unavailable. Try again.';
+      this.element('weatherDetail').textContent=error.code===1?'Allow location for IRIS to show local weather.':'Your location is unavailable. Try again.';
       this.element('locationBtn').textContent='Try location again ↗';return null;
     }finally{this.locating=false;this.element('locationBtn').disabled=false;}
   }

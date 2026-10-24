@@ -4,9 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import secrets
-import subprocess
 import threading
 import urllib.error
 import urllib.request
@@ -19,6 +17,7 @@ from iris.brain.providers.openai_compatible import OpenAICompatibleError
 from iris.brain.council import CouncilExecutionError
 from iris.desktop.recognition import transcribe, speech_status, MAX_AUDIO_BYTES
 from iris.desktop.dashboard import dashboard_weather, dashboard_markets
+from iris.desktop.browser import open_chrome
 
 
 def voice_request(settings, text):
@@ -139,7 +138,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/clap.js': ('clap.js', 'text/javascript'),
                   '/standby.js': ('standby.js', 'text/javascript'),
                   '/dashboard.js': ('dashboard.js', 'text/javascript'),
-                    '/voice-input.js': ('voice-input.js', 'text/javascript'),
+                  '/voice-input.js': ('voice-input.js', 'text/javascript'),
                   '/desktop.css': ('desktop.css', 'text/css')}
         if path in assets:
             if self.headers.get('Sec-Fetch-Site') == 'cross-site' and path != '/':
@@ -256,17 +255,11 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def open_browser(url):
-    if os.name == 'nt':
-        candidates = [Path(os.environ.get('ProgramFiles(x86)', 'C:/Program Files (x86)')) /
-                      'Microsoft/Edge/Application/msedge.exe',
-                      Path(os.environ.get('ProgramFiles', 'C:/Program Files')) /
-                      'Microsoft/Edge/Application/msedge.exe']
-        for candidate in candidates:
-            if candidate.exists():
-                subprocess.Popen([str(candidate), '--app=' + url])
-                return
-    import webbrowser
-    webbrowser.open(url)
+    try:
+        return open_chrome(url)
+    except (RuntimeError, OSError) as exc:
+        print(f'{exc}\nOpen Google Chrome and visit {url}.', flush=True)
+        return False
 
 
 def main():

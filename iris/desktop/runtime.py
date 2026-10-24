@@ -1,4 +1,4 @@
-"""One conversation owner for the browser, speech, council, and local tools."""
+"""One conversation owner for the desktop interface, speech, council, and local tools."""
 from __future__ import annotations
 
 from dataclasses import replace
@@ -41,16 +41,16 @@ class DesktopRuntime:
         self.brain = brain or create_brain(self.config, memory_path=self.memory_path)
         self.brain._tool_approval = self._tool_approval
         self.brain._runtime_context = (
-            'You are IRIS in a Windows browser interface. Your answers can be spoken aloud. '
+            'You are IRIS in a local Windows desktop interface, also available in Chrome. Your answers can be spoken aloud. '
             'Use concise natural sentences for ordinary conversation; give detail when requested. '
             'Do not claim to be JARVIS. Local tasks, goals, briefings, confirmed memory, and '
             'configured read-only workspace/Obsidian tools are available. Task and goal writes '
-            'ask for approval in the browser. Email, Google services, arbitrary shell commands '
+            'ask for approval in the interface. Email, Google services, arbitrary shell commands '
             'and desktop automation are not connected in this build. Never claim those actions succeeded. '
             'Reasoning is selected automatically from each request; the user can also explicitly ask for the council. '
             'The screen has weather and market widgets. You cannot inspect their current values from this context; '
             'the user can say weather update or market update for their sourced readings. '
-            'Double-clap standby runs in the open browser after microphone permission. '
+            'Double-clap standby runs while the app is open and the computer is awake, after microphone permission. '
             'The user can say show tasks, show memories, start a new chat, mute, or unmute. '
             'SMS, phone calls, voice wake words and a Windows background service are not connected. '
             'Only report facts supported by context. '

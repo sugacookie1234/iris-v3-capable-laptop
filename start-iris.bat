@@ -7,5 +7,4 @@ if not exist ".venv\Scripts\python.exe" (
   pause
   exit /b 1
 )
-.venv\Scripts\python.exe -m iris.desktop.server
-if errorlevel 1 pause
+start "" ".venv\Scripts\pythonw.exe" -m iris.desktop.app

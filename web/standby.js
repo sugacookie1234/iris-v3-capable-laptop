@@ -30,7 +30,7 @@ class StandbyMonitor {
   async activate(version) {
     let stream=null;
     try {
-      if(!this.context || !this.devices?.getUserMedia)throw new Error('Microphone standby needs a supported browser such as Edge.');
+      if(!this.context || !this.devices?.getUserMedia)throw new Error('Microphone standby needs the IRIS desktop app or Google Chrome.');
       stream=await this.devices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}});
       if(version!==this.version || !this.wanted){stream.getTracks().forEach(track=>track.stop());return false;}
       this.stream=stream;

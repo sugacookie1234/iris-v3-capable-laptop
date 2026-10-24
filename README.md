@@ -1,7 +1,8 @@
 # I.R.I.S. v3 — Capable Laptop
 
 IRIS's identity, reasoning council, persistent memory and local tools, connected to
-the Edge voice interface and streaming Fish Audio playback from the JARVIS prototype.
+the animated voice interface and streaming Fish Audio playback from the JARVIS prototype.
+It opens as its own **Windows desktop app**, with optional Google Chrome browser mode.
 
 Target laptop: **HP OMEN 16 · Intel Core 7 240H · 16 GB RAM · NVIDIA RTX 5060 · 1 TB SSD**.
 The default uses cloud reasoning and Fish Audio voice recognition, with local faster-whisper as a fallback.
@@ -11,12 +12,14 @@ It can also run on less powerful Windows computers. It has not yet been tested o
 ## Install on the OMEN
 
 1. Install **64-bit Python 3.13** from [python.org](https://www.python.org/downloads/windows/) (3.11–3.13 supported).
-   Enable the Python launcher/PATH option. Edge is the recommended browser.
+   Enable the Python launcher/PATH option. The desktop window uses Microsoft's WebView2 Runtime,
+   normally included with Windows 11. See [desktop setup](docs/DESKTOP-APP.md) if it is missing.
 2. Clone this private repository with your GitHub account, or use **Code → Download ZIP**
    and extract it to a normal local folder, such as `C:\Users\you\Projects\iris-v3-capable-laptop`.
 3. Double-click **`setup.bat`**. It creates an isolated environment, configures recognition, and downloads a pinned Whisper model (about 1.6 GB for the OMEN default).
 4. Enter your provider key and Fish Audio key at the hidden prompts. Choose the model and voice.
-5. Double-click **`start-iris.bat`**. Keep its launcher running. Edge opens IRIS automatically.
+5. Double-click **`start-iris.bat`**. IRIS opens in its own window with no browser tab or address bar.
+   Keep the app running; closing its window stops IRIS. To use Chrome instead, run **`start-iris-browser.bat`**.
 6. Click **Start standby** and allow microphone access. Double clap to speak, or hold **Space**.
    Click **Use my location** to enable local weather. Typing also works.
 
@@ -28,8 +31,8 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 ## What works through the unified interface
 
 - IRIS's own personality and behavior modes; no JARVIS roleplay prompt.
-- Text and browser speech use the same conversation history, memory context and tool boundary.
-- Fish Audio streams to the browser without waiting for the complete audio file.
+- Text and speech use the same conversation history, memory context and tool boundary.
+- Fish Audio streams to the app without waiting for the complete audio file.
 - **Automatic reasoning:** routine requests use FAST; analysis uses DEEP; complex decisions may use
   COUNCIL for independent answers, anonymous reviews and synthesis. You can explicitly ask for the council.
   Say “show council review” to inspect the results. Council makes five provider requests.
@@ -37,7 +40,7 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 - **Memories:** propose a fact, confirm it, retrieve it in later conversations, or forget it.
   `/remember ...` and `/memories` work from the chat as well.
 - **Tasks/goals:** ask to list, create, complete or remove local tasks, and manage goals through chat.
-  Mutations require a browser approval tied to the actual action. Tasks and goals persist locally.
+  Mutations require approval tied to the actual action. Tasks and goals persist locally.
 - **Optional Obsidian:** read/search a configured vault. Knowledge retrieval starts from `vault index.md`.
   No Obsidian app/plugin is necessary for these existing read-only tools.
 - **Double-clap standby:** enabled after the initial microphone permission/Start standby click.
@@ -52,13 +55,13 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 Try: “What is your name?”, “Add a task to test IRIS on my OMEN”, or
 “Ask the council to compare a cloud-first and local-first assistant for my laptop.”
 
-Microphone audio is recorded in the browser and converted to WAV. By default it goes to Fish Audio's
+Microphone audio is recorded by the interface and converted to WAV. By default it goes to Fish Audio's
 `transcribe-1-pro` API. Missing credit, rejected keys, rate limits, network failures and invalid responses
 automatically fall back to local faster-whisper. Each new recording tries Fish again, so adding credit
 restores cloud recognition without changing settings. The UI reports which engine handled the last recording.
 Choose **local** recognition in setup to keep audio on the computer. IRIS does not save recordings;
 Fish's own data handling applies to cloud requests. Your chat provider receives the transcript and relevant
-memory/context. Fish Audio receives reply text for spoken output. Clap level detection stays in the browser.
+memory/context. Fish Audio receives reply text for spoken output. Clap level detection stays on the computer.
 
 ## Models and hardware
 
@@ -92,7 +95,7 @@ Do not publish `.local/`, API keys, or personal vault contents.
 
 New desktop entry points use native Windows file handles for bounded workspace/vault/calendar reads,
 rejecting symbolic links, junctions and unsafe relative paths. Model-proposed writes use immutable,
-single-use browser approval. A council answer does not itself authorize a tool action.
+single-use interface approval. A council answer does not itself authorize a tool action.
 
 ## Scope
 
@@ -132,7 +135,7 @@ comparison with Karpathy's project. No third-party assistant stack was wholesale
 
 ## Voice input troubleshooting
 
-Refresh the page after updating. Click the core, allow microphone access, speak, then click it again
+Restart the app after updating (or refresh Chrome in browser mode). Click the core, allow microphone access, speak, then click it again
 to submit; the timed window also stops after eight seconds. Hold Space away from the text box for
 push-to-talk (up to 30 seconds). Escape or Pause mic discards the recording.
 If the model is missing, run `setup.bat` again. Speech input uses the default Windows microphone.

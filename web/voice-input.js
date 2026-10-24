@@ -33,7 +33,7 @@ class RecordedVoiceInput {
       if(version!==this.version){stream.getTracks().forEach(t=>t.stop());return;}
       this.stream=stream;
       const mime=['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/mp4'].find(t=>this.Recorder.isTypeSupported(t));
-      if(!mime)throw new Error('This browser cannot record supported audio. Open IRIS in Edge.');
+      if(!mime)throw new Error('This interface cannot record supported audio. Update IRIS with setup.bat or try Google Chrome.');
       const recorder=this.recorder=new this.Recorder(stream,{mimeType:mime});
       const chunks=[];let bytes=0;
       recorder.ondataavailable=e=>{

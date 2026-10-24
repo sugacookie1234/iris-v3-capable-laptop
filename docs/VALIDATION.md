@@ -1,5 +1,26 @@
 # Validation — October 24, 2026
 
+## Standalone Windows launcher
+
+Final Windows suite: **481 tests, OK, 4 skipped**, in 116.23 seconds. All five
+JavaScript contract checks passed, along with syntax checks and `pip check`.
+New launcher tests exercise real loopback server startup/shutdown with a simulated
+renderer, renderer-failure cleanup, duplicate-instance prevention, the embedded
+navigation boundary, and Chrome-only external link selection.
+
+The actual pywebview 6.2.1 / WebView2 desktop window launched on the development
+Windows host. Windows reported **I.R.I.S. — Personal Intelligence** responding,
+and the app logged its document-loaded event on port 8766. Authenticated HTTP
+checks confirmed the current interface, Fish recognition configuration and four
+available market rows. No microphone recording or paid chat request was used for
+these desktop-launch checks. No configured credentials matched publishable files.
+
+This session's UI-control tools exposed neither Chrome nor native Windows windows,
+so visual layout, location permission and actual microphone/clap behavior were not
+verified through those tools. Minimized clap sampling has an app-local background
+timer setting but still requires a microphone test. OMEN hardware acceptance remains
+outstanding. [Desktop setup and limitations](DESKTOP-APP.md) describes the launch path.
+
 ## Minimal HUD, automatic routing and standby
 
 Windows unit/integration suite: **476 tests, OK, 4 skipped**, in 77.43 seconds.

@@ -65,7 +65,7 @@ async function speak(text){
   try{const ticket=await api('/api/voice',{text});if(token!==speechToken||muted)return;
     initAudio();if(audioCtx.state==='suspended')await audioCtx.resume();
     await new Promise((resolve,reject)=>{const clean=()=>{voice.onended=null;voice.onerror=null;voice.onplaying=null;speechDone=null;};
-      speechDone=()=>{clean();resolve();};voice.onended=speechDone;voice.onerror=()=>{clean();reject(new Error('Fish Audio is unavailable; using the browser voice.'));};
+      speechDone=()=>{clean();resolve();};voice.onended=speechDone;voice.onerror=()=>{clean();reject(new Error('Fish Audio is unavailable; trying the device voice.'));};
       voice.onplaying=()=>{if(token===speechToken)setState('speaking');};voice.src=ticket.url;voice.play().catch(error=>{clean();reject(error);});});
   }catch(error){if(token!==speechToken||muted)return;toast(error.message);
     if('speechSynthesis'in window)await new Promise(resolve=>{const utterance=new SpeechSynthesisUtterance(text);setState('speaking');speechDone=resolve;utterance.onend=resolve;utterance.onerror=resolve;speechSynthesis.speak(utterance);});
@@ -111,7 +111,7 @@ async function send(text,context={}){
 }
 function startListening(timed=false){
   if((busy&&!pendingId)||listening||micPaused)return;
-  if(!recordedInput){toast('This browser cannot record microphone audio. Open IRIS in Edge.');return;}
+  if(!recordedInput){toast('This interface cannot record microphone audio. Update IRIS with setup.bat or try Google Chrome.');return;}
   recordingApprovalId=pendingId;stopSpeaking();recordedInput.start(timed?8000:30000);
 }
 function stopListening(){if(recordedInput?.active)recordedInput.stop();}
@@ -135,7 +135,7 @@ function showHelp(){const body=panel('Just ask IRIS');const list=document.create
   paragraph(body,'Double clap to wake, then speak. IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
   paragraph(body,'Standby checks sound levels locally. Only a request you start is sent for transcription. Keep this page open and the laptop awake. Pause mic stops monitoring; tap the core to resume.');
   paragraph(body,'Fish Audio handles recognition with local Whisper fallback. “Mute” silences replies while keeping double-clap available. The first local fallback may take longer to load.');
-  paragraph(body,'Weather uses your browser location, rounded to about a kilometre before it reaches Open-Meteo. Markets show completed daily ETF closes from Yahoo Finance, not a live trading feed.');
+  paragraph(body,'Weather uses your device location, rounded to about a kilometre before it reaches Open-Meteo. Markets show completed daily ETF closes from Yahoo Finance, not a live trading feed.');
   if(status?.speech?.fallback)paragraph(body,status.speech.fallback);
 }
 $('infoBtn').onclick=showHelp;

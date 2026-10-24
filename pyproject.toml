@@ -3,7 +3,7 @@ name = "iris-v3-capable-laptop"
 version = "0.1.0"
 description = "IRIS desktop companion for Windows"
 requires-python = ">=3.11"
-dependencies = ["tzdata>=2025.2", "faster-whisper==1.2.1", "ctranslate2==4.8.3", "av==16.1.0"]
+dependencies = ["tzdata>=2025.2", "faster-whisper==1.2.1", "ctranslate2==4.8.3", "av==16.1.0", "pywebview==6.2.1; sys_platform == 'win32'", "pythonnet==3.2.1; sys_platform == 'win32'"]
 
 [tool.ruff]
 line-length = 110
