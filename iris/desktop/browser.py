@@ -44,4 +44,3 @@ class ChromeBrowser:
             return open_chrome(url)
         except (ValueError, RuntimeError, OSError):
             return False
-
