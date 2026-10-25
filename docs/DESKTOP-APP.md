@@ -5,10 +5,13 @@ there is no browser tab, address bar, or console to keep open. It owns its local
 server and stops it when you close the window. Minimize the window to keep IRIS
 running. Reopening the launcher while IRIS is already running shows a notice.
 
-After launch, click **Start standby** and allow the microphone. Double clap to wake
-IRIS, then speak. The app remembers microphone and location permissions in its
-private application profile under ignored `.local/webview/`. It still requires an
-initial Start standby click after each launch. Closing IRIS, sleeping the laptop,
+On the first launch, click **Start standby** and allow the microphone. Double clap
+to wake IRIS, then speak. The app remembers microphone and location permissions in
+its application profile under ignored `.local/webview/`. Later launches restore
+standby automatically when microphone permission is still granted. An explicit
+**Pause mic** is remembered and must be resumed by clicking; a denied or unknown
+permission leaves Start standby visible. Chrome mode still starts with a click.
+Closing IRIS, sleeping the laptop,
 or pausing its microphone stops standby. It does not start automatically with Windows.
 
 The window uses [pywebview](https://pywebview.flowrl.com/) and Microsoft's
@@ -41,9 +44,11 @@ window only permits navigation on its owned loopback origin. It exposes no custo
 Python API to the page, disallows file-URL access and downloads, and keeps TLS checks
 enabled. Ordinary external source links open separately in Chrome.
 
-To support the local clap sampler while minimized, IRIS passes Microsoft's documented
-[`disable-background-timer-throttling` flag](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/webview-features-flags)
-to its own rendering process. It makes no global browser or power-setting changes.
+To support the local clap sampler while minimized and previously permitted audio on
+launch, IRIS passes Microsoft's documented
+[`disable-background-timer-throttling` and `autoplay-policy` flags](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/webview-features-flags)
+to its own rendering process. Microphone access still requires permission. It makes
+no global browser or power-setting changes.
 Actual minimized-window clap detection still needs a hardware test with your microphone.
 
 ## Updating or moving to the OMEN

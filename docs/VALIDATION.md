@@ -1,4 +1,30 @@
-# Validation — October 24, 2026
+# Validation — October 25, 2026
+
+## Standby and voice-command follow-up
+
+The affected Windows desktop, recognition, transcription, routing and widget suite
+passed: **80 tests, OK**, in 5.42 seconds. The initial restricted-account run could
+not exercise Windows DPAPI; it passed when run under the normal signed-in account.
+JavaScript checks cover permission-gated native standby restoration, remembering
+an explicit mic pause, audio suspension indicators, pending-resume cancellation,
+overlapping requests, and an old playback rejection arriving after a replacement.
+
+The local command checks now include “What time is it?” and polite IRIS prefixes,
+without routing ordinary local widget requests to the chat provider. Weather checks
+cover concurrent location requests, permission denial, unavailable readings, and old
+responses arriving after a newer location. Missing values remain unavailable; voice
+responses distinguish permission failures from weather service failures.
+All five JavaScript contract checks passed. Closing the interface invalidates a
+pending location result before it can start a weather request, and suppresses late
+weather updates. Syntax and diff checks passed; configured credentials were absent
+from publishable files.
+
+Native auto-restoration is covered by simulated permission/window tests. Real
+microphone permissions, clap accuracy and audio behavior on the OMEN still need
+hardware acceptance. The desktop app keeps the initial permission/start interaction;
+only later launches with existing permission can restore standby automatically.
+
+## Previous validation — October 24, 2026
 
 ## Standalone Windows launcher
 

@@ -199,6 +199,22 @@ class DesktopTests(unittest.TestCase):
             self.assertEqual(response.status, 200)
             self.assertEqual(json.loads(response.read()), {'text': 'hello', 'speech': speech})
 
+    def test_status_reports_native_host_only_when_enabled(self):
+        server = DesktopServer(('127.0.0.1', 0), self.app)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        connection = http.client.HTTPConnection(*server.server_address)
+        self.addCleanup(connection.close)
+        with patch('iris.desktop.server.speech_status', return_value={}):
+            for desktop in (False, True):
+                if desktop:
+                    server.desktop_window = True
+                connection.request('GET', '/api/status', headers={'Cookie': 'iris_session=' + server.session})
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertIs(json.loads(response.read())['desktop_window'], desktop)
+
 
 @unittest.skipUnless(os.name == 'nt', 'Windows DPAPI contract')
 class WindowsConfigurationTests(unittest.TestCase):

@@ -22,6 +22,7 @@ It can also run on less powerful Windows computers. It has not yet been tested o
    Keep the app running; closing its window stops IRIS. To use Chrome instead, run **`start-iris-browser.bat`**.
 6. Click **Start standby** and allow microphone access. Double clap to speak, or hold **Space**.
    Click **Use my location** to enable local weather. Typing also works.
+   Later desktop launches restore standby if permission is still granted; **Pause mic** stays paused.
 
 Keys are deliberately **not included in the repository**. Enter them again on the OMEN;
 the current computer's encrypted configuration cannot be decrypted by another Windows account.

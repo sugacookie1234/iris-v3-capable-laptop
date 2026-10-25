@@ -38,6 +38,7 @@ class DesktopServer(ThreadingHTTPServer):
 
     def __init__(self, address, runtime):
         self.runtime = runtime
+        self.desktop_window = False
         self.session = secrets.token_urlsafe(32)
         super().__init__(address, Handler)
 
@@ -158,6 +159,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == '/api/status':
                 cfg = app.settings
                 self._json(200, {'name': 'IRIS', 'brain': True, 'voice': bool(cfg.get('IRIS_FISH_API_KEY')),
+                    'desktop_window': self.server.desktop_window,
                     'speech': speech_status(cfg),
                     'model': app.config.model, 'voice_id': cfg.get('IRIS_FISH_VOICE_ID', ''),
                     'last_route': app.last_route, 'last_seconds': app.last_seconds,

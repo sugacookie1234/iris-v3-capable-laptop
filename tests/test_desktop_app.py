@@ -70,6 +70,9 @@ class DesktopAppTests(unittest.TestCase):
                 self.assertFalse(view.settings['ALLOW_FILE_URLS'])
                 self.assertFalse(view.settings['IGNORE_SSL_ERRORS'])
                 self.assertIsNone(view.settings['REMOTE_DEBUGGING_PORT'])
+                flags = os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'].split()
+                self.assertIn('--disable-background-timer-throttling', flags)
+                self.assertIn('--autoplay-policy=no-user-gesture-required', flags)
 
     def test_external_pages_cannot_replace_the_embedded_app(self):
         origin = 'http://127.0.0.1:8766/'

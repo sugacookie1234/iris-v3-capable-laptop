@@ -81,6 +81,7 @@ def run_window(webview, runtime, port=8766):
             continue
     if server is None:
         raise RuntimeError('No available IRIS port. Close the earlier instance and try again.')
+    server.desktop_window = True
     thread = threading.Thread(target=server.serve_forever, name='IRIS local server', daemon=True)
     thread.start()
     previous_open = webbrowser.open
@@ -94,12 +95,13 @@ def run_window(webview, runtime, port=8766):
             'OPEN_EXTERNAL_LINKS_IN_BROWSER': True,
             'IGNORE_SSL_ERRORS': False, 'REMOTE_DEBUGGING_PORT': None,
         })
-        # App-local flag: keep the clap sampler's timer running when minimized.
-        # It does not prevent Windows sleep or change global browser settings.
-        flags = os.environ.get('WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS', '')
-        flag = '--disable-background-timer-throttling'
-        if flag not in flags.split():
-            os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = (flags + ' ' + flag).strip()
+        # App-local settings keep standby active and allow previously permitted
+        # audio to resume on launch. Microphone permission is still required.
+        flags = os.environ.get('WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS', '').split()
+        for flag in ('--disable-background-timer-throttling', '--autoplay-policy=no-user-gesture-required'):
+            if not any(value.split('=')[0] == flag.split('=')[0] for value in flags):
+                flags.append(flag)
+        os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = ' '.join(flags)
         window = webview.create_window(TITLE, url, width=1240, height=820, min_size=(720, 620),
                                        background_color='#050d15', text_select=True)
         window.events.before_show += lambda: guard_navigation(window, url)

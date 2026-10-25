@@ -5,7 +5,9 @@ The desktop keeps the animated core and gives the surrounding screen a quieter l
 ## Start standby
 
 1. Run `start-iris.bat` to open the standalone Windows app. Optional Chrome mode uses `start-iris-browser.bat`.
-2. Click **Start Standby** and allow microphone access.
+2. On first use, click **Start Standby** and allow microphone access. The desktop app
+   restores standby on later launches when permission is still granted; an explicit
+   microphone pause stays paused. Chrome mode starts with a click each time.
 3. Double clap, wait for **Listening**, then speak. A clap wake records up to eight seconds before sending the request for transcription. Clicking the core also starts an eight-second request; clicking again stops it sooner. Holding Space records until release, with a thirty-second limit, when the cursor is outside a text field or dialog.
 
 Double-clap detection stays enabled after activation. Standby checks sound levels locally and discards the samples; it does not continuously upload room audio. A wake starts a separate request recording, which normally goes to Fish Audio. If Fish recognition fails, IRIS tries the installed local faster-whisper model. The first local fallback can take longer while the model loads. The displayed speech status identifies the backend used. See [OMEN speech setup](SPEECH-OMEN.md) for local model and GPU setup.
@@ -16,9 +18,14 @@ Keep the IRIS app open and the laptop awake. Closing the app stops its server an
 
 **Mute** silences spoken replies while retaining double-clap standby. **Pause mic** stops monitoring and cancels recording; use the core or **Resume mic** to restore it. A paused microphone cannot hear “unmute.” Escape stops the current recording or speech without permanently pausing standby.
 
+If Windows suspends audio, the status stops claiming standby is active. Tap the core
+to resume the audio context before recording again. Canceling or pausing while audio
+is starting prevents that unfinished startup from re-enabling the microphone.
+
 ## Commands
 
 Wake IRIS first, then use any of these. The same commands work in the text box.
+Commands also accept a polite prefix such as “Iris, please…” and a trailing “please.”
 
 | Command | Result |
 | --- | --- |

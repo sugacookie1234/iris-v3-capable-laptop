@@ -93,12 +93,22 @@ class StandbyMonitor {
 
 function parseVoiceCommand(text) {
   if(typeof text!=='string')return null;
-  const normalized=text.toLowerCase().trim().replace(/[’]/g,"'")
-    .replace(/^(?:hey\s+)?iris[,.!]?\s+/,'').replace(/^please\s+/,'')
-    .replace(/[.!?]+$/,'').replace(/,?\s+please$/,'').replace(/\s+/g,' ').trim();
+  let normalized=text.toLowerCase().trim().replace(/[’]/g,"'").replace(/\s+/g,' ')
+    .replace(/[.!?]+$/,'').replace(/,?\s+please$/,'').trim();
+  // Apply the same address/politeness rules to every local command. Both
+  // “Iris, please …” and “Please, Iris, …” are common speech transcripts.
+  for(let count=0;count<2;count++) {
+    const withoutPrefix=normalized.replace(/^(?:(?:hey )?iris|please)(?:[,.!:]\s*|\s+)/,'').trim();
+    if(withoutPrefix===normalized)break;
+    normalized=withoutPrefix;
+  }
   const commands={
     mute:/^(?:mute(?: (?:audio|yourself|iris))?|(?:turn |switch )?(?:the )?(?:audio|sound) off|stop speaking|be quiet)$/,
     unmute:/^(?:unmute(?: (?:audio|yourself|iris))?|(?:turn |switch )?(?:the )?(?:audio|sound) on)$/,
+    pausemic:/^(?:(?:pause|mute) (?:(?:the|my) )?(?:microphone|mic)|stop listening(?: to me)?|turn off (?:(?:the|my) )?(?:microphone|mic))$/,
+    time:/^(?:what time is it(?: (?:now|right now))?|what(?:'s| is) (?:the )?(?:current )?time(?: (?:now|right now))?|tell me (?:the )?(?:current )?time|tell me what time it is)$/,
+    weather:/^(?:(?:what(?:'s| is)|how(?:'s| is)) (?:the )?weather(?: like)?(?: (?:today|outside|right now))?|weather(?: update)?|(?:refresh|update) (?:the )?weather|use my (?:current )?location)$/,
+    markets:/^(?:(?:stock )?market update|how(?:'s| is| are) (?:the )?(?:markets|stock market)(?: doing)?(?: today)?|(?:refresh|update) (?:the )?(?:markets|stock market))$/,
     newchat:/^(?:(?:start|begin|open) (?:a )?)?new (?:chat|conversation)$/,
     memories:/^(?:(?:show|open|view)(?: me)? )?(?:(?:my|the) )?(?:memories|memory panel)$/,
     tasks:/^(?:(?:show|open|view)(?: me)? )?(?:(?:my|the) )?(?:tasks|task list)$/,

@@ -83,11 +83,26 @@ function fixture({permission,resume}={}) {
     'Unmute':'unmute','iris, audio on please.':'unmute','Start a new conversation.':'newchat',
     'show me my memories':'memories','Show tasks':'tasks','View the council review':'council',
     'show voice commands':'help','close the panel':'close','approve this action':'approve',
-    'Cancel that action.':'decline'
+    'Cancel that action.':'decline',
+    'What time is it?':'time','What’s the current time?':'time','Tell me what time it is.':'time',
+    'Hey Iris, please what time is it right now?':'time','Please, Iris, tell me the time.':'time',
+    'Iris,weather update please!':'weather','How is the weather outside?':'weather',
+    'Please Iris use my current location.':'weather','Iris, please refresh the weather.':'weather',
+    'Iris, market update.':'markets','How’s the stock market doing today?':'markets',
+    'Please, Iris, refresh the markets.':'markets','Hey Iris, how are the markets doing?':'markets',
+    'Pause mic':'pausemic','Iris, please stop listening.':'pausemic',
+    'Please, Iris, mute my microphone.':'pausemic','Turn off the mic.':'pausemic'
   };
   for(const [input,expected] of Object.entries(cases))assert.equal(parseVoiceCommand(input),expected,input);
   for(const input of ['Should I mute my phone?','Tell me about audio on Windows','How do I start a new chat?',
     'I approve of the idea','What are my tasks for tomorrow?','Remember that I mute notifications at work',
-    'Can you explain the council decision?','yes','no','',null,42])assert.equal(parseVoiceCommand(input),null,String(input));
+    'Can you explain the council decision?','yes','no','',null,42,
+    'What time is it in Tokyo?','Tell me the time complexity of this algorithm',
+    'What is the weather tomorrow?','Iris, what is the weather like in London?',
+    'Please explain how the weather is measured','Iris, use my location to find a restaurant',
+    'How are the markets regulated?','Market update and buy SPY','Should I refresh the markets?',
+    'Iris, please do not stop listening','Explain how to pause the microphone','Mute microphone notifications',
+    'Iris, I approve of this action in principle','Please, Iris, yes','Iris, cancel my subscription'
+  ])assert.equal(parseVoiceCommand(input),null,String(input));
   console.log('Standby permission races, local detection, busy suppression, cleanup, and precise voice commands passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
