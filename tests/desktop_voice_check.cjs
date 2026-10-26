@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {RecordedVoiceInput,encodeWav}=require('../web/voice-input.js');
+const {RecordedVoiceInput,encodeWav,resolveInputDevice}=require('../web/voice-input.js');
 class Recorder {
   static isTypeSupported(){return true;}
   constructor(){this.state='inactive';}
@@ -51,8 +51,58 @@ function fixture(overrides={}) {
   assert.equal(cancelled.requests.length,0);assert.deepEqual(cancelled.texts,[]);
   const denied=fixture({devices:{getUserMedia:async()=>{throw {name:'NotAllowedError'};}}});
   await denied.input.start();assert.match(denied.errors[0],/denied/);assert.equal(denied.input.active,false);
+
+  const devices=[
+    {kind:'audioinput',deviceId:'default',label:'Default - Microphone Array (Realtek(R) Audio)'},
+    {kind:'audioinput',deviceId:'communications',label:'Communications - Microphone Array (Realtek(R) Audio)'},
+    {kind:'audioinput',deviceId:'realtek',label:'Microphone Array (Realtek(R) Audio)'},
+    {kind:'audioinput',deviceId:'webcam',label:'Microphone (HD Webcam C615) (046d:082c)'},
+    {kind:'audiooutput',deviceId:'speaker',label:'Microphone Array (Realtek(R) Audio)'}
+  ];
+  assert.equal(resolveInputDevice(' Microphone Array (Realtek(R) Audio) ',devices),'realtek');
+  assert.equal(resolveInputDevice('Microphone Array (Realtek(R) Aud',devices),'realtek');
+  assert.equal(resolveInputDevice('Microphone (HD Webcam C615)',devices),'webcam');
+  assert.equal(resolveInputDevice('Communications - Microphone (HD Webcam C615)',devices),'webcam');
+  assert.equal(resolveInputDevice('Microphone Array (Realtek(R) Audio)',[...devices,devices[2]]),'realtek');
+  for(const name of ['Microsoft Sound Mapper - Input','Primary Sound Capture Driver'])
+    assert.equal(resolveInputDevice(name,devices),'default');
+  for(const name of ['Microphone','Missing USB Input','',null])
+    assert.throws(()=>resolveInputDevice(name,devices),/could not be matched.*IRIS_INPUT_DEVICE/);
+  const ambiguous=[...devices,{kind:'audioinput',deviceId:'other-realtek',label:'Microphone Array (Realtek(R) Audio)'}];
+  assert.throws(()=>resolveInputDevice('Microphone Array (Realtek(R) Audio)',ambiguous),/More than one/);
+  assert.throws(()=>resolveInputDevice('Microphone Array (Realtek(R) Aud',ambiguous),/More than one/);
+  assert.throws(()=>resolveInputDevice('Microphone Array (Realtek(R) Audio)',devices.filter(device=>device.deviceId!=='realtek')),/could not be matched/);
+  // A unique exact match wins over another device that extends its label.
+  assert.equal(resolveInputDevice('Microphone Array (Realtek(R) Audio)',[...devices,
+    {kind:'audioinput',deviceId:'external',label:'Microphone Array (Realtek(R) Audio) External'}]),'realtek');
+
+  let selected=null,enumerations=0;
+  const matched=fixture({devices:{enumerateDevices:async()=>{enumerations++;return devices;},getUserMedia:async options=>{
+    selected=options;return {getTracks:()=>[{stop:()=>{}}]};
+  }}});
+  await matched.input.start(8000,'Microphone Array (Realtek(R) Aud');
+  assert.deepEqual(selected.audio.deviceId,{exact:'realtek'});assert.equal(enumerations,1);
+  assert.equal(matched.input.active,true);matched.input.cancel();
+  selected=null;await matched.input.start();assert.equal(enumerations,1);
+  assert.equal(Object.hasOwn(selected.audio,'deviceId'),false);matched.input.cancel();
+  await matched.input.start(8000,'Microsoft Sound Mapper - Input');
+  assert.deepEqual(selected.audio.deviceId,{exact:'default'});matched.input.cancel();
+
+  let captureRequests=0,enumerate;
+  const matchingCancelled=fixture({devices:{enumerateDevices:()=>new Promise(resolve=>enumerate=resolve),
+    getUserMedia:async()=>{captureRequests++;return {getTracks:()=>[]};}}});
+  const resolving=matchingCancelled.input.start(8000,'Microphone Array (Realtek(R) Aud');
+  matchingCancelled.input.cancel();enumerate(devices);await resolving;
+  assert.equal(captureRequests,0);assert.deepEqual(matchingCancelled.errors,[]);assert.equal(matchingCancelled.input.active,false);
+
+  const unmatched=fixture({devices:{enumerateDevices:async()=>devices,
+    getUserMedia:async()=>{captureRequests++;return {getTracks:()=>[]};}}});
+  await unmatched.input.start(8000,'Missing USB Input');assert.equal(captureRequests,0);
+  assert.match(unmatched.errors[0],/could not be matched/);assert.equal(unmatched.input.active,false);
+  const unplugged=fixture({devices:{enumerateDevices:async()=>devices,getUserMedia:async()=>{throw {name:'OverconstrainedError'};}}});
+  await unplugged.input.start(8000,'Microphone Array (Realtek(R) Aud');assert.match(unplugged.errors[0],/no longer available/);
   const wav=await encodeWav(new Float32Array([-2,0,2])).arrayBuffer();const view=new DataView(wav);
   assert.equal(view.getUint32(24,true),16000);assert.equal(view.getUint16(22,true),1);
   assert.equal(view.getInt16(44,true),-32768);assert.equal(view.getInt16(48,true),32767);
-  console.log('Voice capture, WAV encoding, permission, release, and cancellation checks passed.');
+  console.log('Voice capture, exact native microphone matching, WAV encoding, permission, release, and cancellation checks passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

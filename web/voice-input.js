@@ -1,4 +1,26 @@
 'use strict';
+function resolveInputDevice(nativeName,devices) {
+  const normalize=value=>String(value||'').normalize('NFKC').toLowerCase().trim()
+    .replace(/^(?:default|communications)\s*[-–:]\s*/,'')
+    .replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/,'').replace(/\s+/g,' ').trim();
+  const name=normalize(nativeName);
+  // These PortAudio Windows aliases intentionally follow the system input.
+  if(name==='microsoft sound mapper - input'||name==='primary sound capture driver')return 'default';
+  const physical=new Map();
+  for(const device of devices||[]) {
+    if(device.kind!=='audioinput'||typeof device.deviceId!=='string'||!device.deviceId||
+      device.deviceId==='default'||device.deviceId==='communications')continue;
+    if(!physical.has(device.deviceId))physical.set(device.deviceId,normalize(device.label));
+  }
+  const exact=[...physical].filter(([,label])=>name&&label===name);
+  // Windows MME can truncate the native device name. Accept only a sufficiently
+  // specific native prefix that identifies one concrete recording device.
+  const matches=exact.length?exact:[...physical].filter(([,label])=>name.length>=12&&label.startsWith(name));
+  if(matches.length===1)return matches[0][0];
+  const reason=matches.length?'More than one recording microphone matches the clap listener.':'The clap microphone could not be matched to a recording input.';
+  throw new Error(reason+' Select the same Windows default input or set IRIS_INPUT_DEVICE to its full name, then restart standby.');
+}
+
 function encodeWav(samples) {
   const buffer=new ArrayBuffer(44+samples.length*2),view=new DataView(buffer);
   const text=(offset,value)=>{for(let i=0;i<value.length;i++)view.setUint8(offset+i,value.charCodeAt(i));};
@@ -25,11 +47,18 @@ class RecordedVoiceInput {
     Object.assign(this,{onState,onText,onError,onBackend,devices,Recorder,request,convert});
     this.version=0;this.active=false;
   }
-  async start(duration=30000) {
+  async start(duration=30000,nativeDeviceName=null) {
     if(this.active)return;
     this.cancel();const version=this.version;this.active=true;this.onState('Microphone permission');
     try {
-      const stream=await this.devices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+      const audio={echoCancellation:true,noiseSuppression:true};
+      if(nativeDeviceName!==null) {
+        if(typeof this.devices.enumerateDevices!=='function')throw new Error('Microphone matching is unavailable. Update IRIS or use Google Chrome.');
+        const devices=await this.devices.enumerateDevices();
+        if(version!==this.version)return;
+        audio.deviceId={exact:resolveInputDevice(nativeDeviceName,devices)};
+      }
+      const stream=await this.devices.getUserMedia({audio});
       if(version!==this.version){stream.getTracks().forEach(t=>t.stop());return;}
       this.stream=stream;
       const mime=['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/mp4'].find(t=>this.Recorder.isTypeSupported(t));
@@ -69,6 +98,7 @@ class RecordedVoiceInput {
       this.cancel();
       const message={NotAllowedError:'Microphone access was denied. Allow the microphone for this page and try again.',
         NotFoundError:'No microphone was found. Connect or enable your microphone.',
+        OverconstrainedError:'The microphone selected for clap standby is no longer available. Check your input device, then restart standby.',
         NotReadableError:'The microphone is unavailable or in use by another application.'}[error.name];
       this.onError(message||error.message);
     }
@@ -87,4 +117,4 @@ class RecordedVoiceInput {
     this.onState('idle');
   }
 }
-if(typeof module!=='undefined')module.exports={RecordedVoiceInput,encodeWav};
+if(typeof module!=='undefined')module.exports={RecordedVoiceInput,encodeWav,resolveInputDevice};

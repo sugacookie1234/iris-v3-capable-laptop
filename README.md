@@ -45,6 +45,8 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 - **Optional Obsidian:** read/search a configured vault. Knowledge retrieval starts from `vault index.md`.
   No Obsidian app/plugin is necessary for these existing read-only tools.
 - **Double-clap standby:** enabled after the initial microphone permission/Start standby click.
+  Uses the supplied tested Python listener: 44.1 kHz input and consecutive 40 ms blocks.
+  Input probing and request recording share the selected microphone. Run `setup.bat` after updating.
   Two claps activate an eight-second recognition window. Idle monitoring measures levels locally;
   speech playback and request capture suspend clap detection. “Mute” silences replies; **Pause mic**
   stops listening. Detection needs testing with your microphone.

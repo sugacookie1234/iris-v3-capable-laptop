@@ -14,13 +14,15 @@ Double-clap detection stays enabled after activation. Standby checks sound level
 
 Clap detection pauses while IRIS records, transcribes, processes a normal request, prepares a reply, or speaks. It resumes when IRIS is ready again. A pending approval is an exception: after IRIS finishes reading the action, double clap can wake it to receive the approval or cancellation.
 
-Keep the IRIS app open and the laptop awake. Closing the app stops its server and microphone. The desktop window disables background timer throttling for its clap sampler, but microphone disconnection, device sleep and OS permissions can still interrupt standby; tap the core to resume after fixing the interruption. This is not a Windows background service, cannot wake a sleeping laptop, and saying “IRIS” alone is not a wake word. See [desktop app](DESKTOP-APP.md).
+The Python listener uses the supplied tested detector: mono 44,100 Hz, consecutive 40 ms blocks, a 50–350 ms double-clap gap and a 450 ms cooldown. It probes the default input, then scans other inputs if the default is silent. Speech recording matches that selected microphone; an ambiguous match gives an error instead of recording from an unrelated input. Set the process environment variable `IRIS_INPUT_DEVICE` to an input name or index to override selection; the source's `JARVIS_INPUT_DEVICE` is also accepted. Run `setup.bat` after pulling this update to install sounddevice and NumPy. See [source comparison and guide review](CLAP-REFERENCE.md).
+
+Keep the IRIS app open and the laptop awake. Closing the app stops its server and microphone. Native capture runs outside the window's audio analyser; a short heartbeat lease releases capture if the interface disconnects. A second window cannot take over a running listener. Microphone disconnection, device sleep and OS permissions can still interrupt standby; tap the core after fixing the interruption. This is not a Windows background service, cannot wake a sleeping laptop, and saying “IRIS” alone is not a wake word. See [desktop app](DESKTOP-APP.md).
 
 **Mute** silences spoken replies while retaining double-clap standby. **Pause mic** stops monitoring and cancels recording; use the core or **Resume mic** to restore it. A paused microphone cannot hear “unmute.” Escape stops the current recording or speech without permanently pausing standby.
 
-If Windows suspends audio, the status stops claiming standby is active. Tap the core
-to resume the audio context before recording again. Canceling or pausing while audio
-is starting prevents that unfinished startup from re-enabling the microphone.
+Playback audio suspension does not stop the native clap detector. Tap the core to
+resume playback audio when needed. Canceling or pausing while audio or microphone
+permission is pending prevents that unfinished startup from re-enabling capture.
 
 ## Commands
 

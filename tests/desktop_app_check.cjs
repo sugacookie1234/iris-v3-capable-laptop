@@ -26,7 +26,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   for(const match of fs.readFileSync(path.join(__dirname,'../web/index.html'),'utf8').matchAll(/id="([^"]+)"/g))elements[match[1]]=new Element(match[1]);
   const document={body:new Element('body'),events:{},getElementById:id=>elements[id]||null,createElement:()=>new Element(),addEventListener:Element.prototype.addEventListener,emit:Element.prototype.emit};
   const window={events:{},addEventListener:Element.prototype.addEventListener,emit:Element.prototype.emit};
-  const requests=[],timeouts=new Map(),intervals=new Map(),storage=new Map();let nextTimer=1,monitor,input,autoEnd=true,playCalls=0;
+  const requests=[],timeouts=new Map(),intervals=new Map(),storage=new Map();let nextTimer=1,monitor,input,autoEnd=true,playCalls=0,permissionStops=0;
   if(standbyPreference!==undefined)storage.set('iris.standby',standbyPreference);
   const responses={'/api/status':{model:'example',speech:{},desktop_window:desktop},'/api/approval':{},'/api/chat':{reply:'Hello.',route:'DEEP'},'/api/voice':{url:'/voice-test'},'/api/reset':{},'/api/memories':{items:[]},'/api/tasks':{items:[]}};
   const voice=elements.voice;
@@ -38,13 +38,13 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
     createAnalyser(){return {connect(){},getByteTimeDomainData(samples){samples.fill(128);}};}
   }
   class Monitor {
-    constructor(options){this.options=options;this.starts=0;this.stops=0;this.active=false;monitor=this;}
+    constructor(options){this.options=options;this.starts=0;this.stops=0;this.active=false;this.device='Microphone (Realtek Audio)';monitor=this;}
     async start(){this.starts++;this.active=true;this.options.onStatus(true,null);return true;}
     stop(){this.stops++;this.active=false;this.options.onStatus(false,null);}
   }
   class Input {
     constructor(options){this.options=options;this.active=false;this.starts=[];this.cancels=0;input=this;}
-    start(duration){this.active=true;this.starts.push(duration);this.options.onState('listening');}
+    start(duration,device){this.active=true;this.starts.push(duration);this.device=device;this.options.onState('listening');}
     stop(){this.active=false;this.options.onState('idle');}
     cancel(){this.cancels++;this.stop();}
   }
@@ -56,12 +56,12 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   }
   window.AudioContext=AudioContext;
   if(nativeWindow)window.chrome={webview:{}};
-  const navigator={mediaDevices:{}};
+  const navigator={mediaDevices:{getUserMedia:async()=>({getTracks:()=>[{stop:()=>permissionStops++}]})}};
   if(microphonePermission!==undefined)navigator.permissions={query:async options=>{assert.equal(options.name,'microphone');return {state:microphonePermission};}};
   const localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,String(value))};
   window.localStorage=localStorage;
-  const sandbox={document,window,navigator,localStorage,DoubleClapDetector,StandbyMonitor:Monitor,
-    RecordedVoiceInput:Input,DashboardWidgets:Widgets,parseVoiceCommand,console,Date,Uint8Array,
+  const sandbox={document,window,navigator,localStorage,DoubleClapDetector,NativeStandbyMonitor:Monitor,
+    RecordedVoiceInput:Input,DashboardWidgets:Widgets,parseVoiceCommand,console,Date,Uint8Array,AbortController,
     requestAnimationFrame:()=>1,
     setTimeout:(fn,delay)=>{const id=nextTimer++;timeouts.set(id,{fn,delay});return id;},clearTimeout:id=>timeouts.delete(id),
     setInterval:(fn,delay)=>{const id=nextTimer++;intervals.set(id,{fn,delay});return id;},clearInterval:id=>intervals.delete(id),
@@ -75,6 +75,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   return {elements,document,window,requests,responses,intervals,storage,
     get monitor(){return monitor;},get input(){return input;},set autoEnd(value){autoEnd=value;},
     get playCalls(){return playCalls;},
+    get permissionStops(){return permissionStops;},
     run:code=>vm.runInContext(code,context),
     flush:async()=>{for(let i=0;i<12;i++)await Promise.resolve();},
     heard:async text=>{input.active=false;input.options.onState('idle');await input.options.onText(text);},
@@ -85,6 +86,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
 (async()=>{
   const main=app();await main.flush();assert.equal(main.monitor,undefined,'Standby waits for a user activation');
   await main.elements.wake.onclick();assert.equal(main.monitor.active,true);assert.equal(main.elements.wake.hidden,true);
+  assert.equal(main.permissionStops,1,'Permission bootstrap releases its temporary microphone stream');
   assert.equal(main.monitor.options.isBusy(),false);
   await main.run('send("Help me plan a trip")');
   assert.deepEqual(main.requests.find(item=>item.url==='/api/chat').body,{text:'Help me plan a trip',mode:'auto'});
@@ -93,6 +95,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   await main.run('send("mute")');assert.equal(main.monitor.active,true);assert.equal(main.monitor.stops,0);
   assert.equal(main.monitor.options.isBusy(),false,'Muted replies do not disable clap wake');
   main.monitor.options.onTrigger();assert.equal(main.input.starts.at(-1),8000);assert.equal(main.monitor.options.isBusy(),true);
+  assert.equal(main.input.device,main.monitor.device,'Speech uses the native clap listener microphone');
   await main.heard('unmute');assert.equal(main.monitor.active,true);assert.equal(main.monitor.options.isBusy(),false);
   await main.run('send("pause mic")');assert.equal(main.monitor.active,false);assert.equal(main.monitor.stops,1);
   const captures=main.input.starts.length;main.run('startListening(true)');assert.equal(main.input.starts.length,captures);
@@ -100,8 +103,8 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
 
   const beforeRecovery=main.input.starts.length;
   main.run('audioCtx.state="suspended"; audioCtx.onstatechange()');
-  assert.equal(main.elements.standbyLabel.textContent,'MICROPHONE INACTIVE','Suspended audio must not advertise working clap detection');
-  assert.match(main.elements.wakeHint.textContent,/resume standby/);
+  assert.equal(main.elements.standbyLabel.textContent,'STANDBY ENABLED','Native clap detection is independent of playback audio');
+  assert.match(main.elements.wakeHint.textContent,/Double clap/);
   main.run('coreAction()');await main.flush();
   assert.equal(main.run('audioCtx.state'),'running');
   assert.equal(main.elements.standbyLabel.textContent,'STANDBY ENABLED');
@@ -163,6 +166,17 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
       assert.equal(deferred.run('micPaused'),true,'The paused preference survives a delayed resume');
       assert.equal(deferred.storage.get('iris.standby'),'paused');
     }
+  }
+
+  // A voice response cancelled during resume must never begin playback later.
+  for(const cancel of ['pause','pagehide']){
+    const pendingPermission=app();await pendingPermission.flush();
+    pendingPermission.run('globalThis.allowMic=null; globalThis.releasedTracks=0; navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>allowMic=resolve)');
+    const enabling=pendingPermission.run('activate()');await pendingPermission.flush();
+    if(cancel==='pause')pendingPermission.run('pauseMic()');else pendingPermission.window.emit('pagehide');
+    pendingPermission.run('allowMic({getTracks:()=>[{stop:()=>releasedTracks++}]})');await enabling;
+    assert.equal(pendingPermission.run('releasedTracks'),1,'A late permission result always releases its stream');
+    assert.equal(pendingPermission.monitor.starts,0,'Canceled permission cannot enable native capture');
   }
 
   // A voice response cancelled during resume must never begin playback later.

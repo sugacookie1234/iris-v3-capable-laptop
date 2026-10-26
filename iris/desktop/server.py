@@ -18,6 +18,7 @@ from iris.brain.council import CouncilExecutionError
 from iris.desktop.recognition import transcribe, speech_status, MAX_AUDIO_BYTES
 from iris.desktop.dashboard import dashboard_weather, dashboard_markets
 from iris.desktop.browser import open_chrome
+from iris.desktop.clap_listener import NativeClapListener, SAMPLE_RATE, BLOCK_MS
 
 
 def voice_request(settings, text):
@@ -40,7 +41,14 @@ class DesktopServer(ThreadingHTTPServer):
         self.runtime = runtime
         self.desktop_window = False
         self.session = secrets.token_urlsafe(32)
+        self.clap_listener = NativeClapListener()
         super().__init__(address, Handler)
+
+    def server_close(self):
+        try:
+            self.clap_listener.close()
+        finally:
+            super().server_close()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -138,6 +146,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/app.js': ('app.js', 'text/javascript'),
                   '/clap.js': ('clap.js', 'text/javascript'),
                   '/standby.js': ('standby.js', 'text/javascript'),
+                  '/native-standby.js': ('native-standby.js', 'text/javascript'),
                   '/dashboard.js': ('dashboard.js', 'text/javascript'),
                   '/voice-input.js': ('voice-input.js', 'text/javascript'),
                   '/desktop.css': ('desktop.css', 'text/css')}
@@ -160,6 +169,7 @@ class Handler(BaseHTTPRequestHandler):
                 cfg = app.settings
                 self._json(200, {'name': 'IRIS', 'brain': True, 'voice': bool(cfg.get('IRIS_FISH_API_KEY')),
                     'desktop_window': self.server.desktop_window,
+                    'clap': {'engine': 'sounddevice', 'sample_rate': SAMPLE_RATE, 'block_ms': BLOCK_MS},
                     'speech': speech_status(cfg),
                     'model': app.config.model, 'voice_id': cfg.get('IRIS_FISH_VOICE_ID', ''),
                     'last_route': app.last_route, 'last_seconds': app.last_seconds,
@@ -227,7 +237,18 @@ class Handler(BaseHTTPRequestHandler):
                 return
             value = self._body()
             path = urlsplit(self.path).path
-            if path == '/api/weather':
+            if path == '/api/clap':
+                owner = value.get('owner')
+                if value.get('action') == 'update':
+                    if type(value.get('busy')) is not bool:
+                        raise ValueError('The microphone busy state must be true or false.')
+                    result = self.server.clap_listener.update(owner, busy=value['busy'])
+                elif value.get('action') == 'stop':
+                    result = self.server.clap_listener.stop(owner)
+                else:
+                    raise ValueError('Choose update or stop for microphone standby.')
+                self._json(200, result)
+            elif path == '/api/weather':
                 self._json(200, dashboard_weather(value.get('latitude'), value.get('longitude')))
             elif path == '/api/chat':
                 self._json(200, app.chat(value.get('text'), value.get('mode', 'auto')))

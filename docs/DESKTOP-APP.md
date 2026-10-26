@@ -44,12 +44,19 @@ window only permits navigation on its owned loopback origin. It exposes no custo
 Python API to the page, disallows file-URL access and downloads, and keeps TLS checks
 enabled. Ordinary external source links open separately in Chrome.
 
-To support the local clap sampler while minimized and previously permitted audio on
+To support standby heartbeats while minimized and previously permitted audio on
 launch, IRIS passes Microsoft's documented
 [`disable-background-timer-throttling` and `autoplay-policy` flags](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/webview-features-flags)
 to its own rendering process. Microphone access still requires permission. It makes
 no global browser or power-setting changes.
 Actual minimized-window clap detection still needs a hardware test with your microphone.
+
+Clap capture now runs in Python with sounddevice using the user's tested 44.1 kHz,
+40 ms detector. The embedded view receives only a wake counter and microphone name;
+no standby audio is saved or uploaded. A three-second ownership lease releases the
+listener if the interface stops sending heartbeats. **Pause mic** and app shutdown
+also stop it. Request recording uses the same microphone, with explicit matching
+errors if Windows and the embedded recorder cannot identify one unique input.
 
 ## Updating or moving to the OMEN
 

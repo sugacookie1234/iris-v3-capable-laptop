@@ -13,20 +13,26 @@ const recordedInput=typeof MediaRecorder!=='undefined'&&navigator.mediaDevices?n
   onText:text=>{const approvalId=recordingApprovalId;recordingApprovalId=null;return send(text,{spoken:true,approvalId});},onError:message=>{toast(message);addLine('IRIS',message);}
 }):null;
 async function api(path,data){
-  const response=await fetch(path,data===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-IRIS-Request':'1'},body:JSON.stringify(data)});
-  const result=await response.json();if(!response.ok)throw new Error(result.error||'IRIS could not complete the request.');return result;
+  const options=data===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-IRIS-Request':'1'},body:JSON.stringify(data)};
+  const controller=path==='/api/clap'?new AbortController():null;
+  const timeout=controller?setTimeout(()=>controller.abort(),2000):null;
+  if(controller){options.signal=controller.signal;options.keepalive=data?.action==='stop';}
+  try{
+    const response=await fetch(path,options);
+    const result=await response.json();if(!response.ok)throw new Error(result.error||'IRIS could not complete the request.');return result;
+  }catch(error){if(controller?.signal.aborted)throw new Error('The local microphone connection timed out. Tap the core to retry.');throw error;}
+  finally{if(timeout!==null)clearTimeout(timeout);}
 }
 const widgets=new DashboardWidgets({api});widgets.start();
 function toast(text){$('toast').textContent=text;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',9000);}
 function setState(value){
   state=value;document.body.className='state-'+value;
-  const ready=monitor?.active&&audioCtx?.state==='running';
+  const ready=monitor?.active;
   const idle=micPaused?'Microphone paused':ready?'Standing by':monitor?.active?'Audio paused':'Ready when you are';
   $('status').textContent={idle,listening:'Listening',thinking:'Thinking',speaking:'Speaking',preparing:'Preparing voice',Transcribing:'Understanding'}[value]||value;
   $('wakeHint').textContent=micPaused||monitor?.active&&!ready?'Tap the core to resume standby.':pendingId?'Double clap, then approve or cancel.':ready?(muted?'Double clap to wake · replies muted':'Double clap to wake · or hold Space'):'One click to enable your microphone.';
 }
 function standbyStatus(active,error){
-  active=active&&audioCtx?.state==='running';
   $('standbyDot').className='signal-dot '+(active?'on':'off');
   $('standbyLabel').textContent=active?'STANDBY ENABLED':micPaused?'MICROPHONE PAUSED':'MICROPHONE INACTIVE';
   if(error)toast(error);setState(state);
@@ -63,12 +69,17 @@ function initAudio(){
   const source=audioCtx.createMediaElementSource(voice);analyser=audioCtx.createAnalyser();analyser.fftSize=512;
   source.connect(analyser);analyser.connect(audioCtx.destination);const samples=new Uint8Array(analyser.fftSize);
   function meter(){let level=0;if(!voice.paused){analyser.getByteTimeDomainData(samples);level=Math.min(1,Math.sqrt(samples.reduce((s,v)=>s+((v-128)/128)**2,0)/samples.length)*4);}reactor.style.setProperty('--level',level.toFixed(3));requestAnimationFrame(meter);}requestAnimationFrame(meter);
-  monitor=new StandbyMonitor({context:audioCtx,detector,onTrigger:()=>startListening(true),onStatus:standbyStatus,
+  monitor=new NativeStandbyMonitor({api,onTrigger:()=>startListening(true),onStatus:standbyStatus,
     isBusy:()=>micPaused||listening||(busy&&!pendingId)||state==='speaking'||state==='preparing'});
 }
 async function activate(){
   if(activating||disposed)return;const version=++activationVersion;activating=true;micPaused=false;$('wake').disabled=true;
   try{initAudio();if(audioCtx.state==='suspended')await audioCtx.resume();
+    if(version!==activationVersion||disposed||micPaused)return;
+    // Grant the request recorder permission before local Python standby starts.
+    // Stop this temporary stream immediately; only the native listener stays open.
+    if(!recordedInput)throw new Error('Microphone recording is unavailable. Update IRIS with setup.bat or use Google Chrome.');
+    if(!monitor.active){const stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(track=>track.stop());}
     if(version!==activationVersion||disposed||micPaused)return;
     const started=await monitor.start();if(version!==activationVersion||disposed||micPaused)return;
     if(started){activated=true;saveStandby('enabled');$('wake').hidden=true;$('muteBtn').textContent='Pause mic';$('muteBtn').setAttribute('aria-pressed','false');setState('idle');}
@@ -142,7 +153,7 @@ async function send(text,context={}){
 function startListening(timed=false){
   if(disposed||(busy&&!pendingId)||listening||micPaused)return;
   if(!recordedInput){toast('This interface cannot record microphone audio. Update IRIS with setup.bat or try Google Chrome.');return;}
-  recordingApprovalId=pendingId;stopSpeaking();recordedInput.start(timed?8000:30000);
+  recordingApprovalId=pendingId;stopSpeaking();recordedInput.start(timed?8000:30000,monitor?.device||null);
 }
 function stopListening(){if(recordedInput?.active)recordedInput.stop();}
 function pauseMic(){activationVersion++;activating=false;$('wake').disabled=false;micPaused=true;saveStandby('paused');recordedInput?.cancel();monitor?.stop();stopSpeaking();$('muteBtn').textContent='Resume mic';$('muteBtn').setAttribute('aria-pressed','true');setState(busy?'thinking':'idle');}
@@ -163,7 +174,7 @@ function showCouncil(){if(!latestCouncil){toast('There is no council review in t
 function showHelp(){const body=panel('Just ask IRIS');const list=document.createElement('div');list.className='command-list';body.append(list);
   for(const text of ['“Show my tasks”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
   paragraph(body,'Double clap to wake, then speak. IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
-  paragraph(body,'Standby checks sound levels locally. Only a request you start is sent for transcription. Keep this page open and the laptop awake. Pause mic stops monitoring; tap the core to resume.');
+  paragraph(body,'The local microphone listener checks consecutive 40 ms sound levels for your double clap. Only a request you start is sent for transcription. Keep IRIS open and the laptop awake. Pause mic stops monitoring; tap the core to resume.');
   paragraph(body,'Fish Audio handles recognition with local Whisper fallback. “Mute” silences replies while keeping double-clap available. The first local fallback may take longer to load.');
   paragraph(body,'Weather uses your device location, rounded to about a kilometre before it reaches Open-Meteo. Markets show completed daily ETF closes from Yahoo Finance, not a live trading feed.');
   if(status?.speech?.fallback)paragraph(body,status.speech.fallback);

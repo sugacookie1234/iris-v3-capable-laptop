@@ -1,5 +1,25 @@
 # Validation — October 25, 2026
 
+## Tested native clap port
+
+The full Windows suite passed: **519 tests, OK, 4 skipped**, in 68.53 seconds.
+All six desktop JavaScript checks passed, including native wake acknowledgement,
+sequential ownership heartbeats, cancellation and matching the request microphone.
+Additional UI checks confirm that late permission grants release their temporary
+stream after pause or page exit. Dependency consistency and diff checks passed.
+
+A bounded local hardware check opened **Microphone Array (Realtek Audio** at
+44,100 Hz in 40 ms blocks, stayed healthy for three seconds after startup, and
+stopped successfully. This check kept wake detection busy, wrote no audio, and
+uploaded nothing. It confirms capture access, not acoustic double-clap accuracy.
+Repeated clap-to-speech behavior and minimized operation still need a physical
+trial, especially on the target OMEN.
+
+The supplied Python source and both PDF guides were reviewed. Source tuning and
+device probing were retained; callback delivery permits bounded cancellation.
+The source's one-time app-launching welcome was replaced with repeated IRIS wakes.
+The review and intentional differences are in [CLAP-REFERENCE.md](CLAP-REFERENCE.md).
+
 ## Standby and voice-command follow-up
 
 The affected Windows desktop, recognition, transcription, routing and widget suite
