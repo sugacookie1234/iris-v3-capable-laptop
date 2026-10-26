@@ -1,0 +1,2 @@
+# Optional phone bridge; the desktop alone does not require this package.
+twilio==9.12.0

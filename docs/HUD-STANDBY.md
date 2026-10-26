@@ -72,11 +72,11 @@ Prices are in **USD** and represent the latest available completed daily close, 
 
 Widgets attempt a refresh every fifteen minutes while the page is running. Source failures show unavailable or clearly marked cached readings rather than invented values. Browser location accuracy and public data freshness can vary.
 
-## Future phone access
+## Optional phone access
 
-SMS and ordinary phone calls are feasible as a separate integration. A service such as Twilio can send and receive SMS through a phone number and a webhook, and can create or answer voice calls. A future IRIS implementation would need a compatible phone number, server-side credentials, a reachable HTTPS webhook, and an authenticated connection to the assistant. See Twilio's official [Messaging quickstart](https://www.twilio.com/docs/messaging/quickstart) and [Voice server quickstart](https://www.twilio.com/docs/voice/quickstart/server).
+The separate phone connection now supports owner-only SMS conversations, PIN-protected incoming call conversations, and explicitly confirmed outgoing notifications. It uses Twilio and needs a suitable number, provider credentials and a public HTTPS tunnel to its own port, **8767**. Use `setup-phone.bat` and `start-phone.bat`; follow the [phone setup guide](PHONE.md) for Canadian number requirements.
 
-No SMS or calling integration is installed by this update. The local `127.0.0.1` desktop server is not a public phone endpoint. Reliable contact while the laptop sleeps would need an independently running service; an interactive phone conversation would also need audio handling beyond the desktop microphone flow.
+Phone service is disabled until configured. The desktop server on port **8766** is not the public phone endpoint. Phone conversations currently have isolated history and no access to desktop actions or personal records; calls use a standard Twilio voice. The laptop and tunnel must stay awake. Reliable contact while it sleeps and streaming Fish Audio calls are later extensions.
 
 ## Verification limits
 

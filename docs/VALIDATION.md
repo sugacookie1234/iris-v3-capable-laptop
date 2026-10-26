@@ -1,4 +1,30 @@
-# Validation — October 25, 2026
+# Validation — October 26, 2026
+
+## Optional SMS and phone bridge
+
+The complete Windows suite passed: **629 tests, OK, 4 skipped**, in 125.28 seconds.
+The new phone-specific suite has **101 passing tests**. All six desktop JavaScript
+checks passed. Dependency consistency, whitespace checks and the configured-key,
+token and PIN scan passed; no saved credential values appeared in publishable files.
+
+Phone checks use fake model/transport clients and actual local HTTP requests signed
+with the real Twilio SDK. They cover account/participant/signature validation, exact
+public-origin signing despite spoofed proxy headers, malformed requests, separation
+from desktop APIs, asynchronous SMS and voice flows, duplicate delivery, three PIN
+attempts with retry-safe tokens, cross-call token isolation, call termination/expiry,
+late answers, STOP/START and replay suppression, send uncertainty, recovery, bounded
+queues and local retention. Setup and CLI tests verify local credential entry and
+explicit outgoing-notification previews without external communication.
+
+Twilio SDK **9.12.0** was installed into the existing virtual environment as an
+optional dependency. The real local `iris.phone status` command confirmed the phone
+service is disabled. No phone account, number or public tunnel was created, no real
+SMS or call was sent, and no provider/carrier delivery has been verified. Activation
+requires an eligible provider account/number, phone credentials and a public HTTPS
+origin. Canadian onboarding considerations and the precise limitations are in
+[PHONE.md](PHONE.md).
+
+## Previous validation — October 25, 2026
 
 ## Public web research
 

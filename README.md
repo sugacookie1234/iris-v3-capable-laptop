@@ -37,6 +37,11 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
   Uses the configured OpenRouter account and returns clickable source links. Search has a
   separate OpenRouter charge; Fish Audio credit does not pay for it. Ordinary chat does not
   browse automatically. See [web research](docs/WEB-RESEARCH.md).
+- **Optional SMS and calls:** a separate phone connection supports incoming text conversations,
+  PIN-protected incoming calls, and manually confirmed outgoing notifications to your own number.
+  It requires a suitable Twilio number/account and a public HTTPS tunnel; it is disabled until
+  configured. Run `setup-phone.bat`, then `start-phone.bat`. See [phone setup](docs/PHONE.md)
+  for Canadian number requirements. Phone conversations currently have no access to desktop tools or memories.
 - Fish Audio streams to the app without waiting for the complete audio file.
 - **Automatic reasoning:** routine requests use FAST; analysis uses DEEP; complex decisions may use
   COUNCIL for independent answers, anonymous reviews and synthesis. You can explicitly ask for the council.
