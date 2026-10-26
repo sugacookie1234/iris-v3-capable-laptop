@@ -33,6 +33,10 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 
 - IRIS's own personality and behavior modes; no JARVIS roleplay prompt.
 - Text and speech use the same conversation history, memory context and tool boundary.
+- **Internet research:** say “Search the web for…” or type `/search your question`.
+  Uses the configured OpenRouter account and returns clickable source links. Search has a
+  separate OpenRouter charge; Fish Audio credit does not pay for it. Ordinary chat does not
+  browse automatically. See [web research](docs/WEB-RESEARCH.md).
 - Fish Audio streams to the app without waiting for the complete audio file.
 - **Automatic reasoning:** routine requests use FAST; analysis uses DEEP; complex decisions may use
   COUNCIL for independent answers, anonymous reviews and synthesis. You can explicitly ask for the council.

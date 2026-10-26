@@ -1,5 +1,23 @@
 # Validation — October 25, 2026
 
+## Public web research
+
+After adding explicit web commands, the full Windows suite passed: **528 tests,
+OK, 4 skipped**, in 56.54 seconds. Web tests cover opt-in plugin requests, endpoint
+restrictions, source annotations, missing sources, safe source URLs, quota errors,
+query-only context, conversation history, and isolation from local tools. The UI
+test renders source titles as text and rejects unsupported link schemes. JavaScript
+syntax and diff checks passed.
+
+One live research request using the existing OpenRouter configuration successfully
+returned the official sounddevice documentation with three source links in about
+five seconds. This verified the configured web plugin and model together. No user
+documents, saved memories, prior conversations or audio were included in the probe.
+Search incurs OpenRouter charges; no Fish Audio request was made by this probe.
+
+Web access currently requires an explicit search command. Ordinary conversation
+and council responses are not silently web-grounded. See [WEB-RESEARCH.md](WEB-RESEARCH.md).
+
 ## Tested native clap port
 
 The full Windows suite passed: **519 tests, OK, 4 skipped**, in 68.53 seconds.

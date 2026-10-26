@@ -17,6 +17,7 @@ from iris.tasks.store import TaskStore
 from iris.terminal import load_config, create_brain, _memory_proposal
 from iris.tools import Approval
 from iris.tools.models import ResultStatus
+from iris.desktop.web_search import search_query, research
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -59,6 +60,9 @@ class DesktopRuntime:
             'Voice recognition supports Fish Audio with a local faster-whisper fallback, or a local-only setting. '
             'Whisper can use NVIDIA acceleration when available; do not assume the active speech engine or device. '
             'Council mode offers advice only and cannot execute tools. '
+            'Public web research is available when the user starts a request with "search the web for" '
+            'or /search. It uses OpenRouter search credit and returns source links. Ordinary chat does not '
+            'browse automatically. Do not claim to have searched for an ordinary chat response. '
             'Current local date: ' + time.strftime('%Y-%m-%d')
         )
         self.history = []
@@ -128,6 +132,16 @@ class DesktopRuntime:
         started = time.monotonic()
         try:
             text = text.strip()
+            query = search_query(text) if mode == 'auto' else None
+            if query is not None:
+                answer = research(self.config, query)
+                cited = answer['reply'] + '\nSources:\n' + '\n'.join(
+                    item['title'] + ': ' + item['url'] for item in answer['sources'])
+                self.history.extend([LLMMessage(MessageRole.USER, text), LLMMessage(MessageRole.ASSISTANT, cited)])
+                limit = self.config.max_history_turns * 2
+                self.history = self.history[-limit:] if limit else []
+                self.last_route = 'WEB'
+                return answer
             with MemoryStore(self.memory_path) as store:
                 if text.startswith('/remember '):
                     item = _memory_proposal(text[len('/remember '):])

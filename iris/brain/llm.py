@@ -88,6 +88,7 @@ class LLMRequest:
     messages: Sequence[LLMMessage]
     options: GenerationOptions = field(default_factory=GenerationOptions)
     tools: Sequence[LLMToolDefinition] = ()
+    web_search: bool = False
 
 
 @dataclass(frozen=True)
@@ -98,6 +99,7 @@ class LLMResponse:
     input_tokens: int | None = None
     output_tokens: int | None = None
     tool_calls: Sequence[LLMToolCall] = ()
+    citations: Sequence[dict[str, str]] = ()
 
 
 class LLMProvider(Protocol):

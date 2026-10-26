@@ -43,6 +43,15 @@ function addLine(who,text){
   const content=document.createElement('span');content.className='txt';content.textContent=text;
   line.append(label,content);logEl.append(line);logEl.scrollTop=logEl.scrollHeight;return content;
 }
+function addSources(answer,sources){
+  const list=document.createElement('span');list.className='web-sources';
+  for(const source of (sources||[]).slice(0,5)){
+    try{const url=new URL(source.url);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)continue;
+      const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.textContent=source.title||url.hostname;list.append(link);
+    }catch{}
+  }
+  if(list.children.length)answer.append(list);
+}
 async function loadStatus(){try{status=await api('/api/status');if(disposed)return;renderSpeechStatus();await restoreStandby();}catch(error){if(!disposed)toast(error.message);}}
 function saveStandby(value){try{globalThis.localStorage?.setItem('iris.standby',value);}catch{}}
 async function restoreStandby(){
@@ -144,7 +153,8 @@ async function send(text,context={}){
   stopSpeaking();busy=true;$('typeForm').querySelector('button').disabled=true;addLine('YOU',text);const answer=addLine('IRIS','…');setState('thinking');
   let spokenReply=null;
   try{const data=await api('/api/chat',{text,mode:'auto'});answer.textContent=data.reply;logEl.scrollTop=logEl.scrollHeight;
-    latestCouncil=data.council||null;$('routeLabel').textContent=data.route==='COUNCIL'?'COUNCIL CONSULTED':data.route==='DEEP'?'DEEP REASONING':'AUTOMATIC REASONING';
+    addSources(answer,data.sources);
+    latestCouncil=data.council||null;$('routeLabel').textContent=data.route==='WEB'?'WEB SEARCH':data.route==='COUNCIL'?'COUNCIL CONSULTED':data.route==='DEEP'?'DEEP REASONING':'AUTOMATIC REASONING';
     spokenReply=data.reply;
   }catch(error){answer.textContent=error.message;toast(error.message);setState('idle');}
   finally{busy=false;$('typeForm').querySelector('button').disabled=false;}
@@ -174,6 +184,7 @@ function showCouncil(){if(!latestCouncil){toast('There is no council review in t
 function showHelp(){const body=panel('Just ask IRIS');const list=document.createElement('div');list.className='command-list';body.append(list);
   for(const text of ['“Show my tasks”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
   paragraph(body,'Double clap to wake, then speak. IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
+  paragraph(body,'Say “Search the web for…” to research a public question online and show source links. Search uses OpenRouter credit; ordinary conversation does not automatically browse. Source links open in Google Chrome from the desktop app.');
   paragraph(body,'The local microphone listener checks consecutive 40 ms sound levels for your double clap. Only a request you start is sent for transcription. Keep IRIS open and the laptop awake. Pause mic stops monitoring; tap the core to resume.');
   paragraph(body,'Fish Audio handles recognition with local Whisper fallback. “Mute” silences replies while keeping double-clap available. The first local fallback may take longer to load.');
   paragraph(body,'Weather uses your device location, rounded to about a kilometre before it reaches Open-Meteo. Markets show completed daily ETF closes from Yahoo Finance, not a live trading feed.');

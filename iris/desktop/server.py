@@ -19,6 +19,7 @@ from iris.desktop.recognition import transcribe, speech_status, MAX_AUDIO_BYTES
 from iris.desktop.dashboard import dashboard_weather, dashboard_markets
 from iris.desktop.browser import open_chrome
 from iris.desktop.clap_listener import NativeClapListener, SAMPLE_RATE, BLOCK_MS
+from iris.desktop.web_search import web_available
 
 
 def voice_request(settings, text):
@@ -169,6 +170,7 @@ class Handler(BaseHTTPRequestHandler):
                 cfg = app.settings
                 self._json(200, {'name': 'IRIS', 'brain': True, 'voice': bool(cfg.get('IRIS_FISH_API_KEY')),
                     'desktop_window': self.server.desktop_window,
+                    'web_search': web_available(app.config),
                     'clap': {'engine': 'sounddevice', 'sample_rate': SAMPLE_RATE, 'block_ms': BLOCK_MS},
                     'speech': speech_status(cfg),
                     'model': app.config.model, 'voice_id': cfg.get('IRIS_FISH_VOICE_ID', ''),

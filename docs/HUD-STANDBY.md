@@ -35,6 +35,7 @@ Commands also accept a polite prefix such as “Iris, please…” and a trailin
 | “Show my memories” | Opens saved memories. |
 | “Show my tasks” | Opens the task list. |
 | “What time is it?” | Reads the current device time. |
+| “Search the web for…” | Researches a public question through OpenRouter and shows source links. |
 | “Weather update” or “Use my location” | Requests location and refreshes local weather. The browser may require an Allow click. |
 | “Market update” | Reads the latest available completed daily closes. |
 | “Mute” / “Unmute” | Turns voice replies off or on; standby remains enabled. |

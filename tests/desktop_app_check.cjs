@@ -61,7 +61,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   const localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,String(value))};
   window.localStorage=localStorage;
   const sandbox={document,window,navigator,localStorage,DoubleClapDetector,NativeStandbyMonitor:Monitor,
-    RecordedVoiceInput:Input,DashboardWidgets:Widgets,parseVoiceCommand,console,Date,Uint8Array,AbortController,
+    RecordedVoiceInput:Input,DashboardWidgets:Widgets,parseVoiceCommand,console,Date,Uint8Array,AbortController,URL,
     requestAnimationFrame:()=>1,
     setTimeout:(fn,delay)=>{const id=nextTimer++;timeouts.set(id,{fn,delay});return id;},clearTimeout:id=>timeouts.delete(id),
     setInterval:(fn,delay)=>{const id=nextTimer++;intervals.set(id,{fn,delay});return id;},clearInterval:id=>intervals.delete(id),
@@ -257,5 +257,17 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   unsupported.run('startListening(true)');assert.match(unsupported.elements.toast.textContent,/cannot record/);
   unsupported.document.emit('keydown',{code:'Escape',target:unsupported.elements.reactor});
   await unsupported.run('send("pause mic")');assert.equal(unsupported.monitor.active,false);
+  const web=app();await web.flush();
+  web.responses['/api/chat']={reply:'Sourced answer.',route:'WEB',sources:[
+    {title:'<img src=x onerror=bad()>',url:'https://example.com/article'},
+    {title:'Unsafe',url:'javascript:bad()'}]};
+  await web.run('send("Search the web for a public question")');
+  assert.equal(web.elements.routeLabel.textContent,'WEB SEARCH');
+  const sources=web.elements.log.children.at(-1).children[1].children[0];
+  assert.equal(sources.children.length,1,'Only safe source schemes become links');
+  assert.equal(sources.children[0].textContent,'<img src=x onerror=bad()>','Source titles are text, never HTML');
+  assert.equal(sources.children[0].href,'https://example.com/article');
+  assert.equal(sources.children[0].target,'_blank');
+  assert.equal(sources.children[0].rel,'noopener noreferrer');
   console.log('Desktop automatic routing, native standby restoration, audio cancellation races, mute/pause, echo suppression, scoped approvals, and unsupported-browser controls passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

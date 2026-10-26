@@ -134,6 +134,12 @@ class OpenAICompatibleProvider:
             "max_tokens": request.options.max_tokens,
             "stream": False,
         }
+        if request.web_search:
+            if self._base_url != "https://openrouter.ai/api":
+                raise self._error("Web search requires the configured OpenRouter endpoint.")
+            if request.tools:
+                raise self._error("Web research cannot execute local tools in the same request.")
+            payload["plugins"] = [{"id": "web", "engine": "exa", "max_results": 3}]
         # This default voice model supports disabling hidden reasoning. Keep
         # other models/providers on their own defaults, including council roles.
         if (self._base_url == "https://openrouter.ai/api"
@@ -355,6 +361,16 @@ class OpenAICompatibleProvider:
         if not isinstance(model, str) or not model:
             model = requested_model
 
+        citations = []
+        annotations = message.get("annotations", [])
+        if isinstance(annotations, list):
+            for annotation in annotations[:30]:
+                if not isinstance(annotation, dict) or annotation.get("type") != "url_citation":
+                    continue
+                citation = annotation.get("url_citation")
+                if isinstance(citation, dict) and isinstance(citation.get("url"), str):
+                    title = citation.get("title")
+                    citations.append({"url": citation["url"], "title": title if isinstance(title, str) else "Source"})
         return LLMResponse(
             text=content,
             provider=self.name,
@@ -362,4 +378,5 @@ class OpenAICompatibleProvider:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             tool_calls=tuple(tool_calls),
+            citations=tuple(citations),
         )
