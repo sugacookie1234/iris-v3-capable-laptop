@@ -10,3 +10,10 @@ main{position:relative;z-index:1;width:min(1280px,100%);margin:auto;flex:1;paddi
 @media(max-height:760px) and (min-width:681px){.topbar{padding-top:20px}.dashboard{min-height:285px}.reactor{width:235px;min-width:185px}.status{margin-top:18px}.orbital-label{margin-bottom:12px}.conversation{margin-top:12px}.log{height:100px}#clock{font-size:45px}.market-row{padding:9px 0}.weather-glyph{height:37px}.weather-glyph svg{height:37px}}
 @media(prefers-reduced-motion:reduce){.ring,.core,.presence-ticks i{animation:none!important}}
 .web-sources{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:9px;font-size:11px}.web-sources a{color:var(--cyan);text-decoration:none;border-bottom:1px solid #65d5ed45}.web-sources a:hover{text-decoration:underline}
+.organization-hint{margin:4px 0 0;color:var(--muted,#7491a3);font-size:12px;min-height:1em}
+.activity-controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.activity-item{border-top:1px solid #193b4b;padding:12px 0}
+.activity-item p{margin:4px 0}.activity-item p:first-child{color:#b9edff;font-weight:600}
+.activity-item p:nth-child(3){font-size:12px;opacity:.65}
+.note-link{display:block;text-align:left;width:100%;margin:6px 0;padding:10px}
+.note-content{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.6}

@@ -34,6 +34,10 @@ Commands also accept a polite prefix such as “Iris, please…” and a trailin
 | “Start a new chat” | Clears the current conversation; saved memories and tasks remain. |
 | “Show my memories” | Opens saved memories. |
 | “Show my tasks” | Opens the task list. |
+| “Show my goals” / “Show my notes” | Opens saved goals or the notebook. |
+| “Show activity” | Shows automatic changes and Undo. |
+| “Undo the last change” | Reverses the latest eligible automatic change. |
+| “Pause automatic organization” / “Resume automatic organization” | Pauses/resumes automatic capture and reminder delivery. |
 | “What time is it?” | Reads the current device time. |
 | “Search the web for…” | Researches a public question through OpenRouter and shows source links. |
 | “Weather update” or “Use my location” | Requests location and refreshes local weather. The browser may require an Allow click. |
@@ -46,6 +50,10 @@ Commands also accept a polite prefix such as “Iris, please…” and a trailin
 | “Approve” / “Cancel” | Answers a currently pending action confirmation. Without one, no action is approved. |
 
 ## Automatic reasoning
+
+Automatic organization is a separate optional feature. It picks up commitments,
+goals and notes from conversation and schedules deadline reminders. Its background
+work does not delay voice playback. See [automatic organization](AUTOMATIC-ORGANIZATION.md).
 
 IRIS uses a conservative local routing heuristic; choosing a route does not add a separate model request. Ordinary conversation, simple actions, and urgent requests use **FAST**. Affirmative analysis, troubleshooting, planning, and detailed explanations use **DEEP**. A decision with alternatives and several distinct constraints can select **COUNCIL** automatically. Explicit requests such as “Ask the council…” also work.
 

@@ -18,6 +18,8 @@ from iris.terminal import load_config, create_brain, _memory_proposal
 from iris.tools import Approval
 from iris.tools.models import ResultStatus
 from iris.desktop.web_search import search_query, research
+from iris.desktop.autonomy import Autonomy, enabled as automatic_enabled
+from iris.goals.store import GoalStore
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -45,8 +47,7 @@ class DesktopRuntime:
             'You are IRIS in a local Windows desktop interface, also available in Chrome. Your answers can be spoken aloud. '
             'Use concise natural sentences for ordinary conversation; give detail when requested. '
             'Do not claim to be JARVIS. Local tasks, goals, briefings, confirmed memory, and '
-            'configured read-only workspace/Obsidian tools are available. Task and goal writes '
-            'ask for approval in the interface. Email, Google services, arbitrary shell commands '
+            'configured workspace/Obsidian tools are available. Email, Google services, arbitrary shell commands '
             'and desktop automation are not connected in this build. Never claim those actions succeeded. '
             'Reasoning is selected automatically from each request; the user can also explicitly ask for the council. '
             'The screen has weather and market widgets. You cannot inspect their current values from this context; '
@@ -75,6 +76,36 @@ class DesktopRuntime:
         self.audio_lock = threading.Lock()
         self.last_route = 'FAST'
         self.last_seconds = None
+        self._autonomy_lock = threading.Lock()
+        self._closed = False
+        self.autonomy = Autonomy(self.data_dir, self.settings, self.config)
+        self._base_context = self.brain._runtime_context
+
+    def start_background(self):
+        with self._autonomy_lock:
+            if not self._closed:
+                self.autonomy.start()
+
+    def close(self):
+        with self._autonomy_lock:
+            self._closed = True
+            self.autonomy.close()
+
+    def set_automatic_organization(self, active):
+        if type(active) is not bool:
+            raise ValueError('Choose whether automatic organization is on or paused.')
+        from iris.local_config import save_updates
+        # Concurrent UI requests must not create an unowned reminder worker.
+        # Closing the desktop also prevents an in-flight request restarting it.
+        with self._autonomy_lock:
+            if self._closed:
+                raise BusyError('IRIS is closing. Reopen it to change automatic organization.')
+            save_updates({'IRIS_AUTO_ORGANIZE_ENABLED': str(active).lower()}, self.data_dir / 'config.dpapi')
+            self.autonomy.close()
+            self.settings['IRIS_AUTO_ORGANIZE_ENABLED'] = str(active).lower()
+            self.autonomy = Autonomy(self.data_dir, self.settings, self.config)
+            self.autonomy.start()
+            return self.autonomy.status()
 
     def approve(self, summary, identifier=None, timeout=90):
         event = threading.Event()
@@ -92,6 +123,12 @@ class DesktopRuntime:
                     self.pending = None
 
     def _tool_approval(self, plan):
+        # Standing permission covers only these reversible local organizer tools.
+        # Memory, files outside the notebook, and external actions keep their own boundaries.
+        if (automatic_enabled(self.settings) and plan.spec.local_only and plan.spec.reversible
+                and plan.spec.name in {'tasks_create', 'tasks_complete', 'tasks_delete',
+                                      'goals_create', 'goals_update', 'goals_complete'}):
+            return Approval(plan.id, True)
         return Approval(plan.id, self.approve(plan.confirmation_summary, plan.id))
 
     def pending_approval(self):
@@ -116,6 +153,13 @@ class DesktopRuntime:
         with TaskStore(self.tasks_path) as store:
             return [t.to_dict() for t in store.list()]
 
+    def goals(self):
+        path = self.data_dir / 'goals.sqlite3'
+        if not path.exists():
+            return []
+        with GoalStore(path, read_only=True) as store:
+            return [g.to_dict() for g in store.list()]
+
     def reset(self):
         if not self.turn_lock.acquire(blocking=False):
             raise BusyError('Wait for the current response before clearing the conversation.')
@@ -132,10 +176,36 @@ class DesktopRuntime:
         if not self.turn_lock.acquire(blocking=False):
             raise BusyError('IRIS is finishing another request.')
         started = time.monotonic()
+        capture = False
+        capture_history = tuple(self.history[-8:])
         try:
             text = text.strip()
+            if text.casefold().rstrip('.!') in ('pause automatic organization', 'pause automatic organisation'):
+                self.set_automatic_organization(False)
+                return {'reply': 'Automatic organization and reminder delivery are paused. Your saved items remain.', 'route': 'LOCAL'}
+            if text.casefold().rstrip('.!') in ('resume automatic organization', 'resume automatic organisation'):
+                self.set_automatic_organization(True)
+                return {'reply': 'Automatic organization and reminders are on.', 'route': 'LOCAL'}
+            capture = not text.startswith('/') and mode == 'auto'
+            if automatic_enabled(self.settings):
+                self.brain._runtime_context = self._base_context + (
+                    ' Automatic organization is enabled by the owner. A separate background organizer '
+                    'captures clear commitments, deadlines, goals, useful notes and requested note edits '
+                    'from the current user message. Do not ask the user to say "create a task" or offer '
+                    'to create reminders for clear commitments. Automatic changes appear in Activity with Undo. '
+                    'Do not claim a new item was saved or scheduled until a tool result or the local records '
+                    'below confirms it. Answer the substance of the conversation; unclear deadlines may '
+                    'produce a clarification in Activity. Tasks with a date but no time use 23:59:59 local '
+                    'time. Reminders appear 15 minutes before task deadlines; goal dates use 09:00 local. '
+                    'The notebook creates organized Markdown notes and can add/update IRIS sections in '
+                    'existing notes or move them when the user supplies exact paths. Local task and goal '
+                    'tool writes have standing permission. Email and general computer control remain unavailable.\n'
+                ) + self.autonomy.context(text)
+            else:
+                self.brain._runtime_context = self._base_context + ' Local task and goal writes ask for confirmation. Automatic organization is paused.'
             query = search_query(text) if mode == 'auto' else None
             if query is not None:
+                capture = False
                 answer = research(self.config, query)
                 cited = answer['reply'] + '\nSources:\n' + '\n'.join(
                     item['title'] + ': ' + item['url'] for item in answer['sources'])
@@ -176,6 +246,10 @@ class DesktopRuntime:
                 result = respond_with_memory(self.brain, message, memory_store=store,
                                              history=tuple(self.history))
                 tool_result = getattr(result, "tool_result", None)
+                if (tool_result is not None and tool_result.status == ResultStatus.SUCCESS
+                        and getattr(getattr(getattr(tool_result, 'plan', None), 'spec', None), 'name', '')
+                        in {'tasks_create', 'tasks_complete', 'tasks_delete', 'goals_create', 'goals_update', 'goals_complete'}):
+                    capture = False  # A successful explicit write already owns this commitment.
                 if tool_result is not None and tool_result.status == ResultStatus.FAILED:
                     result = replace(result, text="I could not confirm that action completed. "
                         + (tool_result.failure.message if tool_result.failure else "The local tool failed.")
@@ -198,6 +272,8 @@ class DesktopRuntime:
                         'failures': list(council.failures), 'chairman': council.chairman_model}
                 return answer
         finally:
+            if capture:
+                self.autonomy.submit(text, capture_history)
             self.last_seconds = round(time.monotonic() - started, 2)
             self.turn_lock.release()
 

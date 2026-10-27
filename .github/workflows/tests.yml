@@ -22,4 +22,5 @@ jobs:
       - run: node tests/desktop_native_standby_check.cjs
       - run: node tests/desktop_app_check.cjs
       - run: node tests/desktop_dashboard_check.cjs
+      - run: node tests/desktop_organizer_check.cjs
       - run: node --check web/app.js

@@ -44,10 +44,14 @@ class DesktopServer(ThreadingHTTPServer):
         self.session = secrets.token_urlsafe(32)
         self.clap_listener = NativeClapListener()
         super().__init__(address, Handler)
+        if hasattr(runtime, 'start_background'):
+            runtime.start_background()
 
     def server_close(self):
         try:
             self.clap_listener.close()
+            if hasattr(self.runtime, 'close'):
+                self.runtime.close()
         finally:
             super().server_close()
 
@@ -149,6 +153,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/standby.js': ('standby.js', 'text/javascript'),
                   '/native-standby.js': ('native-standby.js', 'text/javascript'),
                   '/dashboard.js': ('dashboard.js', 'text/javascript'),
+                  '/organizer.js': ('organizer.js', 'text/javascript'),
                   '/voice-input.js': ('voice-input.js', 'text/javascript'),
                   '/desktop.css': ('desktop.css', 'text/css')}
         if path in assets:
@@ -176,6 +181,7 @@ class Handler(BaseHTTPRequestHandler):
                     'model': app.config.model, 'voice_id': cfg.get('IRIS_FISH_VOICE_ID', ''),
                     'last_route': app.last_route, 'last_seconds': app.last_seconds,
                     'council': True, 'memory': True, 'tasks': True,
+                    'organizer': app.autonomy.status(),
                     'obsidian': bool(app.config.obsidian_root or app.config.obsidian_vault),
                     'target': 'HP OMEN 16 · Core 7 240H · 16 GB · RTX 5060 · 1 TB SSD',
                     'provider_verified': False})
@@ -187,6 +193,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {'items': app.memories()})
             elif path == '/api/tasks':
                 self._json(200, {'items': app.tasks()})
+            elif path == '/api/goals':
+                self._json(200, {'items': app.goals()})
+            elif path == '/api/activity':
+                self._json(200, app.autonomy.events())
+            elif path == '/api/notes':
+                self._json(200, {'items': app.autonomy.notes()})
             elif path.startswith('/api/audio/'):
                 self._stream_voice(app.consume_audio(path.removeprefix('/api/audio/')))
             else:
@@ -252,6 +264,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, result)
             elif path == '/api/weather':
                 self._json(200, dashboard_weather(value.get('latitude'), value.get('longitude')))
+            elif path == '/api/activity/undo':
+                self._json(200, app.autonomy.undo(value.get('id')))
+            elif path == '/api/reminders/ack':
+                self._json(200, app.autonomy.acknowledge(value.get('id')))
+            elif path == '/api/notes/read':
+                self._json(200, app.autonomy.read_note(value.get('path')))
+            elif path == '/api/organization':
+                self._json(200, app.set_automatic_organization(value.get('enabled')))
             elif path == '/api/chat':
                 self._json(200, app.chat(value.get('text'), value.get('mode', 'auto')))
             elif path == '/api/approval':

@@ -41,6 +41,12 @@ def main():
     vault = ask('Optional Obsidian vault path', 'IRIS_OBSIDIAN_VAULT')
     if vault and not Path(vault).expanduser().is_dir():
         raise ValueError('The Obsidian vault folder does not exist.')
+    automatic = ask('Automatically organize commitments, goals and notes, and deliver desktop reminders (true/false)',
+                    'IRIS_AUTO_ORGANIZE_ENABLED', 'false').lower()
+    sms_reminders = ask('Also send due reminders to your own number once Twilio is configured (true/false)',
+                        'IRIS_AUTO_REMINDER_SMS', 'false').lower()
+    if automatic not in ('true', 'false') or sms_reminders not in ('true', 'false'):
+        raise ValueError('Automatic organization and SMS reminders must be true or false.')
     updates = {'IRIS_PROVIDER_URL': base, 'IRIS_MODEL': model, 'IRIS_API_KEY': key,
                'IRIS_FISH_API_KEY': fish, 'IRIS_FISH_VOICE_ID': voice, 'IRIS_FISH_MODEL': fish_model,
                'IRIS_STT_PROVIDER': stt_provider, 'IRIS_STT_MODEL': stt_model,
@@ -50,7 +56,8 @@ def main():
                'IRIS_COUNCIL_STRATEGIST_MODEL': strategist, 'IRIS_COUNCIL_SKEPTIC_MODEL': skeptic,
                'IRIS_COUNCIL_CHAIRMAN_MODEL': chairman,
                'IRIS_OBSIDIAN_VAULT': str(Path(vault).expanduser()) if vault else '',
-               'IRIS_OBSIDIAN_ROOT': str(Path(vault).expanduser()) if vault else ''}
+               'IRIS_OBSIDIAN_ROOT': str(Path(vault).expanduser()) if vault else '',
+               'IRIS_AUTO_ORGANIZE_ENABLED': automatic, 'IRIS_AUTO_REMINDER_SMS': sms_reminders}
     # Explicitly use the selected legacy provider for every role, including after switching providers.
     for role in ('FAST', 'DEEP', 'COUNCIL_STRATEGIST', 'COUNCIL_SKEPTIC', 'COUNCIL_CHAIRMAN'):
         updates['IRIS_' + role + '_PROVIDER'] = 'terminal'

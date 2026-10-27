@@ -34,6 +34,7 @@ def main():
     print('Incoming messages: ' + config.public_url + '/phone/sms')
     print('Incoming calls: ' + config.public_url + '/phone/voice')
     print('Call status changes: ' + config.public_url + '/phone/status')
+    print('If you enabled automatic SMS reminders, restart the IRIS desktop to load these phone settings.')
     return 0
 
 

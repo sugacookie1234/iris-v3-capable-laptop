@@ -23,6 +23,7 @@ class NativeClapApiTests(unittest.TestCase):
         speech_patch.start()
         self.addCleanup(speech_patch.stop)
         runtime = SimpleNamespace(settings={}, last_route='FAST', last_seconds=None,
+            autonomy=SimpleNamespace(status=lambda: {'enabled': False}),
             config=SimpleNamespace(model='synthetic', obsidian_root=None, obsidian_vault=None))
         self.server = module.DesktopServer(('127.0.0.1', 0), runtime)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)

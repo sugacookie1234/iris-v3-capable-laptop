@@ -134,7 +134,11 @@ only when you want that exact communication sent.
 
 The text command requires typing `SEND`; the call command requires `CALL`.
 Submitting a request does not prove delivery or that you answered. Check your
-phone and Twilio's logs. No scheduled or proactive contact is enabled by setup.
+phone and Twilio's logs. Phone setup alone does not enable proactive contact.
+If you separately enable automatic SMS reminders in ordinary IRIS setup, restart
+the desktop after phone setup. Due reminders can then text your saved number
+without per-message confirmation. Limits and behavior are in
+[automatic organization](AUTOMATIC-ORGANIZATION.md). No automatic calls are enabled.
 
 ## How conversations work
 
@@ -166,8 +170,9 @@ configuration's DPAPI protection. Opt-out state persists. After an uncertain SMS
 send result, IRIS does not automatically retry and risk sending the same reply
 twice; inspect Twilio's log before trying again.
 
-Automatic reminders, calls to other people, desktop actions over the phone,
-continuous real-time audio and Fish voice over calls are separate future work.
+The desktop's optional automatic reminders can send bounded owner-only SMS.
+Calls to other people, desktop actions over the phone, continuous real-time audio
+and Fish voice over calls are separate future work.
 
 The bridge limits automatic work to 20 SMS requests and 60 spoken requests per
 hour, with at most eight queued/working requests. It accepts up to ten new calls

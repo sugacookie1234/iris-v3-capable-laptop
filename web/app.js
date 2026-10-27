@@ -6,6 +6,7 @@ let speechToken=0,audioCtx=null,analyser=null,speechDone=null,monitor=null;
 let toastTimer=null,pendingId=null,latestCouncil=null,status=null,state='idle';
 let recordingApprovalId=null;
 let activationVersion=0,disposed=false,approvalTimer=null;
+let latestActivity=null;
 const detector=new DoubleClapDetector();
 const recordedInput=typeof MediaRecorder!=='undefined'&&navigator.mediaDevices?new RecordedVoiceInput({
   onState:value=>{listening=value!=='idle';setState(value);},
@@ -24,6 +25,14 @@ async function api(path,data){
   finally{if(timeout!==null)clearTimeout(timeout);}
 }
 const widgets=new DashboardWidgets({api});widgets.start();
+const organization=typeof OrganizationFeed==='undefined'?null:new OrganizationFeed({api,
+  isBusy:()=>busy||listening||Boolean(pendingId)||state==='speaking'||state==='preparing',
+  onSnapshot:data=>{latestActivity=data;const info=data.status||{};
+    $('organizationHint').textContent=info.error||(info.processing||info.queued?'Organizing your conversation…':info.enabled?'Automatic organization on · '+info.notes_location:'Automatic organization paused');
+  },
+  onActivity:item=>{if(item.kind!=='clarification'){const summary=item.title+': '+item.detail;toast(summary);addLine('SAVED',summary);}},
+  onReminder:async item=>{if(disposed)return;toast(item.message);addLine(item.clarification?'IRIS':'REMINDER',item.message);await speak(item.message);}
+});
 function toast(text){$('toast').textContent=text;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',9000);}
 function setState(value){
   state=value;document.body.className='state-'+value;
@@ -52,7 +61,7 @@ function addSources(answer,sources){
   }
   if(list.children.length)answer.append(list);
 }
-async function loadStatus(){try{status=await api('/api/status');if(disposed)return;renderSpeechStatus();await restoreStandby();}catch(error){if(!disposed)toast(error.message);}}
+async function loadStatus(){try{status=await api('/api/status');if(disposed)return;renderSpeechStatus();organization?.start();await restoreStandby();}catch(error){if(!disposed)toast(error.message);}}
 function saveStandby(value){try{globalThis.localStorage?.setItem('iris.standby',value);}catch{}}
 async function restoreStandby(){
   if(!status?.desktop_window||!window.chrome?.webview||!recordedInput||disposed||activated||activating)return;
@@ -143,6 +152,8 @@ async function voiceCommand(text,context={}){
     }
     if(command==='newchat')await resetChat();
     if(command==='memories')await showMemories();if(command==='tasks')await showTasks();
+    if(command==='goals')await showGoals();if(command==='notes')await showNotes();
+    if(command==='activity')await showActivity();if(command==='undo')await undoLastAutomatic();
     if(command==='council')showCouncil();if(command==='help')showHelp();return true;
   }
   return false;
@@ -174,16 +185,33 @@ function coreAction(){if(!activated||micPaused||!monitor?.active||audioCtx?.stat
 reactor.addEventListener('click',coreAction);reactor.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();coreAction();}});
 $('typeForm').addEventListener('submit',event=>{event.preventDefault();const text=typeBox.value;typeBox.value='';send(text);});
 $('wake').onclick=activate;$('muteBtn').onclick=()=>micPaused?activate():pauseMic();
-window.addEventListener('pagehide',()=>{disposed=true;activationVersion++;activating=false;monitor?.stop();stopSpeaking();recordedInput?.cancel();widgets.stop();clearInterval(clockTimer);clearTimeout(approvalTimer);});
+window.addEventListener('pagehide',()=>{disposed=true;activationVersion++;activating=false;monitor?.stop();stopSpeaking();recordedInput?.cancel();widgets.stop();organization?.stop();clearInterval(clockTimer);clearTimeout(approvalTimer);});
 function panel(title){$('panelTitle').textContent=title;$('panelBody').replaceChildren();if(!$('panel').open)$('panel').showModal();return $('panelBody');}
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);return p;}
 $('closePanel').onclick=()=>$('panel').close();
 async function showMemories(){try{const data=await api('/api/memories'),body=panel('Memories');if(!data.items.length)paragraph(body,'No saved memories yet. Say “remember that…” to add one.');for(const item of data.items)paragraph(body,item.summary);await speak(data.items.length?'Your saved memories. '+data.items.slice(0,5).map(item=>item.summary).join('. '):'No saved memories yet.');}catch(error){toast(error.message);}}
-async function showTasks(){try{const data=await api('/api/tasks'),body=panel('Tasks');if(!data.items.length)paragraph(body,'No tasks yet. Ask me to add one.');for(const task of data.items)paragraph(body,task.title+' · '+task.status);await speak(data.items.length?'Your tasks. '+data.items.slice(0,5).map(task=>task.title+', '+task.status).join('. '):'No tasks yet.');}catch(error){toast(error.message);}}
+async function showTasks(){try{const data=await api('/api/tasks'),body=panel('Tasks');if(!data.items.length)paragraph(body,'No tasks yet. With automatic organization on, tell me what you need to get done.');for(const task of data.items)paragraph(body,task.title+' · '+task.status+(task.due_at?' · '+new Date(task.due_at).toLocaleString():''));await speak(data.items.length?'Your tasks. '+data.items.slice(0,5).map(task=>task.title+', '+task.status).join('. '):'No tasks yet.');}catch(error){toast(error.message);}}
+async function showGoals(){try{const data=await api('/api/goals'),body=panel('Goals');if(!data.items.length)paragraph(body,'Tell me what you are working towards. Clear long-term goals can be saved automatically.');for(const goal of data.items)paragraph(body,goal.title+' · '+goal.status+' · '+goal.progress+'%'+(goal.target_date?' · '+goal.target_date:''));}catch(error){toast(error.message);}}
+async function showNotes(){try{const data=await api('/api/notes'),body=panel('Notes');if(!data.items.length)paragraph(body,'Useful notes from conversation will appear here.');for(const item of data.items){const button=document.createElement('button');button.className='note-link';button.textContent=item.title||item.path;button.onclick=async()=>{try{const note=await api('/api/notes/read',{path:item.path});const pre=document.createElement('pre');pre.className='note-content';pre.textContent=note.text;panel(note.path||item.title).append(pre);}catch(error){toast(error.message);}};body.append(button);}}catch(error){toast(error.message);}}
+async function undoAutomatic(id){try{await api('/api/activity/undo',{id});toast('Automatic change undone.');await showActivity();}catch(error){toast(error.message);}}
+async function undoLastAutomatic(){try{const data=await api('/api/activity');const item=data.activity.find(row=>row.undoable&&row.state==='applied');if(item)await undoAutomatic(item.id);else await reply('There is no automatic change available to undo.');}catch(error){toast(error.message);}}
+async function showActivity(){try{const data=await api('/api/activity'),body=panel('Activity');latestActivity=data;
+  paragraph(body,data.status.enabled?'IRIS picks up clear commitments, goals and useful notes as you talk.':'Automatic organization is paused.');
+  const controls=document.createElement('div');controls.className='activity-controls';
+  for(const [label,callback] of [['Tasks',showTasks],['Goals',showGoals],['Notes',showNotes]]){const button=document.createElement('button');button.textContent=label;button.onclick=callback;controls.append(button);}
+  const toggle=document.createElement('button');toggle.textContent=data.status.enabled?'Pause organization and reminders':'Resume organization and reminders';toggle.onclick=async()=>{toggle.disabled=true;try{await api('/api/organization',{enabled:!data.status.enabled});await showActivity();}catch(error){toast(error.message);}finally{toggle.disabled=false;}};controls.append(toggle);body.append(controls);
+  if(data.status.error)paragraph(body,data.status.error);
+  const sms=data.status.reminders||{};if(data.status.sms_requested)paragraph(body,sms.sms_enabled?'SMS reminders are enabled for your own number.':'SMS reminders are waiting for Twilio setup and a desktop restart.');
+  if(!data.activity.length)paragraph(body,'Automatic changes will appear here with an undo button.');
+  for(const item of data.activity){const row=document.createElement('section');row.className='activity-item';paragraph(row,item.title);paragraph(row,item.detail);paragraph(row,new Date(item.created_at).toLocaleString()+' · '+item.state);
+    if(item.undoable&&item.state==='applied'){const button=document.createElement('button');button.textContent='Undo';button.onclick=()=>undoAutomatic(item.id);row.append(button);}body.append(row);}
+}catch(error){toast(error.message);}}
+$('activityBtn').onclick=showActivity;
 function showCouncil(){if(!latestCouncil){toast('There is no council review in this conversation yet.');return;}const body=panel('Council review');for(const candidate of latestCouncil.candidates)paragraph(body,candidate.seat+' · '+candidate.model+'\n'+candidate.text);for(const ranking of latestCouncil.rankings)paragraph(body,ranking.reviewer+' review\n'+ranking.text);if(latestCouncil.failures.length)paragraph(body,'Partial failures: '+latestCouncil.failures.join(', '));}
 function showHelp(){const body=panel('Just ask IRIS');const list=document.createElement('div');list.className='command-list';body.append(list);
-  for(const text of ['“Show my tasks”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
+  for(const text of ['“Show my tasks”','“Show my goals”','“Show my notes”','“Show activity”','“Undo the last change”','“Pause automatic organization”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
   paragraph(body,'Double clap to wake, then speak. IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
+  paragraph(body,'With automatic organization on, describe your plans naturally: “I need to submit the report tomorrow at 3 PM.” Tasks, goals and useful notes are saved in the background. Activity shows the result and Undo. Dates without a time use the end of that day; unclear deadlines need a follow-up. Keep IRIS open for desktop and configured SMS reminders.');
   paragraph(body,'Say “Search the web for…” to research a public question online and show source links. Search uses OpenRouter credit; ordinary conversation does not automatically browse. Source links open in Google Chrome from the desktop app.');
   paragraph(body,'The local microphone listener checks consecutive 40 ms sound levels for your double clap. Only a request you start is sent for transcription. Keep IRIS open and the laptop awake. Pause mic stops monitoring; tap the core to resume.');
   paragraph(body,'Fish Audio handles recognition with local Whisper fallback. “Mute” silences replies while keeping double-clap available. The first local fallback may take longer to load.');

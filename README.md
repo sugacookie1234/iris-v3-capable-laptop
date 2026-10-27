@@ -49,10 +49,14 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
   The initial seats may use the same model with distinct roles; setup supports different model IDs.
 - **Memories:** propose a fact, confirm it, retrieve it in later conversations, or forget it.
   `/remember ...` and `/memories` work from the chat as well.
-- **Tasks/goals:** ask to list, create, complete or remove local tasks, and manage goals through chat.
-  Mutations require approval tied to the actual action. Tasks and goals persist locally.
-- **Optional Obsidian:** read/search a configured vault. Knowledge retrieval starts from `vault index.md`.
-  No Obsidian app/plugin is necessary for these existing read-only tools.
+- **Automatic organization:** when enabled in setup, ordinary conversation can create and update
+  tasks, goals and useful notes without a separate command or repeated approval. Deadlines generate
+  desktop reminders, with optional owner-only SMS after Twilio setup. Activity shows changes and Undo.
+  The organizer runs in the background; unclear deadlines need clarification. See [automatic organization](docs/AUTOMATIC-ORGANIZATION.md).
+- **Tasks/goals:** list, create, complete or remove local tasks and manage goals through chat.
+  They persist locally. Writes ask for approval when automatic organization is disabled.
+- **Optional Obsidian:** read/search a configured vault. Automatic notes are organized under `IRIS/`;
+  exact-path edits preserve human text and have backups/undo. Without a vault, IRIS uses a local notebook.
 - **Double-clap standby:** enabled after the initial microphone permission/Start standby click.
   Uses the supplied tested Python listener: 44.1 kHz input and consecutive 40 ms blocks.
   Input probing and request recording share the selected microphone. Run `setup.bat` after updating.
@@ -105,9 +109,10 @@ On Windows, `.local/config.dpapi` uses Windows DPAPI encryption for the current 
 Those SQLite records are local plaintext; DPAPI protects configuration, not all personal records.
 Do not publish `.local/`, API keys, or personal vault contents.
 
-New desktop entry points use native Windows file handles for bounded workspace/vault/calendar reads,
-rejecting symbolic links, junctions and unsafe relative paths. Model-proposed writes use immutable,
-single-use interface approval. A council answer does not itself authorize a tool action.
+Desktop entry points use native Windows file handles for bounded workspace/vault/calendar reads
+and notebook writes, rejecting symbolic links, junctions and unsafe relative paths. Enabled automatic
+organization has standing permission for its bounded, reversible local actions. Other governed actions
+retain their approval checks. A council answer does not itself authorize a tool action.
 
 ## Scope
 
@@ -117,8 +122,9 @@ general desktop automation and unrestricted shell execution are not connected. I
 
 The retained v2 code includes experimental WSL one-shot voice, standalone HUD, readiness and reminder
 entry points. They are not the supported Windows launch path; use `start-iris.bat` for the merged app.
-Standby works while the interface is running and the computer is awake. Windows startup, a system
-background service, voice wake words, SMS/calls and autonomous desktop missions are not connected.
+Standby and reminders work while the interface is running and the computer is awake. Windows startup,
+a system background service, voice wake words and autonomous desktop missions are not connected.
+The optional SMS/call bridge needs its own provider setup.
 
 ## Development and validation
 
@@ -129,6 +135,7 @@ node tests/desktop_voice_check.cjs
 node tests/desktop_standby_check.cjs
 node tests/desktop_app_check.cjs
 node tests/desktop_dashboard_check.cjs
+node tests/desktop_organizer_check.cjs
 .venv\Scripts\python.exe -m iris.desktop.server --no-browser
 ```
 

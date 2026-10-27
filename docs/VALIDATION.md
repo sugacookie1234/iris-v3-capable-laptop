@@ -1,4 +1,51 @@
-# Validation — October 26, 2026
+# Validation — October 27, 2026
+
+## Automatic organization and reminders
+
+The complete Windows suite passed: **741 tests, OK, 4 skipped**, in 125.76 seconds.
+After the final local phrase and request-saving changes, all **66 affected
+organizer/integration tests passed**, in 26.25 seconds.
+All seven desktop JavaScript checks passed. Dependency consistency, JavaScript
+syntax, whitespace checks and the configured-secret scan passed. No saved key,
+token or PIN values appeared in publishable files.
+
+The new checks cover background capture without delaying chat, grounded tasks and
+goals, deadline clarification, duplicate suppression, revision-aware undo, and
+Markdown note capture/edit/move with protected paths and preimages. Reminder checks
+cover overdue catch-up, completion and rescheduling, durable delivery state,
+notification limits, pause/shutdown, optional SMS activation, STOP, and uncertain
+provider submissions. Desktop checks cover authenticated APIs, failed reminder
+acknowledgement retries, resolved questions, unavailable vaults and visible errors.
+Tests use temporary stores and fake notification/phone clients; they do not edit
+the owner's vault or send SMS/calls. The Windows notification script also passed
+PowerShell parsing; a visible system notification has not been verified.
+
+Two separately approved live model checks sent only two synthetic statements about
+an Orion prototype and learning French. The first returned no saved actions and
+no error; its original plan was not retained. After a grounded-title fix, the
+second proposed and saved one task, but omitted the note and misclassified the
+long-term goal. This verifies the live provider/write path, not reliable semantic
+coverage. Safe rejection diagnostics now distinguish empty plans from rejected
+proposals. No SMS, calls or actual vault edits occurred in either test.
+
+Firm sustained commitments and direct personal project facts now have local
+parsing. An end-to-end check with network access disabled created the intended
+Markdown note and goal, read them back from temporary storage, and undid both.
+Simple questions, greetings and duplicate messages skip an extra organization
+request. Mixed fact/question messages remain eligible for capture. General model
+extraction can still miss or misclassify unusual wording; Activity reports actual
+saved changes.
+
+Automatic organization and desktop reminders are enabled in the development
+account, with its existing `D:\I.R.I.S` Obsidian vault selected. Optional reminder
+SMS is requested but inactive because Twilio is not configured. These encrypted
+account settings are not committed and must be configured again on the OMEN.
+The updated native desktop window launched and Windows reported it responding.
+Authenticated loopback checks confirmed organization/reminders enabled, no
+organization error, a working notes endpoint and SMS disabled. No live microphone
+or acoustic double-clap acceptance check was performed during this update.
+
+## Previous validation — October 26, 2026
 
 ## Optional SMS and phone bridge
 
