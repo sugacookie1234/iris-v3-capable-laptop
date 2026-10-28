@@ -104,7 +104,14 @@ async function activate(){
   }catch(error){if(version===activationVersion&&!disposed)toast('Could not start audio: '+error.message);}
   finally{if(version===activationVersion){activating=false;$('wake').disabled=false;}}
 }
-function stopSpeaking(){speechToken++;if(speechDone)speechDone();voice.pause();voice.removeAttribute('src');voice.load();if('speechSynthesis'in window)speechSynthesis.cancel();}
+function stopSpeaking(){
+  speechToken++;
+  // Audio support can disappear after a device change or be only partially
+  // exposed by the desktop renderer. Each cleanup must leave text chat usable.
+  for(const stop of [()=>speechDone?.(),()=>voice.pause(),()=>voice.removeAttribute('src'),()=>voice.load(),()=>window.speechSynthesis?.cancel?.()]){
+    try{stop();}catch(error){console.warn('IRIS audio cleanup unavailable:',error.name);}
+  }
+}
 async function speak(text){
   stopSpeaking();
   if(disposed)return;if(muted||!activated){setState('idle');return;}const token=++speechToken;setState('preparing');
@@ -115,7 +122,7 @@ async function speak(text){
       complete=()=>{clean();resolve();};speechDone=complete;voice.onended=complete;voice.onerror=()=>{clean();reject(new Error('Fish Audio is unavailable; trying the device voice.'));};
       voice.onplaying=()=>{if(token===speechToken)setState('speaking');};voice.src=ticket.url;voice.play().catch(error=>{clean();reject(error);});});
   }catch(error){if(token!==speechToken||muted)return;toast(error.message);
-    if('speechSynthesis'in window)await new Promise(resolve=>{const utterance=new SpeechSynthesisUtterance(text);setState('speaking');speechDone=resolve;utterance.onend=resolve;utterance.onerror=resolve;speechSynthesis.speak(utterance);});
+    if(typeof window.speechSynthesis?.speak==='function'&&typeof window.SpeechSynthesisUtterance==='function')await new Promise(resolve=>{const utterance=new window.SpeechSynthesisUtterance(text);setState('speaking');speechDone=resolve;utterance.onend=resolve;utterance.onerror=resolve;window.speechSynthesis.speak(utterance);});
   }finally{if(token===speechToken){speechDone=null;setState('idle');detector.reset();}}
 }
 async function reply(text){if(disposed)return;addLine('IRIS',text);await speak(text);}
@@ -159,17 +166,24 @@ async function voiceCommand(text,context={}){
   return false;
 }
 async function send(text,context={}){
-  text=text.trim();if(!text||disposed)return;if(recordedInput?.active)recordedInput.cancel();
-  if(await voiceCommand(text,context))return;if(busy){toast('IRIS is finishing your request.');return;}
-  stopSpeaking();busy=true;$('typeForm').querySelector('button').disabled=true;addLine('YOU',text);const answer=addLine('IRIS','…');setState('thinking');
-  let spokenReply=null;
-  try{const data=await api('/api/chat',{text,mode:'auto'});answer.textContent=data.reply;logEl.scrollTop=logEl.scrollHeight;
+  text=text.trim();if(!text||disposed)return;
+  let answer=null,ownsRequest=false,spokenReply=null;
+  try{
+    if(recordedInput?.active)recordedInput.cancel();
+    if(await voiceCommand(text,context)){context.onAccepted?.();return;}
+    if(busy){toast('IRIS is finishing your request.');return;}
+    stopSpeaking();busy=true;ownsRequest=true;$('typeForm').querySelector('button').disabled=true;
+    addLine('YOU',text);answer=addLine('IRIS','…');context.onAccepted?.();setState('thinking');
+    const data=await api('/api/chat',{text,mode:'auto'});answer.textContent=data.reply;logEl.scrollTop=logEl.scrollHeight;
     addSources(answer,data.sources);
     latestCouncil=data.council||null;$('routeLabel').textContent=data.route==='WEB'?'WEB SEARCH':data.route==='COUNCIL'?'COUNCIL CONSULTED':data.route==='DEEP'?'DEEP REASONING':'AUTOMATIC REASONING';
     spokenReply=data.reply;
-  }catch(error){answer.textContent=error.message;toast(error.message);setState('idle');}
-  finally{busy=false;$('typeForm').querySelector('button').disabled=false;}
-  if(spokenReply!==null&&!disposed)await speak(spokenReply);
+  }catch(error){
+    const message=error.message||'IRIS could not send your message. Please try again.';
+    if(answer)answer.textContent=message;else addLine('IRIS',message);
+    toast(message);if(ownsRequest||!busy)setState('idle');
+  }finally{if(ownsRequest){busy=false;$('typeForm').querySelector('button').disabled=false;}}
+  if(spokenReply!==null&&!disposed){try{await speak(spokenReply);}catch{toast('Your reply is ready, but audio playback is unavailable.');setState('idle');}}
 }
 function startListening(timed=false){
   if(disposed||(busy&&!pendingId)||listening||micPaused)return;
@@ -183,7 +197,17 @@ document.addEventListener('keydown',event=>{if(event.code==='Space'&&!event.repe
 document.addEventListener('keyup',event=>{if(event.code==='Space'&&!editable(event.target)){event.preventDefault();stopListening();}});
 function coreAction(){if(!activated||micPaused||!monitor?.active||audioCtx?.state!=='running')activate();else if(listening)stopListening();else startListening(true);}
 reactor.addEventListener('click',coreAction);reactor.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();coreAction();}});
-$('typeForm').addEventListener('submit',event=>{event.preventDefault();const text=typeBox.value;typeBox.value='';send(text);});
+let typedSubmission=null;
+$('typeForm').addEventListener('submit',async event=>{
+  event.preventDefault();if(typedSubmission)return;
+  const text=typeBox.value,submission={};typedSubmission=submission;
+  try{await send(text,{onAccepted:()=>{
+    // Clear only an accepted draft, without deleting anything typed since Send.
+    if(typeBox.value===text)typeBox.value='';
+    if(typedSubmission===submission)typedSubmission=null;
+  }});}catch{toast('IRIS could not send your message. Your draft is still here.');}
+  finally{if(typedSubmission===submission)typedSubmission=null;}
+});
 $('wake').onclick=activate;$('muteBtn').onclick=()=>micPaused?activate():pauseMic();
 window.addEventListener('pagehide',()=>{disposed=true;activationVersion++;activating=false;monitor?.stop();stopSpeaking();recordedInput?.cancel();widgets.stop();organization?.stop();clearInterval(clockTimer);clearTimeout(approvalTimer);});
 function panel(title){$('panelTitle').textContent=title;$('panelBody').replaceChildren();if(!$('panel').open)$('panel').showModal();return $('panelBody');}

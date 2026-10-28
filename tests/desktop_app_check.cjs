@@ -84,6 +84,73 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
 }
 
 (async()=>{
+  // Submit through the actual form handler: native WebView can expose the
+  // synthesis property without providing a usable speech service.
+  const submit=(view,text)=>{
+    view.elements.typeBox.value=text;let prevented=false;
+    view.elements.typeForm.emit('submit',{preventDefault(){prevented=true;}});
+    assert.equal(prevented,true,'Submitting must not reload the application');
+  };
+  const chatRequests=view=>view.requests.filter(item=>item.url==='/api/chat');
+  for(const synthesis of ['null','{cancel(){throw new Error("Device speech unavailable");}}']){
+    const typed=app();await typed.flush();
+    typed.run('window.speechSynthesis=globalThis.speechSynthesis='+synthesis);
+    submit(typed,'Help me plan tomorrow');await typed.flush();
+    assert.equal(chatRequests(typed).length,1,'Unavailable device speech must not block text chat');
+    assert.equal(typed.elements.log.children[0].children[1].textContent,'Help me plan tomorrow');
+    assert.equal(typed.elements.log.children.at(-1).children[1].textContent,'Hello.');
+    assert.equal(typed.elements.typeBox.value,'','An accepted message clears its draft');
+    assert.equal(typed.elements.typeForm.querySelector('button').disabled,false);
+  }
+
+  const blockedRecorder=app();await blockedRecorder.flush();
+  blockedRecorder.input.active=true;
+  blockedRecorder.input.cancel=()=>{throw new Error('Recorder could not stop');};
+  submit(blockedRecorder,'Keep this draft');await blockedRecorder.flush();
+  assert.equal(blockedRecorder.elements.typeBox.value,'Keep this draft');
+  assert.equal(chatRequests(blockedRecorder).length,0,'Failed recorder cleanup must not send an unnoticed request');
+  assert.match(blockedRecorder.elements.toast.textContent,/Recorder could not stop/);
+  assert.equal(blockedRecorder.elements.toast.style.display,'block');
+  blockedRecorder.input.active=false;
+  submit(blockedRecorder,'Keep this draft');await blockedRecorder.flush();
+  assert.equal(chatRequests(blockedRecorder).length,1,'A failed submission must allow a retry');
+
+  const busyForm=app();await busyForm.flush();let finishBusy;
+  busyForm.responses['/api/chat']=()=>new Promise(resolve=>finishBusy=resolve);
+  const pendingChat=busyForm.run('send("Already processing a request")');await busyForm.flush();
+  submit(busyForm,'Send this later');await busyForm.flush();
+  assert.equal(busyForm.elements.typeBox.value,'Send this later','Busy submissions retain their draft');
+  assert.equal(chatRequests(busyForm).length,1);
+  finishBusy({reply:'Done.',route:'FAST'});await pendingChat;
+  assert.equal(busyForm.elements.typeBox.value,'Send this later');
+
+  const nextDraft=app();await nextDraft.flush();let finishTyped;
+  nextDraft.responses['/api/chat']=()=>new Promise(resolve=>finishTyped=resolve);
+  submit(nextDraft,'First typed question');await nextDraft.flush();
+  nextDraft.elements.typeBox.value='A newer draft';
+  finishTyped({reply:'First answer.',route:'FAST'});await nextDraft.flush();
+  assert.equal(nextDraft.elements.typeBox.value,'A newer draft','Finishing chat must preserve newer typing');
+
+  const failedCommand=app();await failedCommand.flush();
+  failedCommand.run('globalThis.rejectWeather=null; globalThis.weatherCalls=0; widgets.locate=()=>{weatherCalls++;return new Promise((resolve,reject)=>rejectWeather=reject)}');
+  submit(failedCommand,'Weather update');await failedCommand.flush();
+  submit(failedCommand,'Weather update');await failedCommand.flush();
+  assert.equal(failedCommand.run('weatherCalls'),1,'Repeated Send must not duplicate a pending local command');
+  failedCommand.run('rejectWeather(new Error("Weather request failed"))');await failedCommand.flush();
+  assert.equal(failedCommand.elements.typeBox.value,'Weather update');
+  assert.match(failedCommand.elements.toast.textContent,/Weather request failed/);
+  assert.equal(failedCommand.elements.toast.style.display,'block');
+  assert.equal(chatRequests(failedCommand).length,0,'A failed local command must not fall through to the model');
+
+  const commandDraft=app();await commandDraft.flush();
+  commandDraft.run('globalThis.finishWeather=null; widgets.locate=()=>new Promise(resolve=>finishWeather=resolve)');
+  submit(commandDraft,'Weather update');await commandDraft.flush();
+  commandDraft.elements.typeBox.value='My next request';
+  commandDraft.run('finishWeather({temperature_c:12,condition:"Clear"})');await commandDraft.flush();
+  assert.equal(commandDraft.elements.typeBox.value,'My next request','Completing a local command must preserve newer typing');
+  assert.match(commandDraft.elements.log.children.at(-1).children[1].textContent,/12 degrees Celsius/);
+  assert.equal(chatRequests(commandDraft).length,0);
+
   const main=app();await main.flush();assert.equal(main.monitor,undefined,'Standby waits for a user activation');
   await main.elements.wake.onclick();assert.equal(main.monitor.active,true);assert.equal(main.elements.wake.hidden,true);
   assert.equal(main.permissionStops,1,'Permission bootstrap releases its temporary microphone stream');
