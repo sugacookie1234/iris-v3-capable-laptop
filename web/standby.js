@@ -106,6 +106,7 @@ function parseVoiceCommand(text) {
     mute:/^(?:mute(?: (?:audio|yourself|iris))?|(?:turn |switch )?(?:the )?(?:audio|sound) off|stop speaking|be quiet)$/,
     unmute:/^(?:unmute(?: (?:audio|yourself|iris))?|(?:turn |switch )?(?:the )?(?:audio|sound) on)$/,
     pausemic:/^(?:(?:pause|mute) (?:(?:the|my) )?(?:microphone|mic)|stop listening(?: to me)?|turn off (?:(?:the|my) )?(?:microphone|mic))$/,
+    standby:/^(?:that(?:'s| is) all(?:,? (?:thanks|thank you))?|go (?:back )?to standby|end (?:the |this )?conversation)$/,
     time:/^(?:what time is it(?: (?:now|right now))?|what(?:'s| is) (?:the )?(?:current )?time(?: (?:now|right now))?|tell me (?:the )?(?:current )?time|tell me what time it is)$/,
     weather:/^(?:(?:what(?:'s| is)|how(?:'s| is)) (?:the )?weather(?: like)?(?: (?:today|outside|right now))?|weather(?: update)?|(?:refresh|update) (?:the )?weather|use my (?:current )?location)$/,
     markets:/^(?:(?:stock )?market update|how(?:'s| is| are) (?:the )?(?:markets|stock market)(?: doing)?(?: today)?|(?:refresh|update) (?:the )?(?:markets|stock market))$/,

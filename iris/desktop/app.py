@@ -17,6 +17,7 @@ import webbrowser
 from iris.desktop.browser import ChromeBrowser
 from iris.desktop.runtime import DesktopRuntime, ROOT
 from iris.desktop.server import DesktopServer
+from iris.desktop.tray import install_tray
 
 TITLE = 'I.R.I.S. — Personal Intelligence'
 LOG = logging.getLogger('iris.desktop')
@@ -85,6 +86,7 @@ def run_window(webview, runtime, port=8766):
     thread = threading.Thread(target=server.serve_forever, name='IRIS local server', daemon=True)
     thread.start()
     previous_open = webbrowser.open
+    tray = None
     try:
         url = f'http://127.0.0.1:{server.server_address[1]}/'
         # pywebview delegates target=_blank links to this function. Replace it
@@ -104,11 +106,26 @@ def run_window(webview, runtime, port=8766):
         os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = ' '.join(flags)
         window = webview.create_window(TITLE, url, width=1240, height=820, min_size=(720, 620),
                                        background_color='#050d15', text_select=True)
-        window.events.before_show += lambda: guard_navigation(window, url)
+        def prepare_window():
+            nonlocal tray
+            guard_navigation(window, url)
+            try:
+                tray = install_tray(window, ROOT)
+            except Exception as exc:
+                # Without a usable tray, preserve the ordinary close-to-exit
+                # behavior rather than hiding a window the user cannot reopen.
+                LOG.warning('Tray unavailable; closing the window exits IRIS: %s', type(exc).__name__)
+
+        window.events.before_show += prepare_window
         window.events.loaded += lambda: LOG.info('IRIS desktop interface loaded on port %s', server.server_address[1])
         webview.start(gui='edgechromium', debug=False, private_mode=False,
                       storage_path=str(Path(runtime.data_dir) / 'webview'))
     finally:
+        if tray is not None:
+            try:
+                tray.dispose()
+            except Exception as exc:
+                LOG.warning('Tray cleanup failed: %s', type(exc).__name__)
         webbrowser.open = previous_open
         server.shutdown()
         server.server_close()
@@ -140,7 +157,7 @@ def main(argv=None):
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('IRIS.CapableLaptop.3')
             run_window(webview, DesktopRuntime(), args.port)
     except AlreadyRunning as exc:
-        notify_error(str(exc))
+        notify_error('IRIS is already running. Open it from its icon in the Windows notification area or taskbar.')
         return 0
     except Exception as exc:
         # Log the category, not provider responses/configuration or credentials.

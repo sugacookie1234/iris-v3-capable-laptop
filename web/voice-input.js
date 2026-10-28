@@ -42,12 +42,62 @@ async function recordingToWav(blob) {
   }
   return encodeWav(samples);
 }
+// Local energy-based endpoint detection: no model, transcript or upload is
+// needed to discard a quiet wake or finish a sentence after a natural pause.
+class SpeechEndpoint {
+  constructor({now=0,initialSilenceMs=6000,endSilenceMs=1100,minSpeechMs=160,maxDurationMs=30000}={}) {
+    Object.assign(this,{started:now,last:now,initialSilenceMs,endSilenceMs,minSpeechMs,maxDurationMs});
+    this.noise=.004;this.run=0;this.heardSpeech=false;this.lastSpeech=now;
+  }
+  update(level,now) {
+    const elapsed=Math.max(0,Math.min(100,now-this.last));this.last=now;
+    const voiced=Number.isFinite(level)&&level>Math.max(.012,this.noise*3);
+    if(voiced){this.run+=elapsed;if(this.run>=this.minSpeechMs)this.heardSpeech=true;this.lastSpeech=now;}
+    else{this.run=0;if(Number.isFinite(level))this.noise=.98*this.noise+.02*Math.max(0,level);}
+    if(!this.heardSpeech&&now-this.started>=this.initialSilenceMs)return 'quiet';
+    if(this.heardSpeech&&now-this.lastSpeech>=this.endSilenceMs)return 'speech';
+    if(now-this.started>=this.maxDurationMs)return this.heardSpeech?'speech':'quiet';
+    return null;
+  }
+}
+class VoiceActivityMonitor {
+  constructor(stream,onDecision,options={}) {
+    Object.assign(this,{stream,onDecision,options});this.closed=false;
+  }
+  async start() {
+    const Audio=globalThis.AudioContext||globalThis.webkitAudioContext;
+    if(!Audio)throw new Error('Automatic listening is unavailable. Hold Space to speak instead.');
+    this.context=new Audio();this.source=this.context.createMediaStreamSource(this.stream);
+    this.analyser=this.context.createAnalyser();this.analyser.fftSize=2048;this.source.connect(this.analyser);
+    const samples=new Float32Array(this.analyser.fftSize);
+    if(this.context.state==='suspended')await this.context.resume();
+    if(this.closed)return;
+    this.endpoint=new SpeechEndpoint({...this.options,now:performance.now()});
+    // Timers keep working when the native window is hidden in the tray.
+    this.timer=setInterval(()=>{
+      if(this.closed)return;
+      try{
+        this.analyser.getFloatTimeDomainData(samples);
+        const level=Math.sqrt(samples.reduce((sum,value)=>sum+value*value,0)/samples.length);
+        const decision=this.endpoint.update(level,performance.now());
+        if(decision){this.stop();this.onDecision(decision);}
+      }catch{this.stop();this.onDecision('quiet');}
+    },40);
+  }
+  stop() {
+    this.closed=true;clearInterval(this.timer);
+    try{this.source?.disconnect();}catch{}
+    try{this.analyser?.disconnect();}catch{}
+    try{this.context?.close()?.catch(()=>{});}catch{}
+  }
+}
 class RecordedVoiceInput {
-  constructor({onState,onText,onError,onBackend=()=>{},devices=navigator.mediaDevices,Recorder=MediaRecorder,request=(...args)=>globalThis.fetch(...args),convert=recordingToWav}) {
-    Object.assign(this,{onState,onText,onError,onBackend,devices,Recorder,request,convert});
+  constructor({onState,onText,onError,onBackend=()=>{},onSilence=()=>{},devices=navigator.mediaDevices,Recorder=MediaRecorder,request=(...args)=>globalThis.fetch(...args),convert=recordingToWav,
+    activityFactory=(stream,callback,options)=>new VoiceActivityMonitor(stream,callback,options)}) {
+    Object.assign(this,{onState,onText,onError,onBackend,onSilence,devices,Recorder,request,convert,activityFactory});
     this.version=0;this.active=false;
   }
-  async start(duration=30000,nativeDeviceName=null) {
+  async start(duration=30000,nativeDeviceName=null,options={}) {
     if(this.active)return;
     this.cancel();const version=this.version;this.active=true;this.onState('Microphone permission');
     try {
@@ -71,8 +121,9 @@ class RecordedVoiceInput {
       };
       recorder.onerror=()=>{this.cancel();this.onError('Microphone recording failed. Check the selected input device.');};
       recorder.onstop=async()=>{
-        stream.getTracks().forEach(t=>t.stop());clearTimeout(this.timer);
+        stream.getTracks().forEach(t=>t.stop());
         if(version!==this.version)return;
+        this.activity?.stop();this.activity=null;clearTimeout(this.timer);
         this.onState('Transcribing');this.controller=new AbortController();
         try {
           if(bytes<32)throw new Error('No audio captured. Hold Space while speaking, then release.');
@@ -85,14 +136,23 @@ class RecordedVoiceInput {
           if(!response.ok)throw new Error(result.error||'Transcription failed.');
           this.active=false;this.onState('idle');
           if(result.speech)this.onBackend(result.speech);
-          if(result.text&&result.text.trim())this.onText(result.text.trim());
+          if(result.text&&result.text.trim())await this.onText(result.text.trim());
           else this.onError('No speech detected. Check your microphone and try again.');
         }catch(error){
           if(version===this.version){this.active=false;this.onState('idle');this.onError(error.message);}
         }
       };
       recorder.start(250);this.onState('listening');
-      this.timer=setTimeout(()=>this.stop(),Math.min(duration,30000));
+      if(options.autoStop){
+        const activity=this.activity=this.activityFactory(stream,decision=>{
+          if(version!==this.version)return;
+          if(decision==='quiet'){this.cancel();this.onSilence();}else this.stop();
+        },{initialSilenceMs:options.initialSilenceMs||6000,maxDurationMs:Math.min(duration,30000)});
+        // A hung/suspended analyser must not leave the microphone open or send
+        // unclassified room audio. Manual push-to-talk has its own time limit.
+        this.timer=setTimeout(()=>{if(version===this.version){this.cancel();this.onSilence();}},Math.min(duration,30000)+500);
+        await activity.start();if(version!==this.version)activity.stop();
+      }else this.timer=setTimeout(()=>this.stop(),Math.min(duration,30000));
     }catch(error){
       if(version!==this.version)return;
       this.cancel();
@@ -105,11 +165,13 @@ class RecordedVoiceInput {
   }
   stop() {
     clearTimeout(this.timer);
+    this.activity?.stop();this.activity=null;
     if(this.recorder&&this.recorder.state==='recording')this.recorder.stop();
     else if(!this.recorder)this.cancel(); // Key released before permission resolved.
   }
   cancel() {
     this.version++;this.active=false;clearTimeout(this.timer);
+    this.activity?.stop();this.activity=null;
     if(this.controller)this.controller.abort();this.controller=null;
     if(this.recorder){this.recorder.onstop=null;if(this.recorder.state==='recording')this.recorder.stop();}
     this.recorder=null;
@@ -117,4 +179,4 @@ class RecordedVoiceInput {
     this.onState('idle');
   }
 }
-if(typeof module!=='undefined')module.exports={RecordedVoiceInput,encodeWav,resolveInputDevice};
+if(typeof module!=='undefined')module.exports={RecordedVoiceInput,encodeWav,resolveInputDevice,SpeechEndpoint,VoiceActivityMonitor};

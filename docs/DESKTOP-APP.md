@@ -2,8 +2,11 @@
 
 Double-click **start-iris.bat**. IRIS opens in its own resizable Windows window;
 there is no browser tab, address bar, or console to keep open. It owns its local
-server and stops it when you close the window. Minimize the window to keep IRIS
-running. Reopening the launcher while IRIS is already running shows a notice.
+server. Closing the window keeps IRIS running in the Windows notification area.
+Double-click its tray icon, or right-click it and choose **Open IRIS**, to return.
+Choose **Quit IRIS** in that menu to stop the app, microphone and local server.
+If Windows cannot create the tray icon, closing the window exits normally instead.
+Reopening the launcher while IRIS is already running directs you to the tray.
 
 On the first launch, click **Start standby** and allow the microphone. Double clap
 to wake IRIS, then speak. The app remembers microphone and location permissions in
@@ -11,8 +14,14 @@ its application profile under ignored `.local/webview/`. Later launches restore
 standby automatically when microphone permission is still granted. An explicit
 **Pause mic** is remembered and must be resumed by clicking; a denied or unknown
 permission leaves Start standby visible. Chrome mode still starts with a click.
-Closing IRIS, sleeping the laptop,
-or pausing its microphone stops standby. It does not start automatically with Windows.
+Quitting IRIS, sleeping the laptop, or pausing its microphone stops standby.
+Closing just its window keeps standby and reminders available while the laptop is awake.
+
+To start at sign-in, right-click the IRIS tray icon and enable **Start with Windows**.
+This is off by default and affects only your Windows account. Uncheck it to remove
+this checkout's login entry. Keep the repository and its `.venv` at the same path;
+if you move it, disable this option first and enable it again from the new location.
+Login startup opens IRIS normally so microphone permission or other setup needs remain visible.
 
 The window uses [pywebview](https://pywebview.flowrl.com/) and Microsoft's
 [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
@@ -49,7 +58,7 @@ launch, IRIS passes Microsoft's documented
 [`disable-background-timer-throttling` and `autoplay-policy` flags](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/webview-features-flags)
 to its own rendering process. Microphone access still requires permission. It makes
 no global browser or power-setting changes.
-Actual minimized-window clap detection still needs a hardware test with your microphone.
+Actual minimized/hidden-window clap detection still needs a hardware test with your microphone.
 
 Clap capture now runs in Python with sounddevice using the user's tested 44.1 kHz,
 40 ms detector. The embedded view receives only a wake counter and microphone name;

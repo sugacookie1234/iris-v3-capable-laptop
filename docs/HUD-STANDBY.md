@@ -8,7 +8,11 @@ The desktop keeps the animated core and gives the surrounding screen a quieter l
 2. On first use, click **Start Standby** and allow microphone access. The desktop app
    restores standby on later launches when permission is still granted; an explicit
    microphone pause stays paused. Chrome mode starts with a click each time.
-3. Double clap, wait for **Listening**, then speak. A clap wake records up to eight seconds before sending the request for transcription. Clicking the core also starts an eight-second request; clicking again stops it sooner. Holding Space records until release, with a thirty-second limit, when the cursor is outside a text field or dialog.
+3. Double clap, wait for **Listening**, then speak. Local sound-level detection sends your request after about 1.1 seconds of silence following speech, with a thirty-second recording limit. Clicking the core starts the same automatic recording; clicking again sends it immediately. Holding Space records until release, with a thirty-second limit, when the cursor is outside a text field or dialog.
+
+After a spoken reply finishes, IRIS leaves a short echo gap and shows **Anything else?** for five seconds. Start your follow-up during that window; it uses the same pause-to-send detection. If you stay quiet, the recording is discarded locally without a transcription or model request. A wake with no speech expires after six seconds. “That’s all” ends follow-up listening while keeping double-clap standby enabled. Typed replies, reminders and action confirmations do not automatically open a follow-up window. New action confirmations cancel any automatic recording and require a deliberate wake.
+
+Click the core or hold Space to interrupt playback. Automatic interruption by speaking over IRIS is not implemented. Escape, Pause mic and typed requests cancel pending follow-up listening. Sound-level detection is a lightweight heuristic, not a speech-recognition model: noise and nearby voices can trigger it, and long pauses can end a sentence early. Hold Space for manual control when needed.
 
 Double-clap detection stays enabled after activation. Standby checks sound levels locally and discards the samples; it does not continuously upload room audio. A wake starts a separate request recording, which normally goes to Fish Audio. If Fish recognition fails, IRIS tries the installed local faster-whisper model. The first local fallback can take longer while the model loads. The displayed speech status identifies the backend used. See [OMEN speech setup](SPEECH-OMEN.md) for local model and GPU setup.
 
@@ -16,7 +20,7 @@ Clap detection pauses while IRIS records, transcribes, processes a normal reques
 
 The Python listener uses the supplied tested detector: mono 44,100 Hz, consecutive 40 ms blocks, a 50–350 ms double-clap gap and a 450 ms cooldown. It probes the default input, then scans other inputs if the default is silent. Speech recording matches that selected microphone; an ambiguous match gives an error instead of recording from an unrelated input. Set the process environment variable `IRIS_INPUT_DEVICE` to an input name or index to override selection; the source's `JARVIS_INPUT_DEVICE` is also accepted. Run `setup.bat` after pulling this update to install sounddevice and NumPy. See [source comparison and guide review](CLAP-REFERENCE.md).
 
-Keep the IRIS app open and the laptop awake. Closing the app stops its server and microphone. Native capture runs outside the window's audio analyser; a short heartbeat lease releases capture if the interface disconnects. A second window cannot take over a running listener. Microphone disconnection, device sleep and OS permissions can still interrupt standby; tap the core after fixing the interruption. This is not a Windows background service, cannot wake a sleeping laptop, and saying “IRIS” alone is not a wake word. See [desktop app](DESKTOP-APP.md).
+Keep IRIS running and the laptop awake. Closing the desktop window hides it in the Windows tray; **Quit IRIS** in the tray menu stops its server and microphone. The tray also offers optional **Start with Windows**. Native capture runs outside the window's audio analyser; a short heartbeat lease releases capture if the interface disconnects. A second window cannot take over a running listener. Microphone disconnection, device sleep and OS permissions can still interrupt standby; tap the core after fixing the interruption. This is not a Windows background service, cannot wake a sleeping laptop, and saying “IRIS” alone is not a wake word. See [desktop app](DESKTOP-APP.md).
 
 **Mute** silences spoken replies while retaining double-clap standby. **Pause mic** stops monitoring and cancels recording; use the core or **Resume mic** to restore it. A paused microphone cannot hear “unmute.” Escape stops the current recording or speech without permanently pausing standby.
 
@@ -43,6 +47,7 @@ Commands also accept a polite prefix such as “Iris, please…” and a trailin
 | “Weather update” or “Use my location” | Requests location and refreshes local weather. The browser may require an Allow click. |
 | “Market update” | Reads the latest available completed daily closes. |
 | “Mute” / “Unmute” | Turns voice replies off or on; standby remains enabled. |
+| “That’s all” / “Go to standby” | Ends automatic follow-up listening; double clap can wake IRIS again. |
 | “Pause microphone” or “Stop listening” | Stops microphone monitoring until resumed by clicking. |
 | “Show council review” | Opens the most recent council results, if available. |
 | “Voice commands” or “Help” | Opens the command guide. |

@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {RecordedVoiceInput,encodeWav,resolveInputDevice}=require('../web/voice-input.js');
+const {RecordedVoiceInput,encodeWav,resolveInputDevice,SpeechEndpoint}=require('../web/voice-input.js');
 class Recorder {
   static isTypeSupported(){return true;}
   constructor(){this.state='inactive';}
@@ -17,6 +17,45 @@ function fixture(overrides={}) {
   return result;
 }
 (async()=>{
+  const quiet=new SpeechEndpoint();
+  for(let now=40;now<6000;now+=40)assert.equal(quiet.update(.002,now),null);
+  assert.equal(quiet.update(.002,6000),'quiet','Silence ends without a transcription');
+  const spike=new SpeechEndpoint();spike.update(.2,40);spike.update(.002,80);
+  assert.equal(spike.update(.002,6000),'quiet','A brief click must not count as speech');
+  const sentence=new SpeechEndpoint();
+  for(let now=40;now<=400;now+=40)assert.equal(sentence.update(.06,now),null);
+  assert.equal(sentence.heardSpeech,true);
+  for(let now=440;now<1500;now+=40)assert.equal(sentence.update(.002,now),null);
+  assert.equal(sentence.update(.002,1520),'speech','A pause submits before the old eight-second timer');
+  const hesitation=new SpeechEndpoint();
+  for(let now=40;now<=400;now+=40)hesitation.update(.05,now);
+  for(let now=440;now<=1000;now+=40)assert.equal(hesitation.update(.002,now),null);
+  assert.equal(hesitation.update(.05,1040),null,'A short pause inside a sentence does not end the turn');
+  const longSpeech=new SpeechEndpoint({maxDurationMs:1000});
+  for(let now=40;now<1000;now+=40)longSpeech.update(.05,now);
+  assert.equal(longSpeech.update(.05,1000),'speech','Long speech remains bounded');
+  for(const decision of ['quiet','speech']){
+    let decide,stopped=0,silences=0;
+    const automatic=fixture({activityFactory:(stream,callback)=>{
+      decide=callback;return {start:async()=>{},stop:()=>stopped++};
+    },onSilence:()=>silences++});
+    await automatic.input.start(30000,null,{autoStop:true});decide(decision);await tick();
+    assert.equal(automatic.requests.length,decision==='speech'?1:0);
+    assert.equal(silences,decision==='quiet'?1:0);assert.ok(stopped>0);
+    assert.ok(automatic.stops>0);assert.equal(automatic.input.active,false);assert.deepEqual(automatic.errors,[]);
+  }
+  let oldDecision;
+  const staleMonitor=fixture({activityFactory:(stream,callback)=>{
+    oldDecision=callback;return {start:async()=>{},stop(){}};
+  }});
+  await staleMonitor.input.start(30000,null,{autoStop:true});staleMonitor.input.cancel();
+  await staleMonitor.input.start();oldDecision('speech');await tick();
+  assert.equal(staleMonitor.input.active,true,'An obsolete analyser cannot stop a later recording');
+  assert.equal(staleMonitor.requests.length,0);staleMonitor.input.cancel();
+  const noMonitor=fixture({activityFactory:()=>({start:async()=>{throw new Error('Automatic listening unavailable');},stop(){}})});
+  await noMonitor.input.start(30000,null,{autoStop:true});
+  assert.match(noMonitor.errors[0],/Automatic listening unavailable/);assert.equal(noMonitor.requests.length,0);
+  assert.equal(noMonitor.input.active,false);assert.ok(noMonitor.stops>0);
   // Browser fetch requires Window as its receiver; a method on the recorder
   // must not pass the recorder instance as `this` to the native function.
   const originalFetch=globalThis.fetch;

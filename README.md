@@ -19,7 +19,8 @@ It can also run on less powerful Windows computers. It has not yet been tested o
 3. Double-click **`setup.bat`**. It creates an isolated environment, configures recognition, and downloads a pinned Whisper model (about 1.6 GB for the OMEN default).
 4. Enter your provider key and Fish Audio key at the hidden prompts. Choose the model and voice.
 5. Double-click **`start-iris.bat`**. IRIS opens in its own window with no browser tab or address bar.
-   Keep the app running; closing its window stops IRIS. To use Chrome instead, run **`start-iris-browser.bat`**.
+   Closing the window keeps IRIS running in the system tray. Right-click its icon to open or quit it,
+   or enable **Start with Windows**. To use Chrome instead, run **`start-iris-browser.bat`**.
 6. Click **Start standby** and allow microphone access. Double clap to speak, or hold **Space**.
    Click **Use my location** to enable local weather. Typing also works.
    Later desktop launches restore standby if permission is still granted; **Pause mic** stays paused.
@@ -60,7 +61,11 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 - **Double-clap standby:** enabled after the initial microphone permission/Start standby click.
   Uses the supplied tested Python listener: 44.1 kHz input and consecutive 40 ms blocks.
   Input probing and request recording share the selected microphone. Run `setup.bat` after updating.
-  Two claps activate an eight-second recognition window. Idle monitoring measures levels locally;
+  Two claps start recording; about 1.1 seconds of silence after speech sends the request, up to 30 seconds.
+  After a spoken reply, IRIS listens for five seconds for you to begin a follow-up without another clap.
+  Quiet windows are discarded locally without transcription charges. Say “That’s all” to return to standby.
+  Hold Space for manual recording; click the core or hold Space to interrupt playback.
+  Idle monitoring measures levels locally;
   speech playback and request capture suspend clap detection. “Mute” silences replies; **Pause mic**
   stops listening. Detection needs testing with your microphone.
 - Minimal HUD with a larger local clock, location-based weather and SPY/QQQ/DIA/IWM daily closes.
@@ -122,8 +127,9 @@ general desktop automation and unrestricted shell execution are not connected. I
 
 The retained v2 code includes experimental WSL one-shot voice, standalone HUD, readiness and reminder
 entry points. They are not the supported Windows launch path; use `start-iris.bat` for the merged app.
-Standby and reminders work while the interface is running and the computer is awake. Windows startup,
-a system background service, voice wake words and autonomous desktop missions are not connected.
+Standby and reminders work while the app is running (including hidden in its Windows tray) and the
+computer is awake. Optional login startup is available in the tray menu. A system background service,
+voice wake words, automatic speech interruption and autonomous desktop missions are not connected.
 The optional SMS/call bridge needs its own provider setup.
 
 ## Development and validation
@@ -155,8 +161,10 @@ comparison with Karpathy's project. No third-party assistant stack was wholesale
 ## Voice input troubleshooting
 
 Restart the app after updating (or refresh Chrome in browser mode). Click the core, allow microphone access, speak, then click it again
-to submit; the timed window also stops after eight seconds. Hold Space away from the text box for
-push-to-talk (up to 30 seconds). Escape or Pause mic discards the recording.
+to submit; automatic recording also stops after a natural pause. Hold Space away from the text box for
+push-to-talk (up to 30 seconds). Escape or Pause mic discards the recording and cancels follow-up listening.
+Automatic endpoint detection uses local sound levels; background voices or steady loud noise can affect it.
+Use push-to-talk in noisy surroundings. Actual accuracy and timing still need testing on your OMEN microphone.
 If the model is missing, run `setup.bat` again. Speech input uses the default Windows microphone.
 Fish recognition requires API credit, separate from its website subscription. Local Whisper needs no
 transcription key or credits. The first local request loads the model and can be slower; CPU fallback

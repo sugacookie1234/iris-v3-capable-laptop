@@ -289,6 +289,23 @@ The OMEN itself has not been available for hardware acceptance.
 - Browser text chat displayed IRIS's identity response; the memory dialog loaded.
   A compact-window layout overlap was found and fixed.
 
+## Voice turns and tray update — 2026-10-28
+
+- Focused voice, app and standby JavaScript checks pass: silence discard,
+  pause-to-send, a bounded recording limit, follow-up cancellation, stale recorder
+  callbacks, typed-chat draft preservation, and explicit approval wake behavior.
+- A real Chrome audio pipeline using an internally generated tone followed by
+  silence produced one WAV transcription request to a fake local handler. A silent
+  stream produced zero requests. No physical microphone or provider was used.
+- Ten focused Python desktop/tray tests pass. An isolated Windows WebView2/WinForms
+  check confirmed close-to-tray, continuing timers while hidden, reopening and Quit.
+- These checks do not establish real-room speech/noise discrimination, audible
+  playback or OMEN performance. Voice interruption currently uses the core or Space;
+  speaking over playback does not automatically interrupt it. Model output still
+  completes before speech is requested; this update reduces input waiting time.
+- Start with Windows is an optional tray setting; no login registration was enabled
+  by these tests.
+
 ## Remaining manual acceptance
 
 - Run setup and launch on the actual OMEN. Keys must be entered on that machine;

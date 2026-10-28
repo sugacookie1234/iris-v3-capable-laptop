@@ -44,7 +44,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   }
   class Input {
     constructor(options){this.options=options;this.active=false;this.starts=[];this.cancels=0;input=this;}
-    start(duration,device){this.active=true;this.starts.push(duration);this.device=device;this.options.onState('listening');}
+    start(duration,device,options){this.active=true;this.starts.push(duration);this.device=device;this.recordOptions=options;this.options.onState('listening');}
     stop(){this.active=false;this.options.onState('idle');}
     cancel(){this.cancels++;this.stop();}
   }
@@ -72,7 +72,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   };
   if(recording)sandbox.MediaRecorder=function(){};
   const context=vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/app.js'),'utf8'),context);
-  return {elements,document,window,requests,responses,intervals,storage,
+  return {elements,document,window,requests,responses,intervals,storage,timeouts,
     get monitor(){return monitor;},get input(){return input;},set autoEnd(value){autoEnd=value;},
     get playCalls(){return playCalls;},
     get permissionStops(){return permissionStops;},
@@ -151,6 +151,41 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   assert.match(commandDraft.elements.log.children.at(-1).children[1].textContent,/12 degrees Celsius/);
   assert.equal(chatRequests(commandDraft).length,0);
 
+  const follow=app();await follow.flush();await follow.elements.wake.onclick();
+  await follow.run('send("A typed question")');
+  assert.equal(follow.run('followUpTimer'),null,'Typing never opens an automatic recording');
+  await follow.heard('A spoken question');
+  const followTimer=follow.run('followUpTimer');assert.ok(followTimer);
+  assert.equal(follow.input.active,false,'Follow-up waits for playback and the echo gap');
+  follow.timeouts.get(followTimer).fn();await follow.flush();
+  assert.equal(follow.input.active,true);assert.equal(follow.input.recordOptions.autoStop,true);
+  assert.equal(follow.input.recordOptions.initialSilenceMs,5000);
+  assert.equal(follow.elements.status.textContent,'Anything else?');
+  const beforeSilence=chatRequests(follow).length;
+  follow.input.cancel();follow.input.options.onSilence();await follow.flush();
+  assert.equal(chatRequests(follow).length,beforeSilence,'Quiet follow-up does not invoke the model');
+  assert.equal(follow.run('followUpTimer'),null,'Quiet follow-up does not reopen itself');
+  await follow.heard('That’s all');
+  assert.equal(follow.monitor.active,true,'Ending the conversation keeps double-clap standby');
+  assert.equal(follow.run('followUpTimer'),null);
+  assert.equal(chatRequests(follow).length,beforeSilence,'Ending conversation is a local command');
+
+  for(const action of ['pauseMic()','document.emit("keydown",{code:"Escape"})','send("A typed interruption")']){
+    const interrupted=app();await interrupted.flush();await interrupted.elements.wake.onclick();
+    await interrupted.heard('Start a conversation');
+    const timer=interrupted.run('followUpTimer'),callback=interrupted.timeouts.get(timer).fn;
+    await interrupted.run(action);callback();await interrupted.flush();
+    assert.equal(interrupted.input.active,false,'Cancelled follow-up stays cancelled: '+action);
+  }
+  const approvalFollow=app();await approvalFollow.flush();await approvalFollow.elements.wake.onclick();
+  await approvalFollow.heard('A normal question');
+  approvalFollow.timeouts.get(approvalFollow.run('followUpTimer')).fn();
+  assert.equal(approvalFollow.input.active,true);
+  approvalFollow.responses['/api/approval']={pending:{id:'fresh-action',summary:'A new action'}};
+  await approvalFollow.run('pollApproval()');await approvalFollow.flush();
+  assert.equal(approvalFollow.input.active,false,'A new approval cancels automatic follow-up capture');
+  assert.equal(approvalFollow.run('followUpTimer'),null,'Approval requires a deliberate wake');
+
   const main=app();await main.flush();assert.equal(main.monitor,undefined,'Standby waits for a user activation');
   await main.elements.wake.onclick();assert.equal(main.monitor.active,true);assert.equal(main.elements.wake.hidden,true);
   assert.equal(main.permissionStops,1,'Permission bootstrap releases its temporary microphone stream');
@@ -161,7 +196,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
 
   await main.run('send("mute")');assert.equal(main.monitor.active,true);assert.equal(main.monitor.stops,0);
   assert.equal(main.monitor.options.isBusy(),false,'Muted replies do not disable clap wake');
-  main.monitor.options.onTrigger();assert.equal(main.input.starts.at(-1),8000);assert.equal(main.monitor.options.isBusy(),true);
+  main.monitor.options.onTrigger();assert.equal(main.input.starts.at(-1),30000);assert.equal(main.input.recordOptions.autoStop,true);assert.equal(main.monitor.options.isBusy(),true);
   assert.equal(main.input.device,main.monitor.device,'Speech uses the native clap listener microphone');
   await main.heard('unmute');assert.equal(main.monitor.active,true);assert.equal(main.monitor.options.isBusy(),false);
   await main.run('send("pause mic")');assert.equal(main.monitor.active,false);assert.equal(main.monitor.stops,1);

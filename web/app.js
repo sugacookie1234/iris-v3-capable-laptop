@@ -5,13 +5,16 @@ let busy=false,muted=false,micPaused=false,listening=false,activated=false,activ
 let speechToken=0,audioCtx=null,analyser=null,speechDone=null,monitor=null;
 let toastTimer=null,pendingId=null,latestCouncil=null,status=null,state='idle';
 let recordingApprovalId=null;
+let conversationVersion=0,followUpTimer=null,followUpListening=false;
 let activationVersion=0,disposed=false,approvalTimer=null;
 let latestActivity=null;
 const detector=new DoubleClapDetector();
 const recordedInput=typeof MediaRecorder!=='undefined'&&navigator.mediaDevices?new RecordedVoiceInput({
   onState:value=>{listening=value!=='idle';setState(value);},
   onBackend:speech=>{if(status)status.speech=speech;renderSpeechStatus();if(speech.fallback)toast(speech.fallback);},
-  onText:text=>{const approvalId=recordingApprovalId;recordingApprovalId=null;return send(text,{spoken:true,approvalId});},onError:message=>{toast(message);addLine('IRIS',message);}
+  onText:text=>{const approvalId=recordingApprovalId;recordingApprovalId=null;return send(text,{spoken:true,approvalId});},
+  onSilence:()=>{followUpListening=false;recordingApprovalId=null;setState('idle');},
+  onError:message=>{cancelFollowUp();toast(message);addLine('IRIS',message);}
 }):null;
 async function api(path,data){
   const options=data===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-IRIS-Request':'1'},body:JSON.stringify(data)};
@@ -31,15 +34,31 @@ const organization=typeof OrganizationFeed==='undefined'?null:new OrganizationFe
     $('organizationHint').textContent=info.error||(info.processing||info.queued?'Organizing your conversation…':info.enabled?'Automatic organization on · '+info.notes_location:'Automatic organization paused');
   },
   onActivity:item=>{if(item.kind!=='clarification'){const summary=item.title+': '+item.detail;toast(summary);addLine('SAVED',summary);}},
-  onReminder:async item=>{if(disposed)return;toast(item.message);addLine(item.clarification?'IRIS':'REMINDER',item.message);await speak(item.message);}
+  onReminder:async item=>{if(disposed)return;cancelFollowUp(true);toast(item.message);addLine(item.clarification?'IRIS':'REMINDER',item.message);await speak(item.message);}
 });
 function toast(text){$('toast').textContent=text;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',9000);}
 function setState(value){
   state=value;document.body.className='state-'+value;
   const ready=monitor?.active;
   const idle=micPaused?'Microphone paused':ready?'Standing by':monitor?.active?'Audio paused':'Ready when you are';
-  $('status').textContent={idle,listening:'Listening',thinking:'Thinking',speaking:'Speaking',preparing:'Preparing voice',Transcribing:'Understanding'}[value]||value;
+  $('status').textContent={idle,listening:followUpListening?'Anything else?':'Listening',thinking:'Thinking',speaking:'Speaking',preparing:'Preparing voice',Transcribing:'Understanding'}[value]||value;
   $('wakeHint').textContent=micPaused||monitor?.active&&!ready?'Tap the core to resume standby.':pendingId?'Double clap, then approve or cancel.':ready?(muted?'Double clap to wake · replies muted':'Double clap to wake · or hold Space'):'One click to enable your microphone.';
+  if(value==='listening')$('wakeHint').textContent=followUpListening?'Speak to continue · silence returns to standby':'Speak naturally · pause to send · Escape to cancel';
+}
+function cancelFollowUp(cancelRecording=false){
+  conversationVersion++;clearTimeout(followUpTimer);followUpTimer=null;
+  const wasFollowUp=followUpListening;followUpListening=false;
+  if(cancelRecording&&wasFollowUp)recordedInput?.cancel();
+  return conversationVersion;
+}
+function scheduleFollowUp(version,context){
+  if(!context.spoken||context.approvalId||version!==conversationVersion||disposed||micPaused||muted||!activated||!monitor?.active||busy||listening||pendingId||state!=='idle')return;
+  // Leave a short gap for speaker echo to fade. Only a completed spoken turn
+  // opens this bounded window; reminders, typed replies and approvals do not.
+  followUpTimer=setTimeout(()=>{
+    followUpTimer=null;
+    if(version===conversationVersion&&!disposed&&!micPaused&&!muted&&!busy&&!listening&&!pendingId&&monitor?.active&&state==='idle')startListening(true,true);
+  },600);
 }
 function standbyStatus(active,error){
   $('standbyDot').className='signal-dot '+(active?'on':'off');
@@ -138,6 +157,7 @@ async function voiceCommand(text,context={}){
     if(command==='unmute'){muted=false;await reply('Voice replies are on.');return true;}
     if(command==='close'){if($('panel').open)$('panel').close();return true;}
     if(command==='pausemic'){pauseMic();return true;}
+    if(command==='standby'){cancelFollowUp(true);stopSpeaking();setState(busy?'thinking':'idle');toast('Standing by. Double clap when you need me.');return true;}
     if(busy){toast(pendingId?'I’m waiting for your approval.':'IRIS is finishing your request.');return true;}
     if(command==='time'){await reply('It’s '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'.');return true;}
     if(command==='weather'){
@@ -167,10 +187,11 @@ async function voiceCommand(text,context={}){
 }
 async function send(text,context={}){
   text=text.trim();if(!text||disposed)return;
+  const turn=cancelFollowUp();
   let answer=null,ownsRequest=false,spokenReply=null;
   try{
     if(recordedInput?.active)recordedInput.cancel();
-    if(await voiceCommand(text,context)){context.onAccepted?.();return;}
+    if(await voiceCommand(text,context)){context.onAccepted?.();scheduleFollowUp(turn,context);return;}
     if(busy){toast('IRIS is finishing your request.');return;}
     stopSpeaking();busy=true;ownsRequest=true;$('typeForm').querySelector('button').disabled=true;
     addLine('YOU',text);answer=addLine('IRIS','…');context.onAccepted?.();setState('thinking');
@@ -184,16 +205,18 @@ async function send(text,context={}){
     toast(message);if(ownsRequest||!busy)setState('idle');
   }finally{if(ownsRequest){busy=false;$('typeForm').querySelector('button').disabled=false;}}
   if(spokenReply!==null&&!disposed){try{await speak(spokenReply);}catch{toast('Your reply is ready, but audio playback is unavailable.');setState('idle');}}
+  if(spokenReply!==null)scheduleFollowUp(turn,context);
 }
-function startListening(timed=false){
+function startListening(timed=false,followUp=false){
   if(disposed||(busy&&!pendingId)||listening||micPaused)return;
   if(!recordedInput){toast('This interface cannot record microphone audio. Update IRIS with setup.bat or try Google Chrome.');return;}
-  recordingApprovalId=pendingId;stopSpeaking();recordedInput.start(timed?8000:30000,monitor?.device||null);
+  cancelFollowUp();followUpListening=followUp;
+  recordingApprovalId=pendingId;stopSpeaking();recordedInput.start(30000,monitor?.device||null,{autoStop:timed,initialSilenceMs:followUp?5000:6000});
 }
 function stopListening(){if(recordedInput?.active)recordedInput.stop();}
-function pauseMic(){activationVersion++;activating=false;$('wake').disabled=false;micPaused=true;saveStandby('paused');recordedInput?.cancel();monitor?.stop();stopSpeaking();$('muteBtn').textContent='Resume mic';$('muteBtn').setAttribute('aria-pressed','true');setState(busy?'thinking':'idle');}
+function pauseMic(){cancelFollowUp();activationVersion++;activating=false;$('wake').disabled=false;micPaused=true;saveStandby('paused');recordedInput?.cancel();monitor?.stop();stopSpeaking();$('muteBtn').textContent='Resume mic';$('muteBtn').setAttribute('aria-pressed','true');setState(busy?'thinking':'idle');}
 function editable(target){return target!==reactor&&(target.closest('input,textarea,select,button,dialog')||target.isContentEditable);}
-document.addEventListener('keydown',event=>{if(event.code==='Space'&&!event.repeat&&!editable(event.target)&&activated){event.preventDefault();startListening();}if(event.code==='Escape'){stopSpeaking();recordedInput?.cancel();setState(busy?'thinking':'idle');}});
+document.addEventListener('keydown',event=>{if(event.code==='Space'&&!event.repeat&&!editable(event.target)&&activated){event.preventDefault();startListening();}if(event.code==='Escape'){cancelFollowUp();stopSpeaking();recordedInput?.cancel();setState(busy?'thinking':'idle');}});
 document.addEventListener('keyup',event=>{if(event.code==='Space'&&!editable(event.target)){event.preventDefault();stopListening();}});
 function coreAction(){if(!activated||micPaused||!monitor?.active||audioCtx?.state!=='running')activate();else if(listening)stopListening();else startListening(true);}
 reactor.addEventListener('click',coreAction);reactor.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();coreAction();}});
@@ -209,7 +232,7 @@ $('typeForm').addEventListener('submit',async event=>{
   finally{if(typedSubmission===submission)typedSubmission=null;}
 });
 $('wake').onclick=activate;$('muteBtn').onclick=()=>micPaused?activate():pauseMic();
-window.addEventListener('pagehide',()=>{disposed=true;activationVersion++;activating=false;monitor?.stop();stopSpeaking();recordedInput?.cancel();widgets.stop();organization?.stop();clearInterval(clockTimer);clearTimeout(approvalTimer);});
+window.addEventListener('pagehide',()=>{disposed=true;cancelFollowUp();activationVersion++;activating=false;monitor?.stop();stopSpeaking();recordedInput?.cancel();widgets.stop();organization?.stop();clearInterval(clockTimer);clearTimeout(approvalTimer);});
 function panel(title){$('panelTitle').textContent=title;$('panelBody').replaceChildren();if(!$('panel').open)$('panel').showModal();return $('panelBody');}
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);return p;}
 $('closePanel').onclick=()=>$('panel').close();
@@ -234,7 +257,8 @@ $('activityBtn').onclick=showActivity;
 function showCouncil(){if(!latestCouncil){toast('There is no council review in this conversation yet.');return;}const body=panel('Council review');for(const candidate of latestCouncil.candidates)paragraph(body,candidate.seat+' · '+candidate.model+'\n'+candidate.text);for(const ranking of latestCouncil.rankings)paragraph(body,ranking.reviewer+' review\n'+ranking.text);if(latestCouncil.failures.length)paragraph(body,'Partial failures: '+latestCouncil.failures.join(', '));}
 function showHelp(){const body=panel('Just ask IRIS');const list=document.createElement('div');list.className='command-list';body.append(list);
   for(const text of ['“Show my tasks”','“Show my goals”','“Show my notes”','“Show activity”','“Undo the last change”','“Pause automatic organization”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
-  paragraph(body,'Double clap to wake, then speak. IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
+  paragraph(body,'Double clap to wake, then speak naturally. A pause sends your request. After a spoken reply, “Anything else?” opens five seconds to begin a follow-up without clapping again. Silence returns to standby without an upload. Say “That’s all” to finish, or hold Space for manual recording. Click the core or hold Space to interrupt a spoken reply.');
+  paragraph(body,'IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
   paragraph(body,'With automatic organization on, describe your plans naturally: “I need to submit the report tomorrow at 3 PM.” Tasks, goals and useful notes are saved in the background. Activity shows the result and Undo. Dates without a time use the end of that day; unclear deadlines need a follow-up. Keep IRIS open for desktop and configured SMS reminders.');
   paragraph(body,'Say “Search the web for…” to research a public question online and show source links. Search uses OpenRouter credit; ordinary conversation does not automatically browse. Source links open in Google Chrome from the desktop app.');
   paragraph(body,'The local microphone listener checks consecutive 40 ms sound levels for your double clap. Only a request you start is sent for transcription. Keep IRIS open and the laptop awake. Pause mic stops monitoring; tap the core to resume.');
@@ -245,7 +269,7 @@ function showHelp(){const body=panel('Just ask IRIS');const list=document.create
 $('infoBtn').onclick=showHelp;
 async function resetChat(){try{await api('/api/reset',{});stopSpeaking();logEl.replaceChildren();latestCouncil=null;$('routeLabel').textContent='AUTOMATIC REASONING';if($('panel').open)$('panel').close();await reply('New conversation. Your saved memories and tasks are still here.');}catch(error){toast(error.message);}}
 async function pollApproval(){if(disposed)return;try{const data=await api('/api/approval');if(disposed)return;
-  if(data.pending&&data.pending.id!==pendingId){pendingId=data.pending.id;$('approvalText').textContent=data.pending.summary;if($('panel').open)$('panel').close();if(!$('approval').open)$('approval').showModal();speak('Please confirm. '+data.pending.summary+'. Double clap, then say approve or cancel.');}
+  if(data.pending&&data.pending.id!==pendingId){cancelFollowUp(true);pendingId=data.pending.id;$('approvalText').textContent=data.pending.summary;if($('panel').open)$('panel').close();if(!$('approval').open)$('approval').showModal();speak('Please confirm. '+data.pending.summary+'. Double clap, then say approve or cancel.');}
   else if(!data.pending&&pendingId){pendingId=null;$('approval').close();}
 }catch{}finally{if(!disposed)approvalTimer=setTimeout(pollApproval,600);}}
 async function answerApproval(approved){if(!pendingId)return;const id=pendingId;pendingId=null;$('approval').close();recordedInput?.cancel();stopSpeaking();try{await api('/api/approval',{id,approved});setState(busy?'thinking':'idle');}catch(error){toast(error.message);}}
