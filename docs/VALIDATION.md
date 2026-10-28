@@ -308,6 +308,21 @@ The OMEN itself has not been available for hardware acceptance.
 
 ## Remaining manual acceptance
 
+### Design adoption and governed desktop slice — 2026-10-28
+
+Code revision: [`b63853c640b64f7adcebf10573e7cdb006b46bff`](https://github.com/sugacookie1234/iris-v3-capable-laptop/commit/b63853c640b64f7adcebf10573e7cdb006b46bff).
+Scope: CAP-21 fixed Windows actions, a CAP-15 explicit workspace precursor, and M0 design adoption.
+
+- `python -m unittest tests.test_desktop_commands tests.test_desktop_action_tools tests.test_windows_controls tests.test_desktop tests.test_tools -q`: **53 passed** under the normal Windows account. Native path tests require that account rather than the restricted sandbox token.
+- `node tests/desktop_app_check.cjs`: passed, including shorter spoken summaries with complete visual results and the existing Send/voice/approval regressions.
+- Tests use fake applications and temporary records. Real ToolExecutor workers exercise permission rejection, invalid targets, exact approval snapshots, replay rejection, configured-folder binding and partial workspace results. Local command tests confirm zero model calls and no automatic-organizer side effects.
+- Native CoreAudio volume **read** succeeded on the development computer. No live volume changes, app-launch routine, new provider calls or phone actions were performed during these tests. Actual OMEN action acceptance remains outstanding.
+- The supplied design package and addendum were imported as architecture documents, with preserved original vault snapshots. Seven new vault notes were written and their contents verified; the personal profile is outside the repository and was not added to the confirmed-memory store or sent to a provider.
+- The design docs and new adapter/dispatcher sources were checked against configured secret values: zero matches. This check does not substitute for the separate decision to exclude all personal profile data from Git.
+- Rollback: the preceding source baseline is `9db02a7`. The action slice introduces no database migration or new dependency. Vault imports are separate Markdown notes and can be removed independently; existing notes were not overwritten.
+
+### Earlier hardware and integration acceptance still outstanding
+
 - Run setup and launch on the actual OMEN. Keys must be entered on that machine;
   Windows account encryption is not portable with a repository download.
 - Native Edge automation could not be initialized on the development host.

@@ -5,6 +5,10 @@ the animated voice interface and streaming Fish Audio playback from the JARVIS p
 It opens as its own **Windows desktop app**, with optional Google Chrome browser mode.
 
 Target laptop: **HP OMEN 16 · Intel Core 7 240H · 16 GB RAM · NVIDIA RTX 5060 · 1 TB SSD**.
+
+The owner-adopted [design baseline](docs/IRIS_DESIGN_INDEX.md) links the master design,
+generalist architecture, capability tracker and decisions. It describes the roadmap;
+the implemented features and validation limits below remain the runtime reference.
 The default uses cloud reasoning and Fish Audio voice recognition, with local faster-whisper as a fallback.
 Setup downloads the local speech model and installs the NVIDIA runtime when a compatible GPU is detected.
 It can also run on less powerful Windows computers. It has not yet been tested on the OMEN itself.
@@ -32,6 +36,17 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 
 ## What works through the unified interface
 
+- **Governed computer actions:** say “Open Chrome”, “Open Calculator”, “Open my workspace folder”,
+  “Set volume to forty percent”, or “Mute my computer”. Changes show an exact approval first;
+  “Approve” or the button runs that action once. “Mute” alone still silences only IRIS.
+  **“Start my workspace”** requests one approval for Chrome, Obsidian and the configured workspace
+  folder (the IRIS repository if none was configured). It reports each outcome, including failures.
+  A visible app window and an unverified launch request are reported differently; Explorer's folder
+  location is not yet verified. No arbitrary programs, arguments, websites or shell commands are accepted.
+- **Local quick answers:** “Find files named report” searches filenames in the configured workspace
+  and Obsidian vault, with a bounded depth and result count. “Give me my daily briefing” summarizes
+  local deadlines, goals and an optional configured local calendar. These commands use no model call;
+  spoken output can still use Fish Audio credit. Search and briefing details remain on screen with a shorter spoken summary.
 - IRIS's own personality and behavior modes; no JARVIS roleplay prompt.
 - Text and speech use the same conversation history, memory context and tool boundary.
 - **Internet research:** say “Search the web for…” or type `/search your question`.
@@ -122,8 +137,9 @@ retain their approval checks. A council answer does not itself authorize a tool 
 ## Scope
 
 This build merges the two working foundations. It does **not** install the separate Google Workspace,
-Windows computer-control, or other MCP repositories from the earlier research list. External accounts,
-general desktop automation and unrestricted shell execution are not connected. IRIS reports this honestly.
+Windows computer-control, or other MCP repositories from the earlier research list. Fixed app/folder
+launching and system-volume controls use local Windows adapters. External accounts, general screen
+automation and unrestricted shell execution are not connected. IRIS reports this honestly.
 
 The retained v2 code includes experimental WSL one-shot voice, standalone HUD, readiness and reminder
 entry points. They are not the supported Windows launch path; use `start-iris.bat` for the merged app.
