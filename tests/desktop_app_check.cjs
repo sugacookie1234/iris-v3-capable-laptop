@@ -371,5 +371,11 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   assert.equal(sources.children[0].href,'https://example.com/article');
   assert.equal(sources.children[0].target,'_blank');
   assert.equal(sources.children[0].rel,'noopener noreferrer');
+  const localReply=app();await localReply.flush();await localReply.elements.wake.onclick();
+  localReply.responses['/api/chat']={reply:'Found files: report.md, report-two.md.',spoken_reply:'Found two files. They are listed on screen.',route:'LOCAL'};
+  await localReply.run('send("Find files named report")');
+  assert.equal(localReply.elements.log.children.at(-1).children[1].textContent,'Found files: report.md, report-two.md.');
+  assert.equal(localReply.elements.routeLabel.textContent,'LOCAL ACTION');
+  assert.equal(localReply.requests.find(item=>item.url==='/api/voice').body.text,'Found two files. They are listed on screen.','Local detail stays visible without reading every filename aloud');
   console.log('Desktop automatic routing, native standby restoration, audio cancellation races, mute/pause, echo suppression, scoped approvals, and unsupported-browser controls passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

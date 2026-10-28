@@ -197,8 +197,8 @@ async function send(text,context={}){
     addLine('YOU',text);answer=addLine('IRIS','…');context.onAccepted?.();setState('thinking');
     const data=await api('/api/chat',{text,mode:'auto'});answer.textContent=data.reply;logEl.scrollTop=logEl.scrollHeight;
     addSources(answer,data.sources);
-    latestCouncil=data.council||null;$('routeLabel').textContent=data.route==='WEB'?'WEB SEARCH':data.route==='COUNCIL'?'COUNCIL CONSULTED':data.route==='DEEP'?'DEEP REASONING':'AUTOMATIC REASONING';
-    spokenReply=data.reply;
+    latestCouncil=data.council||null;$('routeLabel').textContent=data.route==='LOCAL'?'LOCAL ACTION':data.route==='WEB'?'WEB SEARCH':data.route==='COUNCIL'?'COUNCIL CONSULTED':data.route==='DEEP'?'DEEP REASONING':'AUTOMATIC REASONING';
+    spokenReply=typeof data.spoken_reply==='string'&&data.spoken_reply.trim()?data.spoken_reply:data.reply;
   }catch(error){
     const message=error.message||'IRIS could not send your message. Please try again.';
     if(answer)answer.textContent=message;else addLine('IRIS',message);
@@ -259,6 +259,7 @@ function showHelp(){const body=panel('Just ask IRIS');const list=document.create
   for(const text of ['“Show my tasks”','“Show my goals”','“Show my notes”','“Show activity”','“Undo the last change”','“Pause automatic organization”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
   paragraph(body,'Double clap to wake, then speak naturally. A pause sends your request. After a spoken reply, “Anything else?” opens five seconds to begin a follow-up without clapping again. Silence returns to standby without an upload. Say “That’s all” to finish, or hold Space for manual recording. Click the core or hold Space to interrupt a spoken reply.');
   paragraph(body,'IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
+  paragraph(body,'Say “Start my workspace” to open Chrome, Obsidian and your workspace folder. “Open Calculator”, “Set volume to 40 percent”, “Mute my computer”, “Find files named report”, and “Give me my daily briefing” run locally without a model call. “Mute” by itself only silences IRIS. Search and briefing details stay on screen with a shorter spoken summary.');
   paragraph(body,'With automatic organization on, describe your plans naturally: “I need to submit the report tomorrow at 3 PM.” Tasks, goals and useful notes are saved in the background. Activity shows the result and Undo. Dates without a time use the end of that day; unclear deadlines need a follow-up. Keep IRIS open for desktop and configured SMS reminders.');
   paragraph(body,'Say “Search the web for…” to research a public question online and show source links. Search uses OpenRouter credit; ordinary conversation does not automatically browse. Source links open in Google Chrome from the desktop app.');
   paragraph(body,'The local microphone listener checks consecutive 40 ms sound levels for your double clap. Only a request you start is sent for transcription. Keep IRIS open and the laptop awake. Pause mic stops monitoring; tap the core to resume.');

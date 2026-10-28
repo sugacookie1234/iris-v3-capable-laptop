@@ -19,6 +19,7 @@ from iris.tools import Approval
 from iris.tools.models import ResultStatus
 from iris.desktop.web_search import search_query, research
 from iris.desktop.autonomy import Autonomy, enabled as automatic_enabled
+from iris.desktop.commands import DesktopCommands
 from iris.goals.store import GoalStore
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,18 +42,27 @@ class DesktopRuntime:
                'IRIS_GOALS_PATH': str(self.data_dir / 'goals.sqlite3'),
                'IRIS_TIMEZONE': self.settings.get('IRIS_TIMEZONE', 'America/New_York')}
         self.config = load_config(cfg)
+        self.desktop_commands = DesktopCommands(self.config, self.data_dir, ROOT, approve=self._tool_approval)
         self.brain = brain or create_brain(self.config, memory_path=self.memory_path)
         self.brain._tool_approval = self._tool_approval
         self.brain._runtime_context = (
             'You are IRIS in a local Windows desktop interface, also available in Chrome. Your answers can be spoken aloud. '
             'Use concise natural sentences for ordinary conversation; give detail when requested. '
             'Do not claim to be JARVIS. Local tasks, goals, briefings, confirmed memory, and '
-            'configured workspace/Obsidian tools are available. Email, Google services, arbitrary shell commands '
-            'and desktop automation are not connected in this build. Never claim those actions succeeded. '
+            'configured workspace/Obsidian tools are available. Direct owner commands can open Chrome, '
+            'Obsidian, Notepad, Calculator, File Explorer and the configured workspace/vault folders, '
+            'read or set system volume, find files by name and give a local daily briefing. '
+            '"Start my workspace" opens Chrome, Obsidian and the workspace folder. These commands '
+            'run in a local dispatcher; your generated text cannot execute them. Only claim an action '
+            'occurred when its result is present in conversation history. A launch request is not proof '
+            'that a window appeared. Email, Google services, arbitrary shell commands and general '
+            'screen clicking are not connected. Never claim those actions succeeded. '
             'Reasoning is selected automatically from each request; the user can also explicitly ask for the council. '
             'The screen has weather and market widgets. You cannot inspect their current values from this context; '
             'the user can say weather update or market update for their sourced readings. '
-            'Double-clap standby runs while the app is open and the computer is awake, after microphone permission. '
+            'Double-clap standby runs while the app is running, including in its Windows tray, '
+            'and the computer is awake, after microphone permission. Spoken turns end on a pause and '
+            'offer five seconds to begin a follow-up. "That is all" returns to standby. '
             'The user can say show tasks, show memories, start a new chat, mute, or unmute. '
             'An optional separate SMS/call bridge is available through setup-phone.bat and start-phone.bat; '
             'it requires provider and HTTPS setup. You cannot inspect whether it is configured or running here, '
@@ -129,7 +139,20 @@ class DesktopRuntime:
                 and plan.spec.name in {'tasks_create', 'tasks_complete', 'tasks_delete',
                                       'goals_create', 'goals_update', 'goals_complete'}):
             return Approval(plan.id, True)
-        return Approval(plan.id, self.approve(plan.confirmation_summary, plan.id))
+        summary = plan.confirmation_summary
+        if plan.spec.name.startswith('desktop_'):
+            # Keep the exact prepared action/path visible, without reading tool
+            # schema and permission metadata aloud for an ordinary app action.
+            summary = summary.split('\nExecute ', 1)[0]
+            if plan.spec.name == 'desktop_volume_set':
+                arguments = dict(plan.arguments)
+                changes = []
+                if 'percent' in arguments:
+                    changes.append(f"Set system volume to {arguments['percent']} percent")
+                if 'muted' in arguments:
+                    changes.append('Mute system audio' if arguments['muted'] else 'Unmute system audio')
+                summary = '. '.join(changes) + '. Then check the device reading.'
+        return Approval(plan.id, self.approve(summary, plan.id))
 
     def pending_approval(self):
         with self.approval_lock:
@@ -180,6 +203,14 @@ class DesktopRuntime:
         capture_history = tuple(self.history[-8:])
         try:
             text = text.strip()
+            local_answer = self.desktop_commands.handle(text) if mode == 'auto' else None
+            if local_answer is not None:
+                self.history.extend([LLMMessage(MessageRole.USER, text),
+                                     LLMMessage(MessageRole.ASSISTANT, local_answer['reply'])])
+                limit = self.config.max_history_turns * 2
+                self.history = self.history[-limit:] if limit else []
+                self.last_route = 'LOCAL'
+                return local_answer
             if text.casefold().rstrip('.!') in ('pause automatic organization', 'pause automatic organisation'):
                 self.set_automatic_organization(False)
                 return {'reply': 'Automatic organization and reminder delivery are paused. Your saved items remain.', 'route': 'LOCAL'}
@@ -199,7 +230,7 @@ class DesktopRuntime:
                     'time. Reminders appear 15 minutes before task deadlines; goal dates use 09:00 local. '
                     'The notebook creates organized Markdown notes and can add/update IRIS sections in '
                     'existing notes or move them when the user supplies exact paths. Local task and goal '
-                    'tool writes have standing permission. Email and general computer control remain unavailable.\n'
+                    'tool writes have standing permission. Email and general screen automation remain unavailable.\n'
                 ) + self.autonomy.context(text)
             else:
                 self.brain._runtime_context = self._base_context + ' Local task and goal writes ask for confirmation. Automatic organization is paused.'
