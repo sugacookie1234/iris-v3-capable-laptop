@@ -323,8 +323,9 @@ Scope: CAP-21 fixed Windows actions, a CAP-15 explicit workspace precursor, and 
 
 ## 2026-10-28 — Action receipts, capability inventory and fresh software baseline
 
-Scope: CAP-30/31 initial desktop slices and M0 offline baseline. Code revision is
-the feature commit containing this entry; hardware/provider acceptance is separate.
+Scope: CAP-30/31 initial desktop slices and M0 offline baseline. Code revision:
+[`fd040ee`](https://github.com/sugacookie1234/iris-v3-capable-laptop/commit/fd040ee621bf4b60962145afd4534869120e9930).
+Hardware/provider acceptance is separate.
 
 - `.venv/Scripts/python.exe -m unittest discover -s tests -q`: **796 run, 792 passed,
   four skipped**, 71.754 seconds. Ran with normal Windows account access so DPAPI

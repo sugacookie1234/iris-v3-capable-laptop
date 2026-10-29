@@ -145,6 +145,7 @@ These capabilities are separate from the existing model router and tool registry
 
 ### 2026-10-28 action history and capability awareness
 
+- Code: [`fd040ee`](https://github.com/sugacookie1234/iris-v3-capable-laptop/commit/fd040ee621bf4b60962145afd4534869120e9930).
 - CAP-30/31 changed DESIGNED → IN-PROGRESS. Commands and privacy scope are in
   [Action history](ACTION-HISTORY.md); exact checks are in [Validation](VALIDATION.md).
 - Receipts store only allowlisted metadata; no arguments, paths, result text,
