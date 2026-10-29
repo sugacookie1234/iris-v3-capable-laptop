@@ -79,6 +79,12 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
   They persist locally. Writes ask for approval when automatic organization is disabled.
 - **Optional Obsidian:** read/search a configured vault. Automatic notes are organized under `IRIS/`;
   exact-path edits preserve human text and have backups/undo. Without a vault, IRIS uses a local notebook.
+  “Check Obsidian”, “Search my notes for …”, “Read note About me”, and “Read next page”
+  work locally without a model call. Relevant indexed notes can also supply bounded,
+  source-labelled excerpts to ordinary model answers. See [vault reading](docs/OBSIDIAN-READING.md).
+- **Planning preview:** “Plan a briefing from my notes on …” shows prerequisites without
+  reading notes or running a task. The bounded read-only plan validator is implemented;
+  automatic execution and verified multi-step results are still pending.
 - **Double-clap standby:** enabled after the initial microphone permission/Start standby click.
   Uses the supplied tested Python listener: 44.1 kHz input and consecutive 40 ms blocks.
   Input probing and request recording share the selected microphone. Run `setup.bat` after updating.

@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from iris.memory.context import MemoryContextMode
 from iris.memory.integration import assemble_reasoning_context
@@ -103,8 +104,55 @@ class ObsidianKnowledgeTests(unittest.TestCase):
         context = ObsidianKnowledgeAdapter(
             str(self.root), max_note_bytes=30, max_total_bytes=35, max_chars=500,
         ).context_for("one two")
-        self.assertEqual(context.sources, ())
+        self.assertTrue(context.sources)
         self.assertLessEqual(context.total_bytes, 35)
+        self.assertLessEqual(len(context.text), 500)
+
+    def test_nested_index_decodes_spaces_and_vault_relative_wikilinks(self):
+        self.write('IRIS/index.md', '[Personal profile](Personal/About%20me.md)\n[[IRIS/Design/Master]]')
+        self.write('IRIS/Personal/About me.md', 'Profile provenance and details.')
+        self.write('IRIS/Design/Master.md', 'Master architecture decisions.')
+        adapter = self.adapter(index_path='IRIS/index.md')
+        self.assertIn('IRIS/Personal/About me.md', adapter.context_for('Read the personal profile About me').sources)
+        self.assertIn('IRIS/Design/Master.md', adapter.context_for('Master architecture').sources)
+
+    def test_large_note_returns_bounded_relevant_excerpt_instead_of_disappearing(self):
+        self.write(DEFAULT_INDEX_NAME, '[[Architecture]]')
+        content = '# Historical source; not verified current\n\n' + ('Background paragraph.\n\n' * 1000)
+        content += '## Durable recovery\nRestart recovery uses verified receipts and checkpoints.'
+        self.write('Architecture.md', content)
+        context = self.adapter().context_for('Architecture durable recovery checkpoints')
+        self.assertEqual(context.sources, ('Architecture.md',))
+        self.assertIn('Historical source', context.text)
+        self.assertIn('checkpoints', context.text)
+        self.assertIn('Excerpt', context.text)
+        self.assertLessEqual(len(context.text), 12_000)
+        self.assertLessEqual(context.total_bytes, 16 * 1024)
+
+    def test_encoded_traversal_and_credentials_after_excerpt_remain_blocked(self):
+        self.write(DEFAULT_INDEX_NAME, '[Escape](%2e%2e/outside.md)\n[[Architecture]]')
+        self.write('Architecture.md', 'Architecture\n\n' * 2000 + 'api_key=abcdefghijklmnop123456')
+        context = self.adapter().context_for('Architecture escape')
+        self.assertEqual(context.sources, ())
+
+    def test_failed_candidate_attempts_are_deduplicated_and_bounded(self):
+        index = '[[Blocked]]\n' * 1000 + '\n'.join(f'[[Blocked {i}]]' for i in range(100))
+        adapter = self.adapter(max_notes=2)
+        def read(root, path, count):
+            if path == DEFAULT_INDEX_NAME:
+                return {'text': index, 'truncated': False}
+            raise PermissionError('unreadable')
+        with patch('iris.obsidian._safe_note_text', side_effect=read) as opened:
+            self.assertEqual(adapter.context_for('Blocked').sources, ())
+        paths = [call.args[1] for call in opened.call_args_list[1:]]
+        self.assertEqual(len(paths), len(set(paths)))
+        self.assertLessEqual(len(paths), 8)
+
+    def test_note_title_beats_shared_parent_folder_in_ranking(self):
+        self.write(DEFAULT_INDEX_NAME, '[Tracker](Design/Tracker.md)\n[Master design](Design/Master_design.md)')
+        self.write('Design/Tracker.md', 'Tracker')
+        self.write('Design/Master_design.md', 'Architecture design')
+        self.assertEqual(self.adapter(max_notes=1).context_for('design').sources, ('Design/Master_design.md',))
 
     def test_malformed_notes_are_skipped_without_failing_context(self):
         self.write(DEFAULT_INDEX_NAME, "[[Bad]] [[Good]]")

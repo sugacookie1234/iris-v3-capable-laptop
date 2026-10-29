@@ -21,7 +21,7 @@ class ObsidianTests(unittest.TestCase):
     def write(self, path, text):
         destination = self.root / path
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(text, encoding="utf-8")
+        destination.write_text(text, encoding="utf-8", newline="")
         return destination
 
     def test_literal_case_insensitive_search_and_bounded_read(self):
@@ -49,6 +49,20 @@ class ObsidianTests(unittest.TestCase):
                 read_note(str(self.root), "note.md", size)
         with self.assertRaises(ValueError):
             read_note(str(self.root / "missing"), "note.md")
+
+    def test_paged_read_preserves_complete_text_and_detects_mid_read_changes(self):
+        content = 'First part\n' * 1000 + 'Last page content.'
+        self.write('Long note.md', content)
+        first = read_note(str(self.root), 'Long note.md', 8000)
+        second = read_note(str(self.root), 'Long note.md', 8000, first['next_start'], first['sha256'])
+        self.assertEqual(first['text'] + second['text'], content)
+        self.assertIsNone(second['next_start'])
+        self.write('Long note.md', 'Changed content.')
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            read_note(str(self.root), 'Long note.md', 8000, first['next_start'], first['sha256'])
+        for offset in (-1, True, 65537):
+            with self.assertRaises(ValueError):
+                read_note(str(self.root), 'Long note.md', start_char=offset)
 
     def test_filters_hidden_symlink_binary_oversize_and_credential_notes(self):
         self.write("good.md", "search phrase is here")

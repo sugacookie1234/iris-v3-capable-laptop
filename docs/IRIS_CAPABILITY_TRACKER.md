@@ -120,7 +120,7 @@ These capabilities are separate from the existing model router and tool registry
 |---|---|---|---|
 | CAP-30 | Privacy-safe outcome traces | IN-PROGRESS | Tested desktop/chat-tool receipts, retention, deletion, privacy and interruption recovery. Route/model/cost tracing, background and phone coverage remain pending. |
 | CAP-31 | Unified read-only capability registry | IN-PROGRESS | Tested typed tool/model/host-workflow inventory and local capability answers. Configuration is not live health; broader specialist/connector inventory remains pending. |
-| CAP-32 | Validated task DAG proposals | DESIGNED | Bounded read-only planning, dependency validation and verified execution |
+| CAP-32 | Validated task DAG proposals | IN-PROGRESS | Bounded immutable read-only proposal validation and local preview tested. Dynamic data flow, execution and independent verification remain pending. |
 | CAP-33 | Verified experience memory | DESIGNED | Durable summaries, provenance, consent, retention and restart tests |
 | CAP-34 | Offline improvement evaluation | DESIGNED | Baseline/holdout evaluation, injection and regression rejection |
 | CAP-35 | Scoped specialist workers | DESIGNED | Typed input/output, bounded delegation and no inherited blanket authority |
@@ -169,3 +169,14 @@ These capabilities are separate from the existing model router and tool registry
   microphone false-positive/miss rates still require real-room and OMEN trials.
   Full evidence is in [Validation](VALIDATION.md); capability status is not promoted
   to LIVE-VERIFIED by fixture tests.
+
+### 2026-10-29 vault retrieval and planning foundation
+
+- Rechecked original design/profile imports locally; all source bodies match.
+- Fixed encoded spaces, vault-relative wikilinks, skipped large notes and title
+  ranking. Added local search and revision-checked paged reads, outside model
+  history and automatic organization. See [vault reading](OBSIDIAN-READING.md).
+- CAP-32 changed DESIGNED → IN-PROGRESS for strict bounded DAG validation and a
+  three-stage preview. No automatic planner execution or verified research-to-draft
+  run is claimed. The next slice must add typed outputs and actual source-bound
+  execution through the existing authority layer.

@@ -387,6 +387,39 @@ See [Fish's language contract](https://docs.fish.audio/features/speech-to-text#l
   authenticated transcription endpoint: empty text, `speech-guard` CPU decision,
   no provider request. The changed-file configured-secret scan found zero matches.
 
+## 2026-10-29 — Vault retrieval, paged reading and CAP-32 foundation
+
+- Rechecked the supplied zip's four design documents, the architecture addendum,
+  and the personal profile against the configured vault. All design bytes match;
+  the profile body matches after its preserved provenance header and newline
+  normalization. The profile stayed outside Git and no test uploaded it to a model.
+- Confirmed the cause of missing context: encoded spaces were not decoded and
+  notes above 16 KiB were skipped. The repaired adapter retrieves the profile and
+  prioritizes the master design/addendum with bounded labelled excerpts.
+- Focused vault/desktop tests: **43 passed**, 13.916 seconds. Added coverage for
+  encoded paths, traversal, large-note excerpts, whole-file credential screening,
+  title ranking, bounded failed reads, paged revision checks, ambiguity and local
+  replies bypassing provider history and automatic organization.
+- Full offline suite after preview integration: **827 run, 823 passed, four skipped**,
+  211.329 seconds with normal Windows permissions. Synthetic notes/fake providers;
+  no paid ASR or LLM request. The native Windows path tests require normal account access.
+- `node tests/desktop_app_check.cjs`: passed, covering the existing send, audio,
+  approval, standby and UI command regressions after the help update.
+- Independent review found an unbounded failed-candidate read regression; fixed
+  with attempted-path deduplication and a bounded attempt count, then tested.
+- Restarted the real native app. Authenticated local HTTP checks passed for
+  `Check Obsidian`, profile search/title resolution, and all **five profile pages**,
+  compared against the actual local file without printing its contents. Every
+  response used the LOCAL route. The briefing preview returned executed=false
+  and executable=false, with zero model calls.
+- CAP-32 validator tests cover immutable snapshots, typed arguments, missing
+  permissions, unknown tools, external/writing tools, dependency cycles and budget
+  limits. This is a proposal/preview foundation, **not** a verified three-step run.
+- Changed files contained zero matches against configured secret values. No new
+  dependency, database migration or modification of original imported notes.
+- Rollback source baseline: `ba74329`. Hardware microphone/OMEN acceptance and
+  full task execution remain outstanding; see [vault usage](OBSIDIAN-READING.md).
+
 ### Earlier hardware and integration acceptance still outstanding
 
 - Run setup and launch on the actual OMEN. Keys must be entered on that machine;
@@ -398,7 +431,8 @@ See [Fish's language contract](https://docs.fish.audio/features/speech-to-text#l
 - Check audible playback, interruptions, microphone permission, push-to-talk,
   and double-clap thresholds in Edge with the OMEN microphone. Synthetic clap
   tests do not establish real-room detection accuracy.
-- Obsidian requires a real vault path and suitable index; tests use fixtures.
+- Obsidian imports and local reads are verified on the current development host;
+  the OMEN installation still needs its own correct vault path and index.
 - Google Workspace and general Windows computer-control MCP connections remain
   unimplemented. See [integration screening](INTEGRATIONS.md). No external
   account actions, arbitrary commands, or autonomous background work are claimed.

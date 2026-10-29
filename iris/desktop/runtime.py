@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 import os
+import re
 import secrets
 import threading
 import time
@@ -22,8 +23,10 @@ from iris.desktop.autonomy import Autonomy, enabled as automatic_enabled
 from iris.desktop.commands import DesktopCommands, normalize
 from iris.desktop.action_history import ActionHistory
 from iris.desktop.capabilities import build_capabilities, capability_reply
+from iris.desktop.vault_commands import VaultCommands
 from iris.goals.store import GoalStore
 from iris.workflows import WorkflowRegistry
+from iris.generalist.plan import notes_briefing_preview
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -46,6 +49,7 @@ class DesktopRuntime:
                'IRIS_TIMEZONE': self.settings.get('IRIS_TIMEZONE', 'America/New_York')}
         self.config = load_config(cfg)
         self.action_history = ActionHistory(self.data_dir / 'action_history.sqlite3')
+        self.vault_commands = VaultCommands(self.config, self.action_history)
         self.desktop_commands = DesktopCommands(self.config, self.data_dir, ROOT,
             approve=self._tool_approval, history=self.action_history)
         self.brain = brain or create_brain(self.config, memory_path=self.memory_path)
@@ -197,6 +201,7 @@ class DesktopRuntime:
             raise BusyError('Wait for the current response before clearing the conversation.')
         try:
             self.history.clear()
+            self.vault_commands.current = None
         finally:
             self.turn_lock.release()
 
@@ -211,6 +216,24 @@ class DesktopRuntime:
 
     def _awareness_command(self, text):
         command = normalize(text)
+        preview = re.fullmatch(r'plan a briefing from my notes on (.+)', command)
+        if preview:
+            try:
+                specs = self.vault_commands.executor.specifications()
+            except (OSError, ValueError):
+                specs = ()
+            try:
+                plan = notes_briefing_preview(preview[1], specs, permissions=('obsidian.read',))
+            except ValueError:
+                return DesktopCommands.answer('Give a notes topic of 1 to 200 characters.')
+            ready = plan['stages'][0]['state'] == 'ready'
+            lines = [f'Briefing plan: {preview[1]}',
+                '1. Search your notes for the topic.' if ready else '1. Configure an accessible Obsidian vault before searching.',
+                '2. Choose the matching notes to read.',
+                '3. Draft the briefing from those sources. Automatic execution of this plan is not connected yet.',
+                'This is a preview. No notes have been searched or read. You can start with “search my notes for …”.']
+            return DesktopCommands.answer('\n'.join(lines),
+                'I have shown the proposed steps. This is a preview; I have not started the task.', plan=plan)
         if command in {'what can you do', 'what can you do so far', 'show capabilities', 'list capabilities'}:
             inventory = self.capabilities()
             return DesktopCommands.answer(capability_reply(inventory),
@@ -219,7 +242,7 @@ class DesktopRuntime:
         if command in {'what have you done today', 'what did you do today', 'show action history', 'show my action history'}:
             report = self.action_history.report(self.config.timezone, today='today' in command)
             executors = [getattr(self.brain, '_tool_executor', None),
-                         getattr(self.desktop_commands.actions, '_executor', None)]
+                         getattr(self.desktop_commands.actions, '_executor', None), self.vault_commands._executor]
             if any(getattr(item, 'observer_failed', False) for item in executors):
                 report = 'Some history could not be saved this session; this list may be incomplete.\n' + report
             return DesktopCommands.answer(report, report.split('\n')[0] +
@@ -229,7 +252,7 @@ class DesktopRuntime:
                 self.action_history.clear()
                 return DesktopCommands.answer('Local action-history receipts erased.')
             return DesktopCommands.answer('I kept your action history.')
-        return None
+        return self.vault_commands.handle(text)
 
     def chat(self, text, mode='auto'):
         if not isinstance(text, str) or not text.strip() or len(text) > 12000:

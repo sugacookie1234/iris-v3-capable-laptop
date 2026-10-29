@@ -26,6 +26,15 @@
 | ADR-020 | Local action receipts | IMPLEMENTATION DECISION 2026-10-28 | Store bounded metadata for observed desktop/chat tools; keep generic returns unverified and interrupted effects unknown. Retain 30 days / 1,000 rows with confirmed deletion. | No raw content, arguments, paths or full errors. Existing organizer Activity remains separate; full route/cost/phone tracing is pending. |
 | ADR-021 | Read-only capability awareness | IMPLEMENTATION DECISION 2026-10-28 | Derive typed inventory from host registrations and configuration; expose local commands and authenticated local API. | Configuration is not live health. Inspection makes no provider requests and confers no execution rights; history/configuration replies stay out of subsequent model prompts. |
 
+- **ADR-022 — Implementation decision, 2026-10-29:** Keep explicit vault inspection
+  local and out of model history. Decode safe index links and excerpt large notes
+  after screening their full bounded contents; preserve provenance and revision
+  checks. Original imports remain snapshots; repository docs track development.
+- **ADR-023 — Implementation decision, 2026-10-29:** Begin CAP-32 with pure bounded
+  immutable proposal validation and an honest local preview. Do not fabricate
+  output schemas, note paths or a draft worker to claim a complete task run.
+  Existing ToolExecutor authority remains the boundary for future execution.
+
 ### Decision change template
 
 ```text
