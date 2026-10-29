@@ -420,6 +420,39 @@ See [Fish's language contract](https://docs.fish.audio/features/speech-to-text#l
 - Rollback source baseline: `ba74329`. Hardware microphone/OMEN acceptance and
   full task execution remain outstanding; see [vault usage](OBSIDIAN-READING.md).
 
+## 2026-10-29 — Restrained voice and executed source briefings
+
+- Speech-only cleanup removes recognized sigh/laugh/breath/performance cues and
+  neutralizes free-form square-bracket instructions while preserving ordinary
+  parentheticals, link labels and literal technical content. Chat text is unchanged.
+  Fish requests use documented temperature 0.3/top-p 0.7 with the existing voice
+  and model. The identity prompt also calls for restrained plain speech.
+- Device fallback receives the same cleaned text; cue-only output skips synthesis.
+  A missing cleaned ticket does not resurrect raw cues. Expanded literal bracket
+  speech remains subject to the CLI request-size limit.
+- Initial combined voice, identity, briefing and runtime checks: **100 passed**.
+  Full offline suite: **846 run, 842 passed, four skipped**, 82.609 seconds with
+  normal Windows permissions. After the final rendered-size guard, **60 focused
+  speech tests passed**. No paid model/speech requests or private audio.
+- `node tests/desktop_app_check.cjs`: passed, including new clean-device-fallback,
+  cue-only silence and failed-ticket regressions plus prior chat/standby checks.
+- New briefing tests cover real temporary-vault search/read/draft execution,
+  metadata-only receipts, instruction-like source text, bounded coverage, no matches,
+  source changes, failed dependencies, malformed outputs, exact excerpt spans,
+  cancellation callback and deadline expiry. Runtime tests confirm no provider
+  or organizer call and no source content in later model history.
+- Independent review found no blockers in the notes recipe or authority/privacy
+  integration. This is a fixed foreground recipe, not a durable general agent.
+- IRIS was closed, so the updated native app was launched. Authenticated loopback
+  checks confirmed cleaned voice text and skipped cue-only audio without fetching
+  audio. A real design-note briefing completed search → three reads → draft with
+  source revision/excerpt verification. It correctly reported **partial coverage**
+  because selection is bounded to three notes. All validation requests were local.
+- No synthesis/listening trial was performed; removal of spontaneous sounds baked
+  into the voice model is not claimed. See [delivery limits](VOICE-DELIVERY.md).
+- Zero configured-secret matches in changed files. No new dependencies, vault
+  changes or database migration. Rollback baseline: `f96db0d`.
+
 ### Earlier hardware and integration acceptance still outstanding
 
 - Run setup and launch on the actual OMEN. Keys must be entered on that machine;

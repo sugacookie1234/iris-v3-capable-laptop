@@ -134,14 +134,17 @@ function stopSpeaking(){
 async function speak(text){
   stopSpeaking();
   if(disposed)return;if(muted||!activated){setState('idle');return;}const token=++speechToken;setState('preparing');
+  let fallbackText=null;
   try{const ticket=await api('/api/voice',{text});if(token!==speechToken||muted)return;
+    fallbackText=typeof ticket.fallback_text==='string'?ticket.fallback_text:null;
+    if(fallbackText!==null&&!fallbackText.trim())return;
     initAudio();if(audioCtx.state==='suspended')await audioCtx.resume();
     if(token!==speechToken||muted||disposed)return;
     await new Promise((resolve,reject)=>{let complete;const clean=()=>{if(speechDone!==complete)return;voice.onended=null;voice.onerror=null;voice.onplaying=null;speechDone=null;};
       complete=()=>{clean();resolve();};speechDone=complete;voice.onended=complete;voice.onerror=()=>{clean();reject(new Error('Fish Audio is unavailable; trying the device voice.'));};
       voice.onplaying=()=>{if(token===speechToken)setState('speaking');};voice.src=ticket.url;voice.play().catch(error=>{clean();reject(error);});});
   }catch(error){if(token!==speechToken||muted)return;toast(error.message);
-    if(typeof window.speechSynthesis?.speak==='function'&&typeof window.SpeechSynthesisUtterance==='function')await new Promise(resolve=>{const utterance=new window.SpeechSynthesisUtterance(text);setState('speaking');speechDone=resolve;utterance.onend=resolve;utterance.onerror=resolve;window.speechSynthesis.speak(utterance);});
+    if(fallbackText!==null&&typeof window.speechSynthesis?.speak==='function'&&typeof window.SpeechSynthesisUtterance==='function')await new Promise(resolve=>{const utterance=new window.SpeechSynthesisUtterance(fallbackText);setState('speaking');speechDone=resolve;utterance.onend=resolve;utterance.onerror=resolve;window.speechSynthesis.speak(utterance);});
   }finally{if(token===speechToken){speechDone=null;setState('idle');detector.reset();}}
 }
 async function reply(text){if(disposed)return;addLine('IRIS',text);await speak(text);}
@@ -259,7 +262,7 @@ function showHelp(){const body=panel('Just ask IRIS');const list=document.create
   for(const text of ['“Show my tasks”','“Show my goals”','“Show my notes”','“Show activity”','“Undo the last change”','“Pause automatic organization”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
   paragraph(body,'Double clap to wake, then speak naturally. A pause sends your request. After a spoken reply, “Anything else?” opens five seconds to begin a follow-up without clapping again. Silence returns to standby without an upload. Say “That’s all” to finish, or hold Space for manual recording. Click the core or hold Space to interrupt a spoken reply.');
   paragraph(body,'IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
-  paragraph(body,'“Check Obsidian” checks vault access. “Search my notes for …”, “Read note …”, and “Read next page” display notes locally without a model request. Use the relative note path if titles are ambiguous. “Plan a briefing from my notes on …” previews the steps; automatic execution of that plan is still being built.');
+  paragraph(body,'“Check Obsidian” checks vault access. “Search my notes for …”, “Read note …”, and “Read next page” display notes locally without a model request. Use the relative note path if titles are ambiguous. “Make a briefing from my notes on …” reads up to three matching notes and presents checked source excerpts without a model call. “Plan a briefing from my notes on …” previews those steps.');
   paragraph(body,'Ask “What can you do?” for the current capability list, or “What have you done today?” for local action receipts. “Show action history” includes earlier retained records. Outcomes distinguish verified, partial and unverified results. “Clear action history” asks before erasing receipts. These commands use no model call.');
   paragraph(body,'Say “Start my workspace” to open Chrome, Obsidian and your workspace folder. “Open Calculator”, “Set volume to 40 percent”, “Mute my computer”, “Find files named report”, and “Give me my daily briefing” run locally without a model call. “Mute” by itself only silences IRIS. Search and briefing details stay on screen with a shorter spoken summary.');
   paragraph(body,'With automatic organization on, describe your plans naturally: “I need to submit the report tomorrow at 3 PM.” Tasks, goals and useful notes are saved in the background. Activity shows the result and Undo. Dates without a time use the end of that day; unclear deadlines need a follow-up. Keep IRIS open for desktop and configured SMS reminders.');

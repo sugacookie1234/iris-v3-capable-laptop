@@ -120,7 +120,7 @@ These capabilities are separate from the existing model router and tool registry
 |---|---|---|---|
 | CAP-30 | Privacy-safe outcome traces | IN-PROGRESS | Tested desktop/chat-tool receipts, retention, deletion, privacy and interruption recovery. Route/model/cost tracing, background and phone coverage remain pending. |
 | CAP-31 | Unified read-only capability registry | IN-PROGRESS | Tested typed tool/model/host-workflow inventory and local capability answers. Configuration is not live health; broader specialist/connector inventory remains pending. |
-| CAP-32 | Validated task DAG proposals | IN-PROGRESS | Bounded immutable read-only proposal validation and local preview tested. Dynamic data flow, execution and independent verification remain pending. |
+| CAP-32 | Validated task DAG proposals | IN-PROGRESS | Bounded proposals, preview and fixed search/read/draft execution with source checks implemented. General planning, durable jobs, visible cancellation and restart recovery remain pending. |
 | CAP-33 | Verified experience memory | DESIGNED | Durable summaries, provenance, consent, retention and restart tests |
 | CAP-34 | Offline improvement evaluation | DESIGNED | Baseline/holdout evaluation, injection and regression rejection |
 | CAP-35 | Scoped specialist workers | DESIGNED | Typed input/output, bounded delegation and no inherited blanket authority |
@@ -180,3 +180,17 @@ These capabilities are separate from the existing model router and tool registry
   three-stage preview. No automatic planner execution or verified research-to-draft
   run is claimed. The next slice must add typed outputs and actual source-bound
   execution through the existing authority layer.
+
+### 2026-10-29 restrained voice and first executed notes plan
+
+- Removed recognized acted vocal cues from speech rendering, kept chat text intact,
+  and reduced Fish expressiveness. Device fallback uses the cleaned text too.
+  See [voice delivery](VOICE-DELIVERY.md); spontaneous voice-model sounds still need
+  actual listening acceptance. No voice model was changed or paid test performed.
+- CAP-32 now has a fixed foreground search/read/draft recipe, with typed output
+  checks, bounded source selection, current-source revision checks and exact
+  excerpt validation. Every operation uses the existing tool authority boundary.
+- The result is a source-excerpt brief, not an independent truth assessment or
+  generated synthesis. Source text stays out of future model history and receipts.
+- Next CAP-32 slice: visible background-job progress/cancellation and restart
+  recovery before broadening general planning or adding CAP-33 experience learning.

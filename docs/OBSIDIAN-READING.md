@@ -38,17 +38,36 @@ the profile body to the originals. No personal profile text is committed here.
 The repository's `docs/` files track current development; imported originals are
 historical snapshots. See [the working design index](IRIS_DESIGN_INDEX.md).
 
-## First planning foundation (CAP-32)
+## Source briefing execution (CAP-32)
 
-`Plan a briefing from my notes on architecture` produces a local preview: search,
-select/read, then draft. It does not execute those stages. Search is validated
-against the registered tool; a read needs a selected path, and a typed draft
-worker is not registered yet. These missing prerequisites are reported explicitly.
+`Make a briefing from my notes on architecture` now runs a fixed local recipe:
+
+1. Search the configured vault for the literal topic phrase.
+2. Read up to three real search matches, prioritizing titles; keep sources separate.
+3. Re-read the selected revisions and assemble exact source excerpts with their paths.
+
+The brief preserves opening provenance, selects relevant passages, and reports
+limited coverage when the search or selection was capped. It is an extractive
+source brief, not an LLM synthesis or independent fact-check of the note claims.
+Missing, malformed or changed sources stop the task without presenting a completed
+draft. No automatic retry, provider request, vault write or organizer submission.
+Raw contents stay out of future model conversation history and metadata receipts.
+
+`Plan a briefing from my notes on architecture` previews these steps without reading
+notes. The registered routine is executable, while its later concrete read/draft
+arguments are validated only after real search/read results exist.
 
 `iris/generalist/plan.py` validates immutable concrete proposals with up to eight
 nodes, 120 aggregate tool-timeout seconds and 2,000 argument characters per node.
 It rejects unknown tools, writes/external tools, missing host permissions,
 untyped inputs, invalid dependencies and cycles. Validation grants no authority.
-The existing executor must revalidate each future invocation. Dynamic output
-references, execution, cancellation/restart and independently verified multi-step
-outcomes are still pending; this is not the completed three-step design milestone.
+The recipe uses at most five calls: search (30 seconds), up to three reads
+(20 seconds each), and draft/recheck (30 seconds). Each operation goes through
+ToolExecutor and the existing authority policy. Strict output contracts validate
+paths, hashes, text sizes and excerpt spans. An elapsed deadline or supplied host
+cancellation callback stops subsequent stages; cancellation is not yet a UI command.
+
+This completes the first fixed search/read/draft execution slice. CAP-32 remains
+IN-PROGRESS: general task decomposition, arbitrary typed output references, durable
+background execution, visible progress/cancel/resume and restart recovery remain
+pending. No task survives an application restart in this foreground implementation.

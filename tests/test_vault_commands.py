@@ -58,11 +58,25 @@ class VaultCommandTests(unittest.TestCase):
             answer = self.app.chat('Plan a briefing from my notes on architecture')
         self.assertEqual(answer['route'], 'LOCAL')
         self.assertFalse(answer['plan']['executed'])
-        self.assertFalse(answer['plan']['executable'])
+        self.assertTrue(answer['plan']['executable'])
         self.assertEqual(answer['plan']['stages'][0]['state'], 'ready')
         self.assertEqual(self.app.history, [])
         self.assertEqual(self.brain.calls, [])
         organize.assert_not_called()
+
+    def test_source_briefing_runs_locally_without_remembering_or_organizing_sources(self):
+        with patch.object(self.app.autonomy, 'submit') as organize:
+            result = self.app.chat('Make a briefing from my notes on private fixture')
+        self.assertEqual(result['route'], 'LOCAL')
+        self.assertIn('IRIS/About me.md', result['reply'])
+        self.assertIn('private fixture', result['reply'])
+        self.assertEqual(self.brain.calls, [])
+        self.assertEqual(self.app.history, [])
+        organize.assert_not_called()
+        self.assertNotIn('private fixture', str(self.app.action_history.rows()))
+        inventory = self.app.capabilities()
+        self.assertTrue(any(item['name'] == 'notes_briefing_draft' and item['source'] == 'notes_briefing'
+                            for item in inventory['tools']))
 
     def test_ambiguous_titles_and_changed_note_are_not_silently_chosen(self):
         (self.root / 'About me.md').write_text('Second profile', encoding='utf-8')

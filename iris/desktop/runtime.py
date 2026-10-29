@@ -27,6 +27,7 @@ from iris.desktop.vault_commands import VaultCommands
 from iris.goals.store import GoalStore
 from iris.workflows import WorkflowRegistry
 from iris.generalist.plan import notes_briefing_preview
+from iris.generalist.notes_briefing import NotesBriefing
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -50,6 +51,7 @@ class DesktopRuntime:
         self.config = load_config(cfg)
         self.action_history = ActionHistory(self.data_dir / 'action_history.sqlite3')
         self.vault_commands = VaultCommands(self.config, self.action_history)
+        self._notes_briefing = None
         self.desktop_commands = DesktopCommands(self.config, self.data_dir, ROOT,
             approve=self._tool_approval, history=self.action_history)
         self.brain = brain or create_brain(self.config, memory_path=self.memory_path)
@@ -212,14 +214,32 @@ class DesktopRuntime:
             self.desktop_commands.actions.specifications(),
             executor.specifications() if isinstance(executor, ToolExecutor) else (),
             getattr(self.brain, '_tool_permissions', ()),
-            workflows.definitions() if isinstance(workflows, WorkflowRegistry) else ())
+            workflows.definitions() if isinstance(workflows, WorkflowRegistry) else (),
+            briefing_specs=self._notes_briefing.specifications() if self._notes_briefing else ())
+
+    def _briefing_runner(self):
+        if self._notes_briefing is None:
+            vault = self.config.obsidian_vault or self.config.obsidian_root
+            if not vault:
+                raise ValueError('No vault configured.')
+            self._notes_briefing = NotesBriefing(vault, history=self.action_history)
+        return self._notes_briefing
 
     def _awareness_command(self, text):
         command = normalize(text)
+        briefing = re.fullmatch(r'(?:make|create|run) (?:a |my )?briefing from my notes (?:on|about) (.+)', command)
+        if briefing:
+            if len(briefing[1]) > 200:
+                return DesktopCommands.answer('Give a notes topic of 1 to 200 characters.')
+            try:
+                runner = self._briefing_runner()
+            except (OSError, ValueError):
+                return DesktopCommands.answer('Your Obsidian vault is unavailable. Check its folder in setup.bat.')
+            return runner.run(briefing[1])
         preview = re.fullmatch(r'plan a briefing from my notes on (.+)', command)
         if preview:
             try:
-                specs = self.vault_commands.executor.specifications()
+                specs = self._briefing_runner().specifications()
             except (OSError, ValueError):
                 specs = ()
             try:
@@ -229,9 +249,10 @@ class DesktopRuntime:
             ready = plan['stages'][0]['state'] == 'ready'
             lines = [f'Briefing plan: {preview[1]}',
                 '1. Search your notes for the topic.' if ready else '1. Configure an accessible Obsidian vault before searching.',
-                '2. Choose the matching notes to read.',
-                '3. Draft the briefing from those sources. Automatic execution of this plan is not connected yet.',
-                'This is a preview. No notes have been searched or read. You can start with “search my notes for …”.']
+                '2. Read up to three matching notes, prioritizing title matches.',
+                '3. Recheck their revisions and prepare a brief of source excerpts.',
+                'This is a preview. No notes have been searched or read. '
+                f'To start, say “Make a briefing from my notes on {preview[1]}”.']
             return DesktopCommands.answer('\n'.join(lines),
                 'I have shown the proposed steps. This is a preview; I have not started the task.', plan=plan)
         if command in {'what can you do', 'what can you do so far', 'show capabilities', 'list capabilities'}:
@@ -242,7 +263,8 @@ class DesktopRuntime:
         if command in {'what have you done today', 'what did you do today', 'show action history', 'show my action history'}:
             report = self.action_history.report(self.config.timezone, today='today' in command)
             executors = [getattr(self.brain, '_tool_executor', None),
-                         getattr(self.desktop_commands.actions, '_executor', None), self.vault_commands._executor]
+                         getattr(self.desktop_commands.actions, '_executor', None), self.vault_commands._executor,
+                         getattr(self._notes_briefing, 'executor', None)]
             if any(getattr(item, 'observer_failed', False) for item in executors):
                 report = 'Some history could not be saved this session; this list may be incomplete.\n' + report
             return DesktopCommands.answer(report, report.split('\n')[0] +

@@ -92,6 +92,17 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
     assert.equal(prevented,true,'Submitting must not reload the application');
   };
   const chatRequests=view=>view.requests.filter(item=>item.url==='/api/chat');
+  const cleanVoice=app();await cleanVoice.flush();
+  cleanVoice.run('activated=true;window.spoken=[];window.SpeechSynthesisUtterance=class {constructor(text){this.text=text;}};window.speechSynthesis={cancel(){},speak(value){window.spoken.push(value.text);value.onend();}};voice.play=()=>Promise.reject(new Error("Synthetic Fish failure"));');
+  cleanVoice.responses['/api/voice']={url:'/voice-test',fallback_text:'Ready, Iris.'};
+  await cleanVoice.run('speak("[sigh] Ready, IRIS.")');
+  assert.equal(cleanVoice.window.spoken.join('|'),'Ready, Iris.','Device fallback must use the cleaned speech text');
+  cleanVoice.responses['/api/voice']={url:null,fallback_text:''};
+  await cleanVoice.run('speak("[sighing]")');
+  assert.equal(cleanVoice.window.spoken.length,1,'Cue-only output must stay silent');
+  cleanVoice.responses['/api/voice']=()=>{throw new Error('Synthetic ticket failure');};
+  await cleanVoice.run('speak("[sigh] unsafe fallback")');
+  assert.equal(cleanVoice.window.spoken.length,1,'Missing cleaned text must not resurrect raw acting cues');
   for(const synthesis of ['null','{cancel(){throw new Error("Device speech unavailable");}}']){
     const typed=app();await typed.flush();
     typed.run('window.speechSynthesis=globalThis.speechSynthesis='+synthesis);

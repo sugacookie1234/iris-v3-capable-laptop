@@ -20,16 +20,21 @@ from iris.desktop.dashboard import dashboard_weather, dashboard_markets
 from iris.desktop.browser import open_chrome
 from iris.desktop.clap_listener import NativeClapListener, SAMPLE_RATE, BLOCK_MS
 from iris.desktop.web_search import web_available
+from iris.voice.fish_audio import normalize_tts_text, FISH_SPEECH_TEMPERATURE, FISH_SPEECH_TOP_P
 
 
 def voice_request(settings, text):
     key = settings.get('IRIS_FISH_API_KEY')
     if not key:
         raise ValueError('No Fish Audio key configured. Run setup.bat to enable this voice.')
+    text = normalize_tts_text(text)
+    if not text:
+        raise ValueError('No spoken words remain after removing vocal directions.')
     return urllib.request.Request('https://api.fish.audio/v1/tts', method='POST',
         data=json.dumps({'text': text, 'reference_id': settings.get('IRIS_FISH_VOICE_ID',
                         '41f0953d7a6b4c078445c7e65d620eeb'), 'format': 'mp3',
-                        'latency': 'balanced', 'normalize': True}).encode(),
+                        'latency': 'balanced', 'normalize': True,
+                        'temperature': FISH_SPEECH_TEMPERATURE, 'top_p': FISH_SPEECH_TOP_P}).encode(),
         headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
                  'model': settings.get('IRIS_FISH_MODEL', 's2.1-pro-free')})
 
@@ -285,8 +290,12 @@ class Handler(BaseHTTPRequestHandler):
                 app.reset()
                 self._json(200, {'ok': True})
             elif path == '/api/voice':
-                token = app.issue_audio(value.get('text'))
-                self._json(200, {'url': '/api/audio/' + token})
+                text = value.get('text')
+                if not isinstance(text, str) or not text.strip() or len(text) > 12000:
+                    raise ValueError('Invalid speech text.')
+                text = normalize_tts_text(text)
+                token = app.issue_audio(text) if text else None
+                self._json(200, {'url': '/api/audio/' + token if token else None, 'fallback_text': text})
             else:
                 self._json(404, {'error': 'Not found.'})
         except BusyError as exc:

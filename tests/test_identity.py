@@ -26,6 +26,13 @@ class IdentityTests(unittest.TestCase):
         self.assertIn("Personality", identity.sections)
         self.assertIn("Behaviour Modes", identity.sections)
 
+    def test_all_modes_avoid_performed_vocalizations(self) -> None:
+        identity = load_identity()
+        for mode in BehaviourMode:
+            prompt = compile_identity_prompt(identity, mode)
+            self.assertIn('spoken delivery calm, precise and restrained', prompt)
+            self.assertIn('performed vocalizations', prompt)
+
     def test_all_behaviour_modes_exist(self) -> None:
         identity = load_identity()
 

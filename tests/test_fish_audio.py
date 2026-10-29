@@ -85,7 +85,8 @@ class FishAudioTests(unittest.TestCase):
         self.assertEqual(received["headers"]["Authorization"], "Bearer synthetic-fish-key")
         self.assertEqual(received["headers"]["Model"], "s2.1-pro-free")
         self.assertEqual(__import__("json").loads(received["body"]),
-                         {"text": "Hello Iris", "reference_id": DEFAULT_FISH_VOICE_ID, "format": "mp3"})
+                         {"text": "Hello Iris", "reference_id": DEFAULT_FISH_VOICE_ID, "format": "mp3",
+                          "normalize": True, "temperature": 0.3, "top_p": 0.7})
         self.assertEqual(audio, [b"ID3audio"])
 
     def test_environment_key_is_bound_only_as_bearer_authorization(self):

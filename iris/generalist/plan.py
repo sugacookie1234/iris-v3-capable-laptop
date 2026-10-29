@@ -133,17 +133,30 @@ def notes_briefing_preview(topic, specifications, *, permissions=()):
                        'detail': 'Search the configured vault for the topic. This search has not run.'})
     except ValueError as error:
         stages.append({'id': 'search', 'tool': None, 'state': 'blocked', 'depends_on': [], 'detail': str(error)})
-    read = next((spec for spec in specs if spec.name == 'obsidian_read'), None)
+    read = next((spec for spec in specs if spec.name == 'notes_briefing_read'), None)
+    if read is None:
+        read = next((spec for spec in specs if spec.name == 'obsidian_read'), None)
+    pipeline_read = read is not None and read.name == 'notes_briefing_read'
     try:
         if read is None:
             raise ValueError('A vault reading tool is not registered.')
         _read_only(read, frozenset(permissions))
-        stages.append({'id': 'read', 'tool': read.name, 'state': 'needs_selection', 'depends_on': ['search'],
-                       'detail': 'Select a returned note path before a concrete read can be validated.'})
+        stages.append({'id': 'read', 'tool': read.name,
+                       'state': 'awaiting_search' if pipeline_read else 'needs_selection', 'depends_on': ['search'],
+                       'detail': ('The local routine selects at most three actual search matches and validates their reads.'
+                                  if pipeline_read else 'Select a returned note path before a concrete read can be validated.')})
     except ValueError as error:
         stages.append({'id': 'read', 'tool': None, 'state': 'blocked', 'depends_on': ['search'], 'detail': str(error)})
-    stages.append({'id': 'draft', 'tool': None, 'state': 'unavailable', 'depends_on': ['read'],
-                   'detail': 'A registered draft worker with typed inputs and outputs is not implemented.'})
+    draft = next((spec for spec in specs if spec.name == 'notes_briefing_draft'), None)
+    try:
+        if draft is None or not pipeline_read:
+            raise ValueError('The local source-briefing routine is not registered.')
+        _read_only(draft, frozenset(permissions))
+        stages.append({'id': 'draft', 'tool': draft.name, 'state': 'awaiting_reads', 'depends_on': ['read'],
+                       'detail': 'Recheck source revisions and assemble bounded verbatim excerpts. No model request.'})
+    except ValueError as error:
+        stages.append({'id': 'draft', 'tool': None, 'state': 'unavailable', 'depends_on': ['read'], 'detail': str(error)})
+    executable = [stage['state'] for stage in stages] == ['ready', 'awaiting_search', 'awaiting_reads']
     return {'kind': 'notes_briefing_preview', 'topic': topic.strip(), 'stages': stages,
-            'executable': False, 'executed': False, 'model_calls': 0,
+            'executable': executable, 'executed': False, 'model_calls': 0,
             'limitations': 'Preview only. No notes were read, no draft was produced and no permissions were granted.'}

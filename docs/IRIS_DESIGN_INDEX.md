@@ -26,9 +26,10 @@ or a bulk import into the confirmed-memory database.
 - Current generalist slice: **CAP-30/31**, bounded local action receipts and a
   read-only tool/model/workflow inventory. See [usage and coverage](ACTION-HISTORY.md).
   Broader trace/cost coverage and runtime health verification remain pending.
-- **CAP-32 foundation:** bounded read-only proposal validation and a local notes
-  briefing preview, with unresolved prerequisites shown explicitly. Execution and
-  the verified three-stage milestone are pending. [Vault and planning usage](OBSIDIAN-READING.md).
+- **CAP-32 first execution slice:** bounded read-only proposal validation, a local
+  preview and a fixed search/read/draft recipe. Source revisions and excerpt spans
+  are checked independently. General planning and durable background jobs remain
+  pending. [Vault and planning usage](OBSIDIAN-READING.md).
 - New action handlers must pass through the existing `ToolExecutor` and authority
   checks. App launches use YELLOW approval and distinguish launch requests from
   independently observed windows. One workspace approval covers exactly Chrome,

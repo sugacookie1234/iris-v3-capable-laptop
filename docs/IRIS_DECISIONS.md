@@ -35,6 +35,15 @@
   output schemas, note paths or a draft worker to claim a complete task run.
   Existing ToolExecutor authority remains the boundary for future execution.
 
+- **ADR-024 — Implementation decision, 2026-10-29:** Suppress performed vocal cues
+  at the speech boundary and request lower Fish expressiveness, preserving selected
+  voice/model and displayed text. Shared cleanup also governs device fallback.
+  Auditory acceptance remains separate from request-contract tests.
+- **ADR-025 — Implementation decision, 2026-10-29:** Execute a bounded fixed
+  notes-briefing recipe locally before introducing a general planner. Use existing
+  authority, strict output contracts, source revision/readback and excerpt checks.
+  The output is labelled source excerpts, with no model cost or new write authority.
+
 ### Decision change template
 
 ```text

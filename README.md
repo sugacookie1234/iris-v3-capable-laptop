@@ -82,9 +82,14 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
   “Check Obsidian”, “Search my notes for …”, “Read note About me”, and “Read next page”
   work locally without a model call. Relevant indexed notes can also supply bounded,
   source-labelled excerpts to ordinary model answers. See [vault reading](docs/OBSIDIAN-READING.md).
-- **Planning preview:** “Plan a briefing from my notes on …” shows prerequisites without
-  reading notes or running a task. The bounded read-only plan validator is implemented;
-  automatic execution and verified multi-step results are still pending.
+- **Source briefings:** “Make a briefing from my notes on …” searches, reads up to three
+  matching notes and checks their revisions before showing verbatim source excerpts.
+  It runs locally without a model call. “Plan a briefing from my notes on …” previews
+  the steps. General autonomous planning and durable background jobs remain pending.
+- **Restrained voice:** speech rendering removes acted sighs, laughs and other vocal
+  cues, with lower Fish expressiveness and the same selected voice. Chat text stays
+  intact. See [voice delivery](docs/VOICE-DELIVERY.md); spontaneous sounds from the
+  voice model still need listening acceptance.
 - **Double-clap standby:** enabled after the initial microphone permission/Start standby click.
   Uses the supplied tested Python listener: 44.1 kHz input and consecutive 40 ms blocks.
   Input probing and request recording share the selected microphone. Run `setup.bat` after updating.

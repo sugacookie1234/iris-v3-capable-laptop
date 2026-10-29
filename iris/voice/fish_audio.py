@@ -27,6 +27,7 @@ from urllib.request import Request, urlopen
 
 from iris.voice.adapters import VoiceBackendError
 from iris.voice.protocols import AudioSink, LocalSpeechSynthesizer
+from iris.voice.delivery import clean_delivery_text
 
 
 FISH_AUDIO_TTS_URL = "https://api.fish.audio/v1/tts"
@@ -37,14 +38,17 @@ MAX_AUDIO_BYTES = 10 * 1024 * 1024
 _PLAYBACK_PREROLL_MS = 150
 _FISH_STREAM_RIFF_SIZE = 4_294_967_076
 _FISH_STREAM_DATA_SIZE = 4_294_967_040
+FISH_SPEECH_TEMPERATURE = 0.3
+FISH_SPEECH_TOP_P = 0.7
 
 
 def normalize_tts_text(text: str) -> str:
-    """Render only standalone canonical IRIS names for speech pronunciation.
+    """Clean spoken delivery and render standalone IRIS names for pronunciation.
 
     URL/path separators and identifier characters are boundaries we deliberately
     reject, so provider text such as ``/IRIS-v2`` or ``IRIS_MODEL`` is unchanged.
     """
+    text = clean_delivery_text(text)
     boundary = r"A-Za-z0-9_./\\:"
     text = re.sub(
         rf"(?<![{boundary}])I\.R\.I\.S\.(?![{boundary}])",
@@ -52,7 +56,7 @@ def normalize_tts_text(text: str) -> str:
         text,
     )
     return re.sub(
-        rf"(?<![{boundary}])IRIS(?![{boundary}])",
+        rf"(?<![{boundary}])IRIS(?![A-Za-z0-9_/\\:-]|\.[A-Za-z0-9_])",
         "Iris",
         text,
     )
@@ -861,16 +865,21 @@ class FishAudioSynthesizer(LocalSpeechSynthesizer):
             raise ValueError("Fish Audio requires non-empty text.")
         if len(text) > MAX_TTS_CHARACTERS:
             raise ValueError(f"Fish Audio text is limited to {MAX_TTS_CHARACTERS} characters.")
+        speech_text = normalize_tts_text(text)
+        if not speech_text:
+            return  # A response consisting only of acting cues is silent.
+        if len(speech_text) > MAX_TTS_CHARACTERS:
+            raise ValueError(f"Rendered speech is limited to {MAX_TTS_CHARACTERS} characters.")
         api_key = os.environ.get("IRIS_FISH_API_KEY", "").strip()
         if not api_key:
             raise FishAudioError("IRIS_FISH_API_KEY is not configured.")
         if self.audio_sink is None:
             raise LocalPlaybackError("Fish Audio audio_sink is not configured; provide a local playback sink.")
-        speech_text = normalize_tts_text(text)
         request = Request(
             FISH_AUDIO_TTS_URL,
             data=(f'{{"text":{_json_string(speech_text)},"reference_id":{_json_string(self.voice_id)},'
-                   f'"format":{_json_string(self.audio_format)}}}').encode("utf-8"),
+                   f'"format":{_json_string(self.audio_format)},"normalize":true,'
+                   f'"temperature":{FISH_SPEECH_TEMPERATURE},"top_p":{FISH_SPEECH_TOP_P}}}').encode("utf-8"),
             # Keep the wire request aligned with Fish Audio's documented curl
             # shape. urllib supplies its own transport headers as needed.
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json",

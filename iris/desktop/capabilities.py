@@ -16,11 +16,12 @@ def _public_id(value):
                      and '://' not in value and not contains_secret(value)) else 'configured'
 
 
-def build_capabilities(config, settings, desktop_specs=(), brain_specs=(), permissions=(), workflows=()):
+def build_capabilities(config, settings, desktop_specs=(), brain_specs=(), permissions=(), workflows=(), *, briefing_specs=()):
     tools = []
     for source, specs, granted in (
         ('desktop', desktop_specs, {'desktop.launch', 'desktop.audio'}),
         ('chat', brain_specs, set(permissions)),
+        ('notes_briefing', briefing_specs, {'obsidian.read'}),
     ):
         for spec in specs:
             tools.append({'name': spec.name, 'source': source, 'status': 'registered',
@@ -66,7 +67,7 @@ def build_capabilities(config, settings, desktop_specs=(), brain_specs=(), permi
         'local_commands': ['daily briefing', 'find files named …', 'what have you done today',
                            'show action history', 'clear action history', 'what can you do',
                            'check obsidian', 'search my notes for …', 'read note …', 'read next page',
-                           'plan a briefing from my notes on …'],
+                           'plan a briefing from my notes on …', 'make a briefing from my notes on …'],
         'skills': {'status': 'host_workflows_only', 'automatic_installation': False,
             'workflows': [{'name': definition.name, 'tools': [step.tool_name for step in definition.steps],
                            'status': 'registered', 'live_verified': False} for definition in workflows]},
@@ -90,7 +91,7 @@ def capability_reply(inventory):
     lines.append('• Find files by name, give a daily briefing, and show local action history.')
     if services['obsidian_folder'] == 'configured':
         lines.append('• Search and read Obsidian notes locally, including long notes page by page. Ask “Check Obsidian” to check access.')
-    lines.append('• Preview a notes briefing plan. Automatic multi-step execution is still being built.')
+        lines.append('• “Make a briefing from my notes on …”: find and read up to three notes, recheck their revisions and show source excerpts without a model call. A plan preview is also available.')
     if any(name.startswith('tasks_') for name in names):
         lines.append('• Manage local tasks and goals using the registered tools and existing approvals.')
     lines.append('• Automatic notes and reminders: ' + services['automatic_organization'] +
