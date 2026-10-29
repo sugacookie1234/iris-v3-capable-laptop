@@ -6,6 +6,7 @@ import threading
 import urllib.error
 import urllib.request
 from iris.desktop import transcription as local
+from iris.desktop.speech_guard import has_speech, accepted_text
 
 MAX_AUDIO_BYTES = local.MAX_AUDIO_BYTES
 _lock = threading.Lock()
@@ -27,7 +28,8 @@ def _fish_transcribe(settings, audio):
         raise FishRecognitionError('No Fish Audio key is configured.')
     boundary = 'iris-' + secrets.token_hex(16)
     fields = {'ignore_timestamps': 'true', 'diarize': 'false', 'tag_audio_events': 'false'}
-    if settings.get('IRIS_STT_LANGUAGE', 'en') == 'en':
+    _, _, language = local.speech_options(settings)
+    if language == 'en':
         fields['language'] = 'en'
     form = ''.join(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'
                    for name, value in fields.items())
@@ -44,7 +46,7 @@ def _fish_transcribe(settings, audio):
         result = json.loads(raw)
         if not isinstance(result, dict) or not isinstance(result.get('text'), str):
             raise ValueError('Missing transcript')
-        return result['text'].strip()
+        return accepted_text(result['text'], language, result.get('language_code'))
     except urllib.error.HTTPError as error:
         code = error.code
         error.close()
@@ -70,12 +72,17 @@ def speech_status(settings=None):
 def transcribe(settings, audio, content_type):
     global _status
     local.validate_audio(audio, content_type)
+    local.speech_options(settings)
     provider = settings.get('IRIS_STT_PROVIDER', 'fish').strip().lower()
     if provider not in ('fish', 'local'):
         raise ValueError('Voice recognition must be fish or local. Run setup.bat.')
     if not _lock.acquire(blocking=False):
         raise ValueError('IRIS is transcribing another recording. Try again shortly.')
     try:
+        if not has_speech(audio):
+            _status = {'engine': 'speech-guard', 'model': 'silero-vad', 'device': 'cpu',
+                       'compute_type': None, 'fallback': None}
+            return ''
         reason = None
         if provider == 'fish':
             try:

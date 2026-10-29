@@ -22,6 +22,15 @@ function fixture(overrides={}) {
   assert.equal(quiet.update(.002,6000),'quiet','Silence ends without a transcription');
   const spike=new SpeechEndpoint();spike.update(.2,40);spike.update(.002,80);
   assert.equal(spike.update(.002,6000),'quiet','A brief click must not count as speech');
+  const delayedSpike=new SpeechEndpoint();
+  delayedSpike.update(.2,1000);delayedSpike.update(.2,1040);delayedSpike.update(.2,1080);
+  delayedSpike.update(.002,1120);
+  assert.equal(delayedSpike.heardSpeech,false,'Missing timer samples cannot turn a brief sound into sustained speech');
+  assert.equal(delayedSpike.update(.002,6000),'quiet');
+  const shortCommand=new SpeechEndpoint();
+  for(let now=40;now<=200;now+=40)shortCommand.update(.04,now);
+  for(let now=240;now<=1320;now+=40)shortCommand.update(.002,now);
+  assert.equal(shortCommand.heardSpeech,true,'A short command still qualifies without raising the energy threshold');
   const sentence=new SpeechEndpoint();
   for(let now=40;now<=400;now+=40)assert.equal(sentence.update(.06,now),null);
   assert.equal(sentence.heardSpeech,true);
@@ -44,6 +53,20 @@ function fixture(overrides={}) {
     assert.equal(silences,decision==='quiet'?1:0);assert.ok(stopped>0);
     assert.ok(automatic.stops>0);assert.equal(automatic.input.active,false);assert.deepEqual(automatic.errors,[]);
   }
+  for(const text of ['', '   ']){
+    let decide,silences=0;
+    const noise=fixture({activityFactory:(stream,callback)=>{
+      decide=callback;return {start:async()=>{},stop(){}};
+    },request:async()=>({ok:true,json:async()=>({text,speech:{engine:null,device:'not loaded'}})}),
+    onSilence:()=>silences++});
+    await noise.input.start(30000,null,{autoStop:true});decide('speech');await tick();
+    assert.deepEqual(noise.texts,[],'Backend-rejected room audio must never become a chat message');
+    assert.deepEqual(noise.errors,[],'Rejected automatic noise returns quietly to standby');
+    assert.equal(silences,1);assert.equal(noise.input.active,false);assert.ok(noise.stops>0);
+  }
+  const quietManual=fixture({request:async()=>({ok:true,json:async()=>({text:''})})});
+  await quietManual.input.start();quietManual.input.stop();await tick();
+  assert.deepEqual(quietManual.texts,[]);assert.match(quietManual.errors[0],/No speech detected/);
   let oldDecision;
   const staleMonitor=fixture({activityFactory:(stream,callback)=>{
     oldDecision=callback;return {start:async()=>{},stop(){}};

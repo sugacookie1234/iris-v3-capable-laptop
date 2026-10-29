@@ -20,6 +20,7 @@ class RecognitionRoutingTests(unittest.TestCase):
         self.response.read.return_value = b'{"text":" Fish works "}'
         self.opener.open.return_value = self.response
         for item in [patch.object(module.urllib.request, 'build_opener', return_value=self.opener),
+                     patch.object(module, 'has_speech', return_value=True),
                      patch.object(module.local, 'speech_status', return_value=dict(self.local_status)),
                      patch.object(module, '_status', {})]:
             item.start()
@@ -75,6 +76,34 @@ class RecognitionRoutingTests(unittest.TestCase):
         self.response.read.return_value = b'{"text":""}'
         self.assertEqual(self.call(), '')
         self.local.assert_not_called()
+
+    def test_local_noise_gate_prevents_cloud_and_whisper_calls(self):
+        with patch.object(module, 'has_speech', return_value=False):
+            self.assertEqual(self.call(), '')
+        self.opener.open.assert_not_called()
+        self.local.assert_not_called()
+        self.assertEqual(module.speech_status()['engine'], 'speech-guard')
+
+    def test_broken_noise_gate_never_uploads_audio(self):
+        with patch.object(module, 'has_speech', side_effect=ValueError('Repair voice input')):
+            with self.assertRaisesRegex(ValueError, 'Repair voice input'):
+                self.call()
+        self.opener.open.assert_not_called()
+        self.local.assert_not_called()
+        self.assertFalse(module._lock.locked())
+
+    def test_english_mode_rejects_language_conflicts_without_retrying_noise(self):
+        for response in ({'text': 'ランダムな音', 'language_code': 'ja'},
+                         {'text': 'ランダムな音'}, {'text': 'Bonjour', 'language_code': 'fr'},
+                         {'text': '[laughter]'}, {'text': '...'}):
+            self.response.read.return_value = json.dumps(response).encode()
+            self.assertEqual(self.call(), '')
+        self.local.assert_not_called()
+
+    def test_auto_language_preserves_multilingual_requests(self):
+        self.response.read.return_value = json.dumps({'text': 'こんにちは', 'language_code': 'ja'}).encode()
+        self.assertEqual(self.call({**self.settings, 'IRIS_STT_LANGUAGE': 'auto'}), 'こんにちは')
+        self.assertNotIn(b'name="language"', self.opener.open.call_args.args[0].data)
 
     def test_local_only_never_contacts_fish(self):
         self.assertEqual(self.call({'IRIS_STT_PROVIDER': 'local'}), 'Local works')

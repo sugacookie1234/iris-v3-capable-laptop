@@ -56,7 +56,7 @@ Do not use a single ambiguous “done” marker. `TESTED` and `LIVE-VERIFIED` re
 ## Progress rollup
 
 - **Baseline counts:** 12 `REPO-REPORTED`, 16 `DESIGNED`, 1 `DEFERRED` (29 total). These are **not** completion percentages.
-- **Last full offline suite:** October 28, 2026: 796 tests run, 792 passed / four skipped; seven JavaScript checks passed. Later focused checks cover the inventory HTTP endpoint and workflow listing. See `docs/VALIDATION.md`.
+- **Last full offline suite:** October 28, 2026: 809 tests run, 805 passed / four skipped after the speech-noise correction; four voice/interface JavaScript checks passed. The preceding action-awareness slice passed all seven JavaScript checks. See `docs/VALIDATION.md`.
 - **Current highest-value milestone:** M0 software baseline audited; complete OMEN hardware acceptance. CAP-30/31 first slices implemented; next is the bounded CAP-32 read-only planner demonstration, before broader M1/M2 work.
 - **Known gaps:** OMEN mic/voice hardware acceptance, external app connectors, phone's access to desktop memories, general desktop autonomy, persistent cross-app jobs, always-on operation.
 
@@ -157,3 +157,14 @@ These capabilities are separate from the existing model router and tool registry
 - Capability inspection makes no network call and grants no permissions. The
   exposed schema follows current tool registrations and host configuration.
 - No paid provider tests or real app/volume changes were performed for this slice.
+
+### 2026-10-28 voice-noise correction (CAP-07/08)
+
+- Added local CPU speech detection before either cloud upload or local decoding,
+  English-mode language validation, and conservative Whisper confidence checks.
+- Rejected automatic recordings return quietly to standby, without creating chat
+  messages or retrying another recognizer. Manual recording retains no-speech feedback.
+- Synthetic noise and the public English speech fixture passed local acceptance;
+  microphone false-positive/miss rates still require real-room and OMEN trials.
+  Full evidence is in [Validation](VALIDATION.md); capability status is not promoted
+  to LIVE-VERIFIED by fixture tests.

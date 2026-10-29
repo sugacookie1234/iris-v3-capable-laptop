@@ -353,6 +353,38 @@ See [coverage and privacy details](ACTION-HISTORY.md). Generic success is not
 verification; the existing authority layer remains unchanged. Receipt coverage
 starts at installation and excludes the separately tracked automatic organizer.
 
+## 2026-10-28 — Reject noise and unexpected-language voice transcripts
+
+Scope: CAP-07/08. The installed language setting was already `en`; Fish ASR treats
+that as a hint and the old adapter accepted its text without checking language.
+See [Fish's language contract](https://docs.fish.audio/features/speech-to-text#language).
+
+- Added bundled CPU Silero VAD before Fish upload and local decoding. Quiet,
+  non-speech and sub-160 ms recordings are discarded; a failed detector does not
+  silently allow cloud upload. No extra dependency, download or provider call.
+- English mode validates Fish's reported language and script; automatic language
+  remains multilingual. Whisper rejects uncertain/repetitive segments as a whole
+  turn to avoid turning a partial negation into a command. Rejected Fish output
+  does not trigger a fallback decode.
+- Automatic capture returns quietly to standby on an empty/rejected transcript;
+  manual capture retains no-speech feedback. Timer gaps cannot count as observed
+  speech duration. Existing 160 ms endpoint sensitivity is preserved.
+- `python -m unittest tests.test_speech_guard tests.test_desktop_recognition tests.test_desktop_transcription -q`:
+  **40 passed**, including real bundled VAD checks against silence, hum, tone,
+  synthetic claps and random noise, plus public speech at normal and 10% amplitude.
+- Full offline suite: **809 run, 805 passed, four skipped**, 72.492 seconds under
+  the normal Windows account. No paid ASR or LLM requests and no private audio.
+- `desktop_voice_check.cjs`, `desktop_app_check.cjs`, `desktop_standby_check.cjs`,
+  and `desktop_native_standby_check.cjs`: passed.
+- Actual installed `small.en` CPU Whisper decoded the six-second public Harvard
+  fixture with the new confidence checks in 9.93 seconds including cold model load.
+  This confirms fallback inference, not real-time speed or OMEN microphone accuracy.
+- Independent code review found no blockers. Real-room false-positive/miss rates,
+  background TV speech and very short/soft utterances still require microphone trials.
+- Restarted the native app and posted a generated one-second silent WAV to its
+  authenticated transcription endpoint: empty text, `speech-guard` CPU decision,
+  no provider request. The changed-file configured-secret scan found zero matches.
+
 ### Earlier hardware and integration acceptance still outstanding
 
 - Run setup and launch on the actual OMEN. Keys must be entered on that machine;

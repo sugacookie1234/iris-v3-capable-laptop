@@ -45,6 +45,7 @@ class LocalTranscriptionTests(unittest.TestCase):
             get_supported_compute_types=self.compute_types,
         )
         patches = [
+            patch.object(module, 'has_speech', return_value=True),
             patch.object(module, 'model_path', return_value=self.path, create=True),
             patch.object(module, '_model', None),
             patch.object(module, '_model_key', None, create=True),
@@ -121,6 +122,20 @@ class LocalTranscriptionTests(unittest.TestCase):
     def test_silence_does_not_invent_a_transcript(self):
         self.factory.return_value = recognizer()
         self.assertEqual(module.transcribe({}, wav(), 'audio/wav'), '')
+
+    def test_noise_is_rejected_before_loading_whisper(self):
+        with patch.object(module, 'has_speech', return_value=False):
+            self.assertEqual(module.transcribe({}, wav(), 'audio/wav'), '')
+        self.factory.assert_not_called()
+
+    def test_uncertain_segment_discards_entire_turn_instead_of_partial_command(self):
+        for metric, value in (('no_speech_prob', .8), ('avg_logprob', -1.5),
+                              ('compression_ratio', 3.0), ('avg_logprob', float('nan'))):
+            with self.subTest(metric=metric):
+                self.model.transcribe.side_effect = lambda *_a, **_k: (
+                    iter([SimpleNamespace(text='Do not', **{metric: value}),
+                          SimpleNamespace(text='open Chrome')]), SimpleNamespace(language='en'))
+                self.assertEqual(module.transcribe({}, wav(), 'audio/wav'), '')
 
     def test_thirty_one_seconds_and_wav_content_type_parameters_are_accepted(self):
         self.assertEqual(

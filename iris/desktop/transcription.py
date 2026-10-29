@@ -7,6 +7,7 @@ import sysconfig
 import threading
 import wave
 from iris.desktop.speech_config import model_path, speech_options
+from iris.desktop.speech_guard import has_speech, accepted_text, confident_segment
 
 MAX_AUDIO_BYTES = 1100000
 _lock = threading.Lock()
@@ -87,9 +88,22 @@ def _load_model(settings, force_cpu=False, fallback_reason=None):
 
 def _recognize(model, audio, language):
     # Inference runs in the segment iterator, so consume it inside the retry boundary.
-    segments, _ = model.transcribe(io.BytesIO(audio), language=None if language == 'auto' else language,
-        beam_size=5, vad_filter=True, condition_on_previous_text=False, no_speech_threshold=0.6)
-    return ' '.join(segment.text.strip() for segment in segments if segment.text.strip()).strip()
+    segments, info = model.transcribe(io.BytesIO(audio), language=None if language == 'auto' else language,
+        beam_size=5, temperature=0.0, vad_filter=True,
+        vad_parameters={'threshold': .6, 'min_speech_duration_ms': 160, 'min_silence_duration_ms': 160},
+        condition_on_previous_text=False, no_speech_threshold=0.6)
+    pieces = []
+    for segment in segments:
+        if segment.text.strip() and not confident_segment(segment):
+            # Reject the whole turn, not a fragment that could change its meaning
+            # (for example by dropping an uncertain 'do not'). Consume the iterator
+            # first so lazy GPU failures still use the existing CPU retry boundary.
+            pieces.append(None)
+        else:
+            pieces.append(segment.text.strip())
+    if None in pieces:
+        return ''
+    return accepted_text(' '.join(pieces), language, getattr(info, 'language', None))
 
 
 def validate_audio(audio, content_type):
@@ -113,6 +127,8 @@ def transcribe(settings, audio, content_type):
     if not _lock.acquire(blocking=False):
         raise ValueError('IRIS is transcribing another recording. Try again shortly.')
     try:
+        if not has_speech(audio):
+            return ''
         model = _load_model(settings)
         try:
             return _recognize(model, audio, language)

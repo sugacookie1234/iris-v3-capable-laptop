@@ -97,8 +97,9 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 Try: “What is your name?”, “Add a task to test IRIS on my OMEN”, or
 “Ask the council to compare a cloud-first and local-first assistant for my laptop.”
 
-Microphone audio is recorded by the interface and converted to WAV. By default it goes to Fish Audio's
-`transcribe-1-pro` API. Missing credit, rejected keys, rate limits, network failures and invalid responses
+Microphone audio is recorded by the interface and converted to WAV. A bundled local Silero speech
+detector rejects non-speech before any Fish upload or Whisper decoding. Accepted speech goes to Fish Audio's
+`transcribe-1-pro` API by default. Missing credit, rejected keys, rate limits, network failures and invalid responses
 automatically fall back to local faster-whisper. Each new recording tries Fish again, so adding credit
 restores cloud recognition without changing settings. The UI reports which engine handled the last recording.
 Choose **local** recognition in setup to keep audio on the computer. IRIS does not save recordings;
@@ -186,7 +187,14 @@ Restart the app after updating (or refresh Chrome in browser mode). Click the co
 to submit; automatic recording also stops after a natural pause. Hold Space away from the text box for
 push-to-talk (up to 30 seconds). Escape or Pause mic discards the recording and cancels follow-up listening.
 Automatic endpoint detection uses local sound levels; background voices or steady loud noise can affect it.
-Use push-to-talk in noisy surroundings. Actual accuracy and timing still need testing on your OMEN microphone.
+A separate local speech detector then checks the recording before transcription. Empty/rejected automatic
+turns return quietly to standby; manual recording still explains when no speech was found. English mode
+rejects conflicting detected languages and predominantly non-Latin transcripts, including spurious Japanese.
+Fish's language option is a hint, not a restriction ([API documentation](https://docs.fish.audio/features/speech-to-text#language));
+IRIS applies its own check. Select automatic language with a multilingual local model in setup if needed.
+Local Whisper also rejects uncertain/repetitive segments rather than submitting a partial command.
+Real voices from a TV or other people can still pass speech detection. Use push-to-talk in noisy surroundings.
+Actual accuracy and timing still need testing on your OMEN microphone.
 If the model is missing, run `setup.bat` again. Speech input uses the default Windows microphone.
 Fish recognition requires API credit, separate from its website subscription. Local Whisper needs no
 transcription key or credits. The first local request loads the model and can be slower; CPU fallback

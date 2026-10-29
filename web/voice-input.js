@@ -50,7 +50,12 @@ class SpeechEndpoint {
     this.noise=.004;this.run=0;this.heardSpeech=false;this.lastSpeech=now;
   }
   update(level,now) {
-    const elapsed=Math.max(0,Math.min(100,now-this.last));this.last=now;
+    const gap=now-this.last;this.last=now;
+    // A delayed timer did not observe the audio in between its samples. Do not
+    // credit that missing interval to a click caught when the timer resumes.
+    const continuous=Number.isFinite(gap)&&gap>=0&&gap<=120;
+    const elapsed=continuous?Math.min(100,gap):0;
+    if(!continuous)this.run=0;
     const voiced=Number.isFinite(level)&&level>Math.max(.012,this.noise*3);
     if(voiced){this.run+=elapsed;if(this.run>=this.minSpeechMs)this.heardSpeech=true;this.lastSpeech=now;}
     else{this.run=0;if(Number.isFinite(level))this.noise=.98*this.noise+.02*Math.max(0,level);}
@@ -137,6 +142,7 @@ class RecordedVoiceInput {
           this.active=false;this.onState('idle');
           if(result.speech)this.onBackend(result.speech);
           if(result.text&&result.text.trim())await this.onText(result.text.trim());
+          else if(options.autoStop)this.onSilence();
           else this.onError('No speech detected. Check your microphone and try again.');
         }catch(error){
           if(version===this.version){this.active=false;this.onState('idle');this.onError(error.message);}
