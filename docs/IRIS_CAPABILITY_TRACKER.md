@@ -160,6 +160,7 @@ These capabilities are separate from the existing model router and tool registry
 
 ### 2026-10-28 voice-noise correction (CAP-07/08)
 
+- Code: [`8930ca0`](https://github.com/sugacookie1234/iris-v3-capable-laptop/commit/8930ca026b2bf1431cfcdd03808c86225c9df32a).
 - Added local CPU speech detection before either cloud upload or local decoding,
   English-mode language validation, and conservative Whisper confidence checks.
 - Rejected automatic recordings return quietly to standby, without creating chat

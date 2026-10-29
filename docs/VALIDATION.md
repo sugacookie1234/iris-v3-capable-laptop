@@ -355,6 +355,8 @@ starts at installation and excludes the separately tracked automatic organizer.
 
 ## 2026-10-28 — Reject noise and unexpected-language voice transcripts
 
+Code: [`8930ca0`](https://github.com/sugacookie1234/iris-v3-capable-laptop/commit/8930ca026b2bf1431cfcdd03808c86225c9df32a).
+
 Scope: CAP-07/08. The installed language setting was already `en`; Fish ASR treats
 that as a hint and the old adapter accepted its text without checking language.
 See [Fish's language contract](https://docs.fish.audio/features/speech-to-text#language).
