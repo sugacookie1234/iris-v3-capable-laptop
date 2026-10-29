@@ -187,6 +187,8 @@ class Handler(BaseHTTPRequestHandler):
                     'provider_verified': False})
             elif path == '/api/approval':
                 self._json(200, {'pending': app.pending_approval()})
+            elif path == '/api/capabilities':
+                self._json(200, app.capabilities())
             elif path == '/api/markets':
                 self._json(200, dashboard_markets())
             elif path == '/api/memories':

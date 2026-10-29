@@ -56,15 +56,15 @@ Do not use a single ambiguous “done” marker. `TESTED` and `LIVE-VERIFIED` re
 ## Progress rollup
 
 - **Baseline counts:** 12 `REPO-REPORTED`, 16 `DESIGNED`, 1 `DEFERRED` (29 total). These are **not** completion percentages.
-- **Last documented general Windows suite:** October 27, 2026: 741 passing / four skipped (as reported in `docs/VALIDATION.md`); latest focused October 28 voice/tray evidence exists. No test suite was executed as part of this design creation.
-- **Current highest-value milestone:** M0 baseline test audit and design review; then M1 awareness data model and M2 first Welcome Home slice.
+- **Last full offline suite:** October 28, 2026: 796 tests run, 792 passed / four skipped; seven JavaScript checks passed. Later focused checks cover the inventory HTTP endpoint and workflow listing. See `docs/VALIDATION.md`.
+- **Current highest-value milestone:** M0 software baseline audited; complete OMEN hardware acceptance. CAP-30/31 first slices implemented; next is the bounded CAP-32 read-only planner demonstration, before broader M1/M2 work.
 - **Known gaps:** OMEN mic/voice hardware acceptance, external app connectors, phone's access to desktop memories, general desktop autonomy, persistent cross-app jobs, always-on operation.
 
 ## Active milestone board
 
 | Milestone | State | Exit criteria | Links / notes |
 |---|---|---|---|
-| M0 Baseline/design adoption | IN PROGRESS | Review and approve this spec; test current main; note discrepancies | Owner adopted design on 2026-10-28. Import and focused desktop/permission tests recorded; full fresh baseline audit remains outstanding. |
+| M0 Baseline/design adoption | SOFTWARE AUDITED; HARDWARE PENDING | Review and approve this spec; test current main; note discrepancies | Owner adopted design on 2026-10-28. Full offline suite passed on 2026-10-28. OMEN mic, voice and app-launch acceptance remain pending. |
 | M1 Awareness foundation | NOT STARTED | Event/case/interest schema + provenance and consent UI tests | Depends M0 |
 | M2 Welcome Home scene | NOT STARTED | One actual hardware end-to-end scenario succeeds | Depends M1 (partial), wake baseline |
 | M3 Memory import | NOT STARTED | Local export import with preview, consent and undo | Depends M1 |
@@ -118,8 +118,8 @@ These capabilities are separate from the existing model router and tool registry
 
 | ID | Capability | Status | Acceptance still needed |
 |---|---|---|---|
-| CAP-30 | Privacy-safe outcome traces | DESIGNED | Bounded redacted traces and verified outcomes, retention and regression tests |
-| CAP-31 | Unified read-only capability registry | DESIGNED | Typed inventory across existing tools/models/skills, no execution by discovery |
+| CAP-30 | Privacy-safe outcome traces | IN-PROGRESS | Tested desktop/chat-tool receipts, retention, deletion, privacy and interruption recovery. Route/model/cost tracing, background and phone coverage remain pending. |
+| CAP-31 | Unified read-only capability registry | IN-PROGRESS | Tested typed tool/model/host-workflow inventory and local capability answers. Configuration is not live health; broader specialist/connector inventory remains pending. |
 | CAP-32 | Validated task DAG proposals | DESIGNED | Bounded read-only planning, dependency validation and verified execution |
 | CAP-33 | Verified experience memory | DESIGNED | Durable summaries, provenance, consent, retention and restart tests |
 | CAP-34 | Offline improvement evaluation | DESIGNED | Baseline/holdout evaluation, injection and regression rejection |
@@ -142,3 +142,17 @@ These capabilities are separate from the existing model router and tool registry
   general Windows-control capability as TESTED or LIVE-VERIFIED.
 - No AGI claim, autonomous planner, source-code self-modification, new account
   connector, automatic scene or monitoring subscription has been introduced.
+
+### 2026-10-28 action history and capability awareness
+
+- CAP-30/31 changed DESIGNED → IN-PROGRESS. Commands and privacy scope are in
+  [Action history](ACTION-HISTORY.md); exact checks are in [Validation](VALIDATION.md).
+- Receipts store only allowlisted metadata; no arguments, paths, result text,
+  secrets or full transcripts. Local replies are excluded from future model prompts.
+- Existing authority remains the execution boundary. An observer cannot approve,
+  retry or promote generic handler success into independently verified success.
+- Receipts retain up to 30 days / 1,000 entries with explicit confirmed erasure.
+  Automatic organization keeps its separate Activity/Undo record.
+- Capability inspection makes no network call and grants no permissions. The
+  exposed schema follows current tool registrations and host configuration.
+- No paid provider tests or real app/volume changes were performed for this slice.

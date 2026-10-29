@@ -21,8 +21,11 @@ or a bulk import into the confirmed-memory database.
 
 - Baseline: `9db02a7` contains voice endpoint detection, follow-up listening and
   tray standby. Actual microphone and OMEN acceptance are still outstanding.
-- Current bounded slice: **CAP-21**, explicit Windows app/folder and system-volume
+- Desktop control slice: **CAP-21**, explicit Windows app/folder and system-volume
   actions, plus a fixed workspace routine that is a precursor to **CAP-15**.
+- Current generalist slice: **CAP-30/31**, bounded local action receipts and a
+  read-only tool/model/workflow inventory. See [usage and coverage](ACTION-HISTORY.md).
+  Broader trace/cost coverage and runtime health verification remain pending.
 - New action handlers must pass through the existing `ToolExecutor` and authority
   checks. App launches use YELLOW approval and distinguish launch requests from
   independently observed windows. One workspace approval covers exactly Chrome,

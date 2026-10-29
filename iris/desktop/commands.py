@@ -45,18 +45,19 @@ def normalize(text):
 
 
 class DesktopCommands:
-    def __init__(self, config, data_dir, repo_root, actions=None, approve=None):
+    def __init__(self, config, data_dir, repo_root, actions=None, approve=None, history=None):
         self.config, self.data_dir = config, Path(data_dir)
         self.workspace = Path(config.workspace_root or repo_root).expanduser().absolute()
         self.vault = config.obsidian_vault or config.obsidian_root
         self._actions = actions
         self.approve = approve
+        self.history = history
 
     @property
     def actions(self):
         if self._actions is None:
             from iris.desktop.action_tools import DesktopActionTools
-            self._actions = DesktopActionTools(self.workspace, self.vault, approve=self.approve)
+            self._actions = DesktopActionTools(self.workspace, self.vault, approve=self.approve, history=self.history)
         return self._actions
 
     def _run(self, name, **arguments):
@@ -86,7 +87,7 @@ class DesktopCommands:
                 return self._workspace()
             if command in {'daily briefing', 'give me my daily briefing', 'give me a daily briefing',
                            'brief me on my day', 'brief me on today', "what's on my agenda", 'what is on my agenda'}:
-                return self._briefing()
+                return self._read('desktop_daily_briefing', self._briefing)
             if command in {"what's my volume", 'what is my volume', 'what is the system volume', 'check system volume'}:
                 return self._volume()
             if command in {'mute my computer', 'mute system audio', 'mute system volume', 'mute the speakers'}:
@@ -108,13 +109,16 @@ class DesktopCommands:
                 query = files[1].strip('"\'` ')
                 if not query or any(c in query for c in '/\\\x00') or query in {'.', '..'}:
                     return self.answer('Give me part of a filename, for example: find files named report.')
-                return self._find(query)
+                return self._read('desktop_find_files', lambda: self._find(query))
         except ActionFailure as error:
             return self.answer(str(error))
         except (OSError, ValueError, RuntimeError):
             # Native exception text can contain paths or arbitrary OS details.
             return self.answer('I could not complete that local action. Check that the app, folder or audio device is available, then try again.')
         return None
+
+    def _read(self, name, operation):
+        return self.history.read_completed(name, operation) if self.history is not None else operation()
 
     def _app(self, alias):
         result = self._run('desktop_open_app', app=alias)

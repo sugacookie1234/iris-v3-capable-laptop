@@ -62,6 +62,18 @@ def _validate(spec: ToolSpec, arguments: dict[str, Any]) -> tuple[tuple[str, Any
 class ToolExecutor:
     def __init__(self, registry: ToolRegistry) -> None:
         self._registry = registry
+        # Optional host-owned observation. Return values never influence authority.
+        self.observer = None
+        self.observer_failed = False
+
+    def _observe(self, event, *metadata):
+        if self.observer is not None:
+            try:
+                return getattr(self.observer, event)(*metadata)
+            except Exception:
+                # A full disk must not turn an already performed action into a retry.
+                self.observer_failed = True
+        return None
 
     def specifications(self) -> tuple[ToolSpec, ...]:
         return self._registry.specifications()
@@ -69,6 +81,19 @@ class ToolExecutor:
     def execute(self, call: ToolCall, *, authority: AuthorityContext | None = None,
                 approve: Callable[[ExecutionPlan], Approval] | None = None,
                 dry_run: bool = False) -> ToolResult:
+        identifier = None
+        if not dry_run and isinstance(call, ToolCall):
+            identifier = self._observe('begin', call.name, call.origin)
+        result = None
+        try:
+            result = self._execute(call, authority=authority, approve=approve,
+                                   dry_run=dry_run, audit_id=identifier)
+            return result
+        finally:
+            if identifier is not None:
+                self._observe('finish', identifier, result)
+
+    def _execute(self, call, *, authority, approve, dry_run, audit_id):
         def failed(code: FailureCode, message: str, plan: ExecutionPlan | None = None,
                    cause: str | None = None) -> ToolResult:
             return ToolResult(ResultStatus.FAILED, plan, failure=ToolFailure(code, message, cause))
@@ -102,6 +127,8 @@ class ToolExecutor:
         if dry_run:
             return ToolResult(ResultStatus.PREVIEW, plan)
         if decision.needs_approval:
+            if audit_id is not None:
+                self._observe('approval', audit_id, 'required')
             if approve is None:
                 return failed(FailureCode.APPROVAL_REQUIRED, decision.reason, plan)
             try:
@@ -110,6 +137,10 @@ class ToolExecutor:
                 return failed(FailureCode.APPROVAL_REJECTED, "Approval callback failed.", plan, type(exc).__name__)
             if not isinstance(approval, Approval) or approval.approved is not True or approval.plan_id != plan.id:
                 return failed(FailureCode.APPROVAL_REJECTED, "This execution was not explicitly approved.", plan)
+            if audit_id is not None:
+                self._observe('approval', audit_id, 'approved')
+        elif audit_id is not None:
+            self._observe('approval', audit_id, 'not_required')
         # Fresh approval is followed directly by execution of the immutable snapshot.
         context = multiprocessing.get_context("spawn")
         receiver, sender = context.Pipe(duplex=False)

@@ -95,7 +95,7 @@ def _folder_path(value):
 
 class DesktopActionTools:
     def __init__(self, workspace, vault=None, approve=None, *, executor_factory=ToolExecutor,
-                 controls_factory=WindowsControls):
+                 controls_factory=WindowsControls, history=None):
         workspace = _folder_path(workspace)
         paths = (('workspace', workspace),)
         if vault:
@@ -131,6 +131,9 @@ class DesktopActionTools:
              ToolArgument('muted', 'True to mute, false to unmute', ArgumentType.BOOLEAN, False)), local_only=True,
         ), partial(_volume_set, controls_factory=controls_factory), prepare=_prepare_volume)
         self._executor = executor_factory(registry)
+        if history is not None:
+            history.register(self.specifications())
+            self._executor.observer = history
 
     def specifications(self):
         return self._executor.specifications()

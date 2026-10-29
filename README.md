@@ -36,6 +36,12 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 
 ## What works through the unified interface
 
+- **Capability awareness and action history:** ask “What can you do?” or “What have you done today?”
+  for local answers grounded in registered tools, configuration and execution receipts. “Show action
+  history” includes earlier retained attempts; “Clear action history” asks before erasing them.
+  Configured services are not assumed to be connected or funded, and unverified actions are labelled.
+  Receipts omit prompts, arguments, paths and result content; retention is 30 days / 1,000 records.
+  These commands use no model call. See [history and capabilities](docs/ACTION-HISTORY.md) for coverage.
 - **Governed computer actions:** say “Open Chrome”, “Open Calculator”, “Open my workspace folder”,
   “Set volume to forty percent”, or “Mute my computer”. Changes show an exact approval first;
   “Approve” or the button runs that action once. “Mute” alone still silences only IRIS.

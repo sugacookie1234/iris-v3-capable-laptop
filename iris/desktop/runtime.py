@@ -15,12 +15,15 @@ from iris.memory.models import MemoryConfirmation
 from iris.memory.store import MemoryStore
 from iris.tasks.store import TaskStore
 from iris.terminal import load_config, create_brain, _memory_proposal
-from iris.tools import Approval
+from iris.tools import Approval, ToolExecutor
 from iris.tools.models import ResultStatus
 from iris.desktop.web_search import search_query, research
 from iris.desktop.autonomy import Autonomy, enabled as automatic_enabled
-from iris.desktop.commands import DesktopCommands
+from iris.desktop.commands import DesktopCommands, normalize
+from iris.desktop.action_history import ActionHistory
+from iris.desktop.capabilities import build_capabilities, capability_reply
 from iris.goals.store import GoalStore
+from iris.workflows import WorkflowRegistry
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -42,8 +45,14 @@ class DesktopRuntime:
                'IRIS_GOALS_PATH': str(self.data_dir / 'goals.sqlite3'),
                'IRIS_TIMEZONE': self.settings.get('IRIS_TIMEZONE', 'America/New_York')}
         self.config = load_config(cfg)
-        self.desktop_commands = DesktopCommands(self.config, self.data_dir, ROOT, approve=self._tool_approval)
+        self.action_history = ActionHistory(self.data_dir / 'action_history.sqlite3')
+        self.desktop_commands = DesktopCommands(self.config, self.data_dir, ROOT,
+            approve=self._tool_approval, history=self.action_history)
         self.brain = brain or create_brain(self.config, memory_path=self.memory_path)
+        executor = getattr(self.brain, '_tool_executor', None)
+        if isinstance(executor, ToolExecutor):
+            self.action_history.register(executor.specifications())
+            executor.observer = self.action_history
         self.brain._tool_approval = self._tool_approval
         self.brain._runtime_context = (
             'You are IRIS in a local Windows desktop interface, also available in Chrome. Your answers can be spoken aloud. '
@@ -191,6 +200,37 @@ class DesktopRuntime:
         finally:
             self.turn_lock.release()
 
+    def capabilities(self):
+        executor = getattr(self.brain, '_tool_executor', None)
+        workflows = getattr(self.brain, '_workflow_registry', None)
+        return build_capabilities(self.config, self.settings,
+            self.desktop_commands.actions.specifications(),
+            executor.specifications() if isinstance(executor, ToolExecutor) else (),
+            getattr(self.brain, '_tool_permissions', ()),
+            workflows.definitions() if isinstance(workflows, WorkflowRegistry) else ())
+
+    def _awareness_command(self, text):
+        command = normalize(text)
+        if command in {'what can you do', 'what can you do so far', 'show capabilities', 'list capabilities'}:
+            inventory = self.capabilities()
+            return DesktopCommands.answer(capability_reply(inventory),
+                'I can help with chat, briefings, finding files and approved desktop controls. '
+                'The screen shows your configured services and current limitations.', capabilities=inventory)
+        if command in {'what have you done today', 'what did you do today', 'show action history', 'show my action history'}:
+            report = self.action_history.report(self.config.timezone, today='today' in command)
+            executors = [getattr(self.brain, '_tool_executor', None),
+                         getattr(self.desktop_commands.actions, '_executor', None)]
+            if any(getattr(item, 'observer_failed', False) for item in executors):
+                report = 'Some history could not be saved this session; this list may be incomplete.\n' + report
+            return DesktopCommands.answer(report, report.split('\n')[0] +
+                ' The screen shows outcomes and any unverified results. Automatic organization is listed separately in Activity.')
+        if command in {'clear action history', 'erase action history', 'delete action history'}:
+            if self.approve('Erase all local action-history receipts? This leaves your tasks, notes and memories in place.'):
+                self.action_history.clear()
+                return DesktopCommands.answer('Local action-history receipts erased.')
+            return DesktopCommands.answer('I kept your action history.')
+        return None
+
     def chat(self, text, mode='auto'):
         if not isinstance(text, str) or not text.strip() or len(text) > 12000:
             raise ValueError('Enter a message of 1–12000 characters.')
@@ -203,12 +243,18 @@ class DesktopRuntime:
         capture_history = tuple(self.history[-8:])
         try:
             text = text.strip()
-            local_answer = self.desktop_commands.handle(text) if mode == 'auto' else None
+            local_answer = self._awareness_command(text) if mode == 'auto' else None
+            private_local_answer = local_answer is not None
+            if local_answer is None and mode == 'auto':
+                local_answer = self.desktop_commands.handle(text)
             if local_answer is not None:
-                self.history.extend([LLMMessage(MessageRole.USER, text),
-                                     LLMMessage(MessageRole.ASSISTANT, local_answer['reply'])])
-                limit = self.config.max_history_turns * 2
-                self.history = self.history[-limit:] if limit else []
+                # Receipts and local configuration must not ride along in a later
+                # model prompt. The UI still displays the complete local answer.
+                if not private_local_answer:
+                    self.history.extend([LLMMessage(MessageRole.USER, text),
+                                         LLMMessage(MessageRole.ASSISTANT, local_answer['reply'])])
+                    limit = self.config.max_history_turns * 2
+                    self.history = self.history[-limit:] if limit else []
                 self.last_route = 'LOCAL'
                 return local_answer
             if text.casefold().rstrip('.!') in ('pause automatic organization', 'pause automatic organisation'):

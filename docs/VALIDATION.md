@@ -321,6 +321,37 @@ Scope: CAP-21 fixed Windows actions, a CAP-15 explicit workspace precursor, and 
 - The design docs and new adapter/dispatcher sources were checked against configured secret values: zero matches. This check does not substitute for the separate decision to exclude all personal profile data from Git.
 - Rollback: the preceding source baseline is `9db02a7`. The action slice introduces no database migration or new dependency. Vault imports are separate Markdown notes and can be removed independently; existing notes were not overwritten.
 
+## 2026-10-28 — Action receipts, capability inventory and fresh software baseline
+
+Scope: CAP-30/31 initial desktop slices and M0 offline baseline. Code revision is
+the feature commit containing this entry; hardware/provider acceptance is separate.
+
+- `.venv/Scripts/python.exe -m unittest discover -s tests -q`: **796 run, 792 passed,
+  four skipped**, 71.754 seconds. Ran with normal Windows account access so DPAPI
+  and the existing Windows safe-path fixtures could work. No paid provider test.
+- After adding inventory HTTP authentication and actual host-workflow coverage:
+  `python -m unittest tests.test_action_history tests.test_desktop_capabilities -q`:
+  **17 passed**, including retention, deletion, interrupted receipts, unknown timeout
+  effects, partial results, secret/content omission, authority preservation, no
+  model/organizer call, and exclusion of receipts from future model context.
+- Seven JavaScript checks passed: `desktop_clap_check.cjs`, `desktop_voice_check.cjs`,
+  `desktop_standby_check.cjs`, `desktop_app_check.cjs`, `desktop_dashboard_check.cjs`,
+  `desktop_organizer_check.cjs`, `desktop_native_standby_check.cjs`. Re-ran the app
+  check after the help-text update; passed.
+- Earlier focused Python run: **57 passed** across the two new modules plus desktop
+  commands, action tools, server/runtime and executor authority tests.
+- Restarted the actual native desktop app on the development host. Authenticated
+  local HTTP checks passed for the capability endpoint, “What can you do?”, read-only
+  system-volume inspection and “What have you done today?”. The volume readback
+  appeared as a verified receipt. These checks made zero model/provider calls and
+  changed no system volume or external account state.
+- Development-host OMEN acceptance is not inferred. No real app launches, volume
+  changes, SMS, calls, provider-credit checks or microphone uploads were test actions.
+
+See [coverage and privacy details](ACTION-HISTORY.md). Generic success is not
+verification; the existing authority layer remains unchanged. Receipt coverage
+starts at installation and excludes the separately tracked automatic organizer.
+
 ### Earlier hardware and integration acceptance still outstanding
 
 - Run setup and launch on the actual OMEN. Keys must be entered on that machine;
