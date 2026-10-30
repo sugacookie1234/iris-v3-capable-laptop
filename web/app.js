@@ -8,6 +8,8 @@ let recordingApprovalId=null;
 let conversationVersion=0,followUpTimer=null,followUpListening=false;
 let activationVersion=0,disposed=false,approvalTimer=null;
 let latestActivity=null;
+let jobPanelView=null,panelVersion=0;
+const pendingJobs=new Set();
 const detector=new DoubleClapDetector();
 const recordedInput=typeof MediaRecorder!=='undefined'&&navigator.mediaDevices?new RecordedVoiceInput({
   onState:value=>{listening=value!=='idle';setState(value);},
@@ -16,16 +18,18 @@ const recordedInput=typeof MediaRecorder!=='undefined'&&navigator.mediaDevices?n
   onSilence:()=>{followUpListening=false;recordingApprovalId=null;setState('idle');},
   onError:message=>{cancelFollowUp();toast(message);addLine('IRIS',message);}
 }):null;
-async function api(path,data){
+async function api(path,data,signal){
   const options=data===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-IRIS-Request':'1'},body:JSON.stringify(data)};
-  const controller=path==='/api/clap'?new AbortController():null;
-  const timeout=controller?setTimeout(()=>controller.abort(),2000):null;
+  const controller=path==='/api/clap'||path==='/api/jobs'?new AbortController():null;
+  const timeout=controller?setTimeout(()=>controller.abort(),path==='/api/jobs'?5000:2000):null;
+  const abort=()=>controller?.abort();
+  if(signal?.aborted)abort();else signal?.addEventListener('abort',abort,{once:true});
   if(controller){options.signal=controller.signal;options.keepalive=data?.action==='stop';}
   try{
     const response=await fetch(path,options);
     const result=await response.json();if(!response.ok)throw new Error(result.error||'IRIS could not complete the request.');return result;
-  }catch(error){if(controller?.signal.aborted)throw new Error('The local microphone connection timed out. Tap the core to retry.');throw error;}
-  finally{if(timeout!==null)clearTimeout(timeout);}
+  }catch(error){if(controller?.signal.aborted)throw new Error(path==='/api/jobs'?'The jobs connection timed out.':'The local microphone connection timed out. Tap the core to retry.');throw error;}
+  finally{if(timeout!==null)clearTimeout(timeout);signal?.removeEventListener('abort',abort);}
 }
 const widgets=new DashboardWidgets({api});widgets.start();
 const organization=typeof OrganizationFeed==='undefined'?null:new OrganizationFeed({api,
@@ -35,6 +39,19 @@ const organization=typeof OrganizationFeed==='undefined'?null:new OrganizationFe
   },
   onActivity:item=>{if(item.kind!=='clarification'){const summary=item.title+': '+item.detail;toast(summary);addLine('SAVED',summary);}},
   onReminder:async item=>{if(disposed)return;cancelFollowUp(true);toast(item.message);addLine(item.clarification?'IRIS':'REMINDER',item.message);await speak(item.message);}
+});
+const jobs=typeof JobsFeed==='undefined'?null:new JobsFeed({api,
+  isBusy:()=>busy||listening||Boolean(pendingId)||state==='speaking'||state==='preparing',
+  onSnapshot:items=>{
+    const active=items.filter(item=>['queued','running','cancelling'].includes(item.status));
+    const attention=items.filter(item=>['interrupted','failed'].includes(item.status));
+    const ready=items.filter(item=>item.result_available);
+    $('jobsBtn').textContent='Jobs'+(active.length?' · '+active.length:attention.length?' · !':'');
+    $('jobsHint').textContent=active.length?(active.length===1?jobStage(active[0]):active.length+' jobs in progress'):attention.length?attention.length+' job'+(attention.length===1?' needs':'s need')+' attention':ready.length?ready.length+' briefing'+(ready.length===1?'':'s')+' ready in Jobs':'';
+    renderJobPanel();
+  },
+  onNotice:item=>toast({completed:'Briefing ready. Open Jobs to view it.',partial:'Briefing ready with limited coverage. Open Jobs to view it.',no_matches:'No matching notes for your briefing. See Jobs for details.',failed:'The briefing could not finish. Open Jobs for details.',interrupted:'The briefing was interrupted. Open Jobs to resume it.',cancelled:'Briefing cancelled.'}[item.status]||'Jobs updated.'),
+  onUnavailable:()=>{$('jobsHint').textContent='Jobs connection unavailable · retrying';}
 });
 function toast(text){$('toast').textContent=text;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',9000);}
 function setState(value){
@@ -80,7 +97,7 @@ function addSources(answer,sources){
   }
   if(list.children.length)answer.append(list);
 }
-async function loadStatus(){try{status=await api('/api/status');if(disposed)return;renderSpeechStatus();organization?.start();await restoreStandby();}catch(error){if(!disposed)toast(error.message);}}
+async function loadStatus(){try{status=await api('/api/status');if(disposed)return;renderSpeechStatus();organization?.start();jobs?.start();await restoreStandby();}catch(error){if(!disposed)toast(error.message);}}
 function saveStandby(value){try{globalThis.localStorage?.setItem('iris.standby',value);}catch{}}
 async function restoreStandby(){
   if(!status?.desktop_window||!window.chrome?.webview||!recordedInput||disposed||activated||activating)return;
@@ -183,6 +200,7 @@ async function voiceCommand(text,context={}){
     if(command==='newchat')await resetChat();
     if(command==='memories')await showMemories();if(command==='tasks')await showTasks();
     if(command==='goals')await showGoals();if(command==='notes')await showNotes();
+    if(command==='jobs')showJobs();
     if(command==='activity')await showActivity();if(command==='undo')await undoLastAutomatic();
     if(command==='council')showCouncil();if(command==='help')showHelp();return true;
   }
@@ -199,6 +217,7 @@ async function send(text,context={}){
     stopSpeaking();busy=true;ownsRequest=true;$('typeForm').querySelector('button').disabled=true;
     addLine('YOU',text);answer=addLine('IRIS','…');context.onAccepted?.();setState('thinking');
     const data=await api('/api/chat',{text,mode:'auto'});answer.textContent=data.reply;logEl.scrollTop=logEl.scrollHeight;
+    if(data.job)jobs?.record(data.job);
     addSources(answer,data.sources);
     latestCouncil=data.council||null;$('routeLabel').textContent=data.route==='LOCAL'?'LOCAL ACTION':data.route==='WEB'?'WEB SEARCH':data.route==='COUNCIL'?'COUNCIL CONSULTED':data.route==='DEEP'?'DEEP REASONING':'AUTOMATIC REASONING';
     spokenReply=typeof data.spoken_reply==='string'&&data.spoken_reply.trim()?data.spoken_reply:data.reply;
@@ -235,10 +254,34 @@ $('typeForm').addEventListener('submit',async event=>{
   finally{if(typedSubmission===submission)typedSubmission=null;}
 });
 $('wake').onclick=activate;$('muteBtn').onclick=()=>micPaused?activate():pauseMic();
-window.addEventListener('pagehide',()=>{disposed=true;cancelFollowUp();activationVersion++;activating=false;monitor?.stop();stopSpeaking();recordedInput?.cancel();widgets.stop();organization?.stop();clearInterval(clockTimer);clearTimeout(approvalTimer);});
-function panel(title){$('panelTitle').textContent=title;$('panelBody').replaceChildren();if(!$('panel').open)$('panel').showModal();return $('panelBody');}
+window.addEventListener('pagehide',()=>{disposed=true;cancelFollowUp();activationVersion++;activating=false;monitor?.stop();stopSpeaking();recordedInput?.cancel();widgets.stop();organization?.stop();jobs?.stop();clearInterval(clockTimer);clearTimeout(approvalTimer);clearTimeout(toastTimer);});
+function panel(title){panelVersion++;jobPanelView=title==='Jobs'?'list':null;$('panelTitle').textContent=title;$('panelBody').replaceChildren();if(!$('panel').open)$('panel').showModal();return $('panelBody');}
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);return p;}
 $('closePanel').onclick=()=>$('panel').close();
+function renderJobPanel(){if(jobs&&jobPanelView==='list'&&$('panel').open)renderJobs($('panelBody'),jobs.jobs,{document,onAction:jobAction,pending:pendingJobs});}
+function showJobs(){
+  if(!jobs){toast('Jobs controls are unavailable. Restart IRIS to load them.');return;}
+  if(pendingId){toast('Finish the confirmation first.');return;}
+  panel('Jobs');renderJobPanel();jobs.refresh();
+}
+async function jobAction(action,id){
+  if(disposed||pendingJobs.has(id)||pendingId||!['read','cancel','resume','delete'].includes(action))return;
+  const version=panelVersion;pendingJobs.add(id);renderJobPanel();
+  try{
+    const data=await api('/api/jobs/'+action,{id});if(disposed)return;
+    if(action==='read'){
+      if(pendingId||!$('panel').open||jobPanelView!=='list'||version!==panelVersion)return;
+      if(!data.result||typeof data.result.reply!=='string')throw new Error('This result is not available yet.');
+      const body=panel('Briefing result'),back=document.createElement('button');
+      back.textContent='Back to jobs';back.onclick=showJobs;body.append(back);
+      const result=document.createElement('pre');result.className='note-content';result.textContent=data.result.reply;body.append(result);
+    }else if(action==='delete'){
+      jobs.forget(id);
+    }else jobs.record(data);
+  }catch(error){if(!disposed)toast(error.message||'The job could not be updated.');}
+  finally{pendingJobs.delete(id);if(!disposed)renderJobPanel();}
+}
+$('jobsBtn').onclick=showJobs;
 async function showMemories(){try{const data=await api('/api/memories'),body=panel('Memories');if(!data.items.length)paragraph(body,'No saved memories yet. Say “remember that…” to add one.');for(const item of data.items)paragraph(body,item.summary);await speak(data.items.length?'Your saved memories. '+data.items.slice(0,5).map(item=>item.summary).join('. '):'No saved memories yet.');}catch(error){toast(error.message);}}
 async function showTasks(){try{const data=await api('/api/tasks'),body=panel('Tasks');if(!data.items.length)paragraph(body,'No tasks yet. With automatic organization on, tell me what you need to get done.');for(const task of data.items)paragraph(body,task.title+' · '+task.status+(task.due_at?' · '+new Date(task.due_at).toLocaleString():''));await speak(data.items.length?'Your tasks. '+data.items.slice(0,5).map(task=>task.title+', '+task.status).join('. '):'No tasks yet.');}catch(error){toast(error.message);}}
 async function showGoals(){try{const data=await api('/api/goals'),body=panel('Goals');if(!data.items.length)paragraph(body,'Tell me what you are working towards. Clear long-term goals can be saved automatically.');for(const goal of data.items)paragraph(body,goal.title+' · '+goal.status+' · '+goal.progress+'%'+(goal.target_date?' · '+goal.target_date:''));}catch(error){toast(error.message);}}
@@ -259,10 +302,10 @@ async function showActivity(){try{const data=await api('/api/activity'),body=pan
 $('activityBtn').onclick=showActivity;
 function showCouncil(){if(!latestCouncil){toast('There is no council review in this conversation yet.');return;}const body=panel('Council review');for(const candidate of latestCouncil.candidates)paragraph(body,candidate.seat+' · '+candidate.model+'\n'+candidate.text);for(const ranking of latestCouncil.rankings)paragraph(body,ranking.reviewer+' review\n'+ranking.text);if(latestCouncil.failures.length)paragraph(body,'Partial failures: '+latestCouncil.failures.join(', '));}
 function showHelp(){const body=panel('Just ask IRIS');const list=document.createElement('div');list.className='command-list';body.append(list);
-  for(const text of ['“Show my tasks”','“Show my goals”','“Show my notes”','“Show activity”','“Undo the last change”','“Pause automatic organization”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
+  for(const text of ['“Show my tasks”','“Show my goals”','“Show my notes”','“Show jobs”','“Show activity”','“Undo the last change”','“Pause automatic organization”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
   paragraph(body,'Double clap to wake, then speak naturally. A pause sends your request. After a spoken reply, “Anything else?” opens five seconds to begin a follow-up without clapping again. Silence returns to standby without an upload. Say “That’s all” to finish, or hold Space for manual recording. Click the core or hold Space to interrupt a spoken reply.');
   paragraph(body,'IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
-  paragraph(body,'“Check Obsidian” checks vault access. “Search my notes for …”, “Read note …”, and “Read next page” display notes locally without a model request. Use the relative note path if titles are ambiguous. “Make a briefing from my notes on …” reads up to three matching notes and presents checked source excerpts without a model call. “Plan a briefing from my notes on …” previews those steps.');
+  paragraph(body,'“Check Obsidian” checks vault access. “Search my notes for …”, “Read note …”, and “Read next page” display notes locally without a model request. Use the relative note path if titles are ambiguous. “Make a briefing from my notes on …” runs in the background, reads up to three matching notes and checks source excerpts without a model call. “Show jobs” opens progress, Cancel, Resume and results. Interrupted jobs stay paused after a restart; Resume reads current notes again. “Cancel briefing” stops the active briefing. “Plan a briefing from my notes on …” previews the steps.');
   paragraph(body,'Ask “What can you do?” for the current capability list, or “What have you done today?” for local action receipts. “Show action history” includes earlier retained records. Outcomes distinguish verified, partial and unverified results. “Clear action history” asks before erasing receipts. These commands use no model call.');
   paragraph(body,'Say “Start my workspace” to open Chrome, Obsidian and your workspace folder. “Open Calculator”, “Set volume to 40 percent”, “Mute my computer”, “Find files named report”, and “Give me my daily briefing” run locally without a model call. “Mute” by itself only silences IRIS. Search and briefing details stay on screen with a shorter spoken summary.');
   paragraph(body,'With automatic organization on, describe your plans naturally: “I need to submit the report tomorrow at 3 PM.” Tasks, goals and useful notes are saved in the background. Activity shows the result and Undo. Dates without a time use the end of that day; unclear deadlines need a follow-up. Keep IRIS open for desktop and configured SMS reminders.');

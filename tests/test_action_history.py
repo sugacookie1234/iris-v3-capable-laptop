@@ -54,13 +54,16 @@ class HistoryTests(unittest.TestCase):
         tools.run('desktop_open_app', app='private-argument-sentinel')
         tools.run('private-tool-sentinel')
         registry = ToolRegistry()
-        registry.register(ToolSpec('safe_read', 'Read fixture', AuthorityLevel.GREEN, True, (), (), 2), fake_read)
+        # This checks receipt privacy, not worker startup speed. Leave room for
+        # Windows spawn under full-suite load; timeout behavior has its own tests.
+        registry.register(ToolSpec('safe_read', 'Read fixture', AuthorityLevel.GREEN, True, (), (), 10), fake_read)
         executor = ToolExecutor(registry)
         executor.observer = self.history
         self.history.register(executor.specifications())
         from iris.tools import AuthorityContext
-        executor.execute(ToolCall('safe_read', {}, RequestOrigin.USER),
-                         authority=AuthorityContext(explicitly_requested=True))
+        result = executor.execute(ToolCall('safe_read', {}, RequestOrigin.USER),
+                                  authority=AuthorityContext(explicitly_requested=True))
+        self.assertEqual(result.status, ResultStatus.SUCCESS, result.failure)
         self.assertEqual(self.history.rows()[0]['verification'], 'unverified')
         identifier = self.history.begin('safe_read', RequestOrigin.USER)
         self.history.finish(identifier, ToolResult(ResultStatus.FAILED,

@@ -28,6 +28,7 @@ from iris.goals.store import GoalStore
 from iris.workflows import WorkflowRegistry
 from iris.generalist.plan import notes_briefing_preview
 from iris.generalist.notes_briefing import NotesBriefing
+from iris.agent_jobs.notes import NotesJobs, JobError
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -79,6 +80,9 @@ class DesktopRuntime:
             'and the computer is awake, after microphone permission. Spoken turns end on a pause and '
             'offer five seconds to begin a follow-up. "That is all" returns to standby. '
             'The user can say show tasks, show memories, start a new chat, mute, or unmute. '
+            '"Make a briefing from my notes on ..." queues a local read-only source briefing. '
+            'The Jobs panel shows progress, cancellation, saved results and explicit resume after interruption. '
+            'Job details and source excerpts are not included in this model context. '
             'An optional separate SMS/call bridge is available through setup-phone.bat and start-phone.bat; '
             'it requires provider and HTTPS setup. You cannot inspect whether it is configured or running here, '
             'and desktop chat cannot send texts or place calls. Voice wake words and a Windows background service are not connected. '
@@ -104,6 +108,8 @@ class DesktopRuntime:
         self._autonomy_lock = threading.Lock()
         self._closed = False
         self.autonomy = Autonomy(self.data_dir, self.settings, self.config)
+        self.jobs = NotesJobs(self.data_dir / 'jobs.sqlite3',
+            self.config.obsidian_vault or self.config.obsidian_root, history=self.action_history)
         self._base_context = self.brain._runtime_context
 
     def start_background(self):
@@ -115,6 +121,7 @@ class DesktopRuntime:
         with self._autonomy_lock:
             self._closed = True
             self.autonomy.close()
+        self.jobs.close()
 
     def set_automatic_organization(self, active):
         if type(active) is not bool:
@@ -227,15 +234,34 @@ class DesktopRuntime:
 
     def _awareness_command(self, text):
         command = normalize(text)
+        if command in {'show jobs', 'show my jobs', 'show background jobs', 'job status', 'what are you working on'}:
+            jobs = self.jobs.list()
+            lines = [f"{job['topic']} — {job['status']}; {job['stage']}" for job in jobs[:10]]
+            return DesktopCommands.answer('\n'.join(lines) if lines else 'There are no saved jobs.',
+                f'{len(jobs)} saved jobs. Open Jobs to view results, cancel or resume interrupted work.', jobs=jobs)
+        if command in {'cancel briefing', 'cancel my briefing', 'cancel notes briefing',
+                       'resume briefing', 'resume my briefing', 'resume notes briefing'}:
+            cancel = command.startswith('cancel')
+            candidates = [job for job in self.jobs.list() if job['can_cancel' if cancel else 'can_resume']]
+            if len(candidates) != 1:
+                return DesktopCommands.answer('Open Jobs and choose the briefing to ' + ('cancel.' if cancel else 'resume.')
+                    if candidates else 'There is no briefing available to ' + ('cancel.' if cancel else 'resume.'))
+            job = (self.jobs.cancel if cancel else self.jobs.resume)(candidates[0]['id'])
+            return DesktopCommands.answer('Cancellation requested. Check Jobs for the final status.' if cancel
+                else 'The briefing is queued to restart with fresh source checks. You can keep chatting.', job=job)
         briefing = re.fullmatch(r'(?:make|create|run) (?:a |my )?briefing from my notes (?:on|about) (.+)', command)
         if briefing:
             if len(briefing[1]) > 200:
                 return DesktopCommands.answer('Give a notes topic of 1 to 200 characters.')
             try:
-                runner = self._briefing_runner()
+                self._briefing_runner()
+                job = self.jobs.submit(briefing[1])
+            except JobError as exc:
+                return DesktopCommands.answer(str(exc))
             except (OSError, ValueError):
                 return DesktopCommands.answer('Your Obsidian vault is unavailable. Check its folder in setup.bat.')
-            return runner.run(briefing[1])
+            return DesktopCommands.answer('The notes briefing is queued in Jobs. You can keep chatting while I work.',
+                'I have queued the briefing. You can keep chatting.', job=job)
         preview = re.fullmatch(r'plan a briefing from my notes on (.+)', command)
         if preview:
             try:
@@ -264,7 +290,7 @@ class DesktopRuntime:
             report = self.action_history.report(self.config.timezone, today='today' in command)
             executors = [getattr(self.brain, '_tool_executor', None),
                          getattr(self.desktop_commands.actions, '_executor', None), self.vault_commands._executor,
-                         getattr(self._notes_briefing, 'executor', None)]
+                         getattr(self._notes_briefing, 'executor', None), self.jobs]
             if any(getattr(item, 'observer_failed', False) for item in executors):
                 report = 'Some history could not be saved this session; this list may be incomplete.\n' + report
             return DesktopCommands.answer(report, report.split('\n')[0] +

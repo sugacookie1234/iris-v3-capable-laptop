@@ -44,7 +44,7 @@ Do not use a single ambiguous “done” marker. `TESTED` and `LIVE-VERIFIED` re
 | CAP-19 | Notion data integration | DESIGNED | M4 | Approved page reads; bounded writes and permission checks |
 | CAP-20 | Spotify/local playlist control | DESIGNED | M2/M4 | Real player/device response, unavailable-path fallback |
 | CAP-21 | Governed general Windows/browser control | IN-PROGRESS | M4/M7 | Fixed app/folder launch and CoreAudio volume adapter slice is implemented with approval/verification tests; general screen control and actual OMEN launch/volume-change acceptance remain outstanding. See [validation](VALIDATION.md). |
-| CAP-22 | Durable multi-step agent jobs | DESIGNED | M7 | Restart/idempotency/retry/approval/partial-action tests |
+| CAP-22 | Durable multi-step agent jobs | IN-PROGRESS | M7 | Fixed local notes recipe has encrypted durable state, cancellation, bounded explicit retries and restart recovery. External-effect idempotency, compensation and delegated jobs remain pending. See [job controls](BACKGROUND-JOBS.md). |
 | CAP-23 | Reusable Skills framework | DESIGNED | M7 | Manifest validation, sandbox and skill injection tests |
 | CAP-24 | Coding-agent delegation | DESIGNED | M7 | Isolated worktree, diff/test evidence, no unsanctioned merges |
 | CAP-25 | Unified remote context | DESIGNED | M6 | Phone has bounded shared case access; channel restrictions |
@@ -56,8 +56,8 @@ Do not use a single ambiguous “done” marker. `TESTED` and `LIVE-VERIFIED` re
 ## Progress rollup
 
 - **Baseline counts:** 12 `REPO-REPORTED`, 16 `DESIGNED`, 1 `DEFERRED` (29 total). These are **not** completion percentages.
-- **Last full offline suite:** October 28, 2026: 809 tests run, 805 passed / four skipped after the speech-noise correction; four voice/interface JavaScript checks passed. The preceding action-awareness slice passed all seven JavaScript checks. See `docs/VALIDATION.md`.
-- **Current highest-value milestone:** M0 software baseline audited; complete OMEN hardware acceptance. CAP-30/31 first slices implemented; next is the bounded CAP-32 read-only planner demonstration, before broader M1/M2 work.
+- **Last full offline suite:** October 30, 2026: 897 tests run, 893 passed / four skipped after background jobs and lifecycle fixes; all eight desktop JavaScript checks passed. See `docs/VALIDATION.md`.
+- **Current highest-value milestone:** M0 software baseline audited; complete OMEN hardware acceptance. CAP-30/31 receipts and CAP-22/32 fixed background notes jobs are implemented. Next generalist slice is CAP-33 reviewed experience summaries; broader planning and M1/M2 remain pending.
 - **Known gaps:** OMEN mic/voice hardware acceptance, external app connectors, phone's access to desktop memories, general desktop autonomy, persistent cross-app jobs, always-on operation.
 
 ## Active milestone board
@@ -71,7 +71,7 @@ Do not use a single ambiguous “done” marker. `TESTED` and `LIVE-VERIFIED` re
 | M4 App connectors | NOT STARTED | One connector at a time, scoped OAuth and live acceptance | Depends M0 |
 | M5 Watchtower v1 | NOT STARTED | One real new update, no duplicates, quiet hours | Depends M1 + relevant M4 |
 | M6 Unified phone | NOT STARTED | Authenticated remote view of approved context | Depends M1, phone setup |
-| M7 Skills and jobs | NOT STARTED | Safe multi-step execution and restart recovery | Depends permissions and tool interfaces |
+| M7 Skills and jobs | IN-PROGRESS | Fixed read-only notes jobs with progress, cancellation and recovery | General jobs, trusted skill loading and coding-agent delegation pending |
 | M8 Business/always-on | DEFERRED | Security reviewed hosted worker and one business workflow | Depends M5–M7 |
 
 ## Risk and blocker register
@@ -120,7 +120,7 @@ These capabilities are separate from the existing model router and tool registry
 |---|---|---|---|
 | CAP-30 | Privacy-safe outcome traces | IN-PROGRESS | Tested desktop/chat-tool receipts, retention, deletion, privacy and interruption recovery. Route/model/cost tracing, background and phone coverage remain pending. |
 | CAP-31 | Unified read-only capability registry | IN-PROGRESS | Tested typed tool/model/host-workflow inventory and local capability answers. Configuration is not live health; broader specialist/connector inventory remains pending. |
-| CAP-32 | Validated task DAG proposals | IN-PROGRESS | Bounded proposals, preview and fixed search/read/draft execution with source checks implemented. General planning, durable jobs, visible cancellation and restart recovery remain pending. |
+| CAP-32 | Validated task DAG proposals | IN-PROGRESS | Bounded proposals, preview and background search/read/draft execution with source checks, visible cancellation and explicit restart recovery implemented. General planning and external-effect jobs remain pending. |
 | CAP-33 | Verified experience memory | DESIGNED | Durable summaries, provenance, consent, retention and restart tests |
 | CAP-34 | Offline improvement evaluation | DESIGNED | Baseline/holdout evaluation, injection and regression rejection |
 | CAP-35 | Scoped specialist workers | DESIGNED | Typed input/output, bounded delegation and no inherited blanket authority |
@@ -194,3 +194,17 @@ These capabilities are separate from the existing model router and tool registry
   generated synthesis. Source text stays out of future model history and receipts.
 - Next CAP-32 slice: visible background-job progress/cancellation and restart
   recovery before broadening general planning or adding CAP-33 experience learning.
+
+### 2026-10-30 background notes jobs
+
+- CAP-22 and M7 changed to IN-PROGRESS. Notes briefings now queue independently
+  of chat, with a Jobs panel for progress, cancellation, results and explicit resume.
+- Active work becomes interrupted after reopening IRIS; no automatic replay.
+  Resume repeats the bounded read-only recipe with current source checks.
+- Topics and results use Windows account encryption. Metadata and results remain
+  outside model history and automatic organization. No model call is used.
+- The worker and queue are bounded; stored results have retention and deletion
+  controls. [Usage and limits](BACKGROUND-JOBS.md), [checks](VALIDATION.md).
+- Next: CAP-33 reviewed, provenance-linked experience summaries, with retention
+  and correction controls. This does not authorize self-modification or training
+  on private notes, and broader planning remains a separate unfinished capability.

@@ -21,7 +21,7 @@ class Element {
   pause(){this.paused=true;}
   load(){}
 }
-function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermission,standbyPreference}={}){
+function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermission,standbyPreference,jobs=false}={}){
   const elements={};
   for(const match of fs.readFileSync(path.join(__dirname,'../web/index.html'),'utf8').matchAll(/id="([^"]+)"/g))elements[match[1]]=new Element(match[1]);
   const document={body:new Element('body'),events:{},getElementById:id=>elements[id]||null,createElement:()=>new Element(),addEventListener:Element.prototype.addEventListener,emit:Element.prototype.emit};
@@ -71,7 +71,9 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
       return {ok:true,json:async()=>response};}
   };
   if(recording)sandbox.MediaRecorder=function(){};
-  const context=vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/app.js'),'utf8'),context);
+  const context=vm.createContext(sandbox);
+  if(jobs){responses['/api/jobs']={jobs:[]};vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/jobs.js'),'utf8'),context);}
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/app.js'),'utf8'),context);
   return {elements,document,window,requests,responses,intervals,storage,timeouts,
     get monitor(){return monitor;},get input(){return input;},set autoEnd(value){autoEnd=value;},
     get playCalls(){return playCalls;},
@@ -388,5 +390,55 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   assert.equal(localReply.elements.log.children.at(-1).children[1].textContent,'Found files: report.md, report-two.md.');
   assert.equal(localReply.elements.routeLabel.textContent,'LOCAL ACTION');
   assert.equal(localReply.requests.find(item=>item.url==='/api/voice').body.text,'Found two files. They are listed on screen.','Local detail stays visible without reading every filename aloud');
-  console.log('Desktop automatic routing, native standby restoration, audio cancellation races, mute/pause, echo suppression, scoped approvals, and unsupported-browser controls passed.');
+  const background=app({jobs:true});await background.flush();
+  let backgroundJob={id:'test-briefing',kind:'notes_briefing',topic:'Orion',status:'queued',stage:'queued',attempts:1,completed_steps:[],can_cancel:true,can_resume:false,result_available:false};
+  background.responses['/api/jobs']=()=>({jobs:[backgroundJob]});
+  background.responses['/api/chat']={reply:'Started your briefing.',spoken_reply:'Started.',route:'LOCAL',job:backgroundJob};
+  await background.run('send("Make a briefing from my notes on Orion")');await background.flush();
+  assert.match(background.elements.jobsBtn.textContent,/1/);
+  const lines=background.elements.log.children.length,plays=background.playCalls;
+  background.run('listening=true;state="listening"');
+  backgroundJob={...backgroundJob,status:'completed',stage:'done',can_cancel:false,result_available:true,result:{reply:'PRIVATE note detail'}};
+  await background.run('jobs.poll()');assert.doesNotMatch(background.elements.toast.textContent,/Briefing ready/);
+  background.run('listening=false;state="idle"');await background.run('jobs.poll()');
+  assert.match(background.elements.toast.textContent,/Briefing ready/);
+  assert.equal(background.elements.log.children.length,lines,'Background results must not enter conversation history');
+  assert.equal(background.playCalls,plays,'Completion must not speak');
+  await background.run('send("show jobs")');await background.flush();
+  assert.equal(background.elements.panelTitle.textContent,'Jobs');
+  assert.equal(background.requests.filter(item=>item.url==='/api/jobs/read').length,0,'Opening the list must not fetch private result text');
+  const privateResult='<script>bad()</script> Private source excerpts.';
+  background.responses['/api/jobs/read']={...backgroundJob,result:{reply:privateResult}};
+  await background.run('jobAction("read","test-briefing")');
+  assert.equal(background.elements.panelTitle.textContent,'Briefing result');
+  assert.equal(background.elements.panelBody.children.at(-1).textContent,privateResult);
+  assert.equal(background.elements.panelBody.children.at(-1).innerHTML,undefined);
+  assert.equal(background.elements.log.children.length,lines);
+  assert.equal(background.playCalls,plays);
+  let finishRead;await background.run('showJobs()');await background.flush();
+  background.responses['/api/jobs/read']=()=>new Promise(done=>finishRead=done);
+  const reading=background.run('jobAction("read","test-briefing")');await background.flush();
+  await background.run('jobAction("read","test-briefing")');
+  assert.equal(background.requests.filter(item=>item.url==='/api/jobs/read').length,2,'A double click must not start another result request');
+  background.elements.panel.close();finishRead({result:{reply:privateResult}});await reading;
+  assert.equal(background.elements.panel.open,false,'A late result must not reopen a closed panel');
+  background.run('pendingId="approval-test"');background.elements.jobsBtn.onclick();
+  assert.equal(background.elements.panel.open,false,'Jobs must not replace an approval');
+  assert.equal(background.run('pendingId'),'approval-test');
+  background.run('pendingId=null');
+  backgroundJob={...backgroundJob,status:'interrupted',stage:'interrupted',can_resume:true,result_available:false};
+  background.responses['/api/jobs/resume']=body=>{assert.equal(body.id,'test-briefing');backgroundJob={...backgroundJob,status:'queued',stage:'queued',attempts:2,can_cancel:true,can_resume:false};return backgroundJob;};
+  await background.run('jobAction("resume","test-briefing")');await background.flush();
+  assert.equal(background.run('jobs.jobs[0].status'),'queued');
+  background.responses['/api/jobs/cancel']=body=>{assert.equal(body.id,'test-briefing');backgroundJob={...backgroundJob,status:'cancelling',stage:'cancelling',can_cancel:false};return backgroundJob;};
+  await background.run('jobAction("cancel","test-briefing")');await background.flush();
+  assert.equal(background.run('jobs.jobs[0].status'),'cancelling');
+  background.responses['/api/jobs/delete']={...backgroundJob,status:'deleted'};
+  background.responses['/api/jobs']={jobs:[]};await background.run('jobAction("delete","test-briefing")');await background.flush();
+  assert.equal(background.run('jobs.jobs.length'),0);assert.equal(background.elements.jobsHint.textContent,'');
+  background.window.emit('pagehide');await background.flush();
+  assert.equal(background.run('jobs.stopped'),true);assert.equal(background.timeouts.size,0);
+  const missingJobs=app();await missingJobs.flush();missingJobs.elements.jobsBtn.onclick();
+  assert.match(missingJobs.elements.toast.textContent,/Restart IRIS/);
+  console.log('Desktop routing, standby, speech, approvals, background jobs, explicit private-result viewing and cleanup passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

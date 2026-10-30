@@ -10,6 +10,7 @@ import math
 import multiprocessing
 from collections.abc import Callable
 from typing import Any
+from time import monotonic
 
 from iris.tools.authority import Approval, AuthorityContext, evaluate
 from iris.tools.models import (
@@ -80,23 +81,37 @@ class ToolExecutor:
 
     def execute(self, call: ToolCall, *, authority: AuthorityContext | None = None,
                 approve: Callable[[ExecutionPlan], Approval] | None = None,
-                dry_run: bool = False) -> ToolResult:
+                dry_run: bool = False, cancelled: Callable[[], bool] | None = None) -> ToolResult:
         identifier = None
         if not dry_run and isinstance(call, ToolCall):
             identifier = self._observe('begin', call.name, call.origin)
         result = None
         try:
             result = self._execute(call, authority=authority, approve=approve,
-                                   dry_run=dry_run, audit_id=identifier)
+                                   dry_run=dry_run, audit_id=identifier, cancelled=cancelled)
             return result
         finally:
             if identifier is not None:
                 self._observe('finish', identifier, result)
 
-    def _execute(self, call, *, authority, approve, dry_run, audit_id):
+    def _execute(self, call, *, authority, approve, dry_run, audit_id, cancelled):
         def failed(code: FailureCode, message: str, plan: ExecutionPlan | None = None,
                    cause: str | None = None) -> ToolResult:
             return ToolResult(ResultStatus.FAILED, plan, failure=ToolFailure(code, message, cause))
+
+        def cancellation(plan):
+            if cancelled is None:
+                return None
+            try:
+                requested = cancelled()
+                if type(requested) is not bool:
+                    raise ValueError('Invalid host cancellation signal.')
+            except Exception:
+                return failed(FailureCode.EXECUTION_FAILED, 'The host cancellation check failed; worker stopped.', plan)
+            if requested:
+                return failed(FailureCode.CANCELLED,
+                    'Tool cancelled; worker stopped. Effects already performed may remain.', plan)
+            return None
 
         if not isinstance(call, ToolCall) or type(call.name) is not str or not isinstance(call.origin, RequestOrigin):
             return failed(FailureCode.INVALID_ARGUMENTS, "Malformed tool call.")
@@ -126,6 +141,9 @@ class ToolExecutor:
             return failed(FailureCode.AUTHORITY_DENIED, decision.reason, plan)
         if dry_run:
             return ToolResult(ResultStatus.PREVIEW, plan)
+        stopped = cancellation(plan)
+        if stopped is not None:
+            return stopped
         if decision.needs_approval:
             if audit_id is not None:
                 self._observe('approval', audit_id, 'required')
@@ -141,6 +159,9 @@ class ToolExecutor:
                 self._observe('approval', audit_id, 'approved')
         elif audit_id is not None:
             self._observe('approval', audit_id, 'not_required')
+        stopped = cancellation(plan)
+        if stopped is not None:
+            return stopped
         # Fresh approval is followed directly by execution of the immutable snapshot.
         context = multiprocessing.get_context("spawn")
         receiver, sender = context.Pipe(duplex=False)
@@ -150,9 +171,24 @@ class ToolExecutor:
             process.start()
             started = True
             sender.close()
-            if not receiver.poll(spec.timeout):
-                return failed(FailureCode.TIMEOUT, "Tool timed out; worker stopped. Effects already performed may remain.", plan)
+            if cancelled is None:
+                if not receiver.poll(spec.timeout):
+                    return failed(FailureCode.TIMEOUT, "Tool timed out; worker stopped. Effects already performed may remain.", plan)
+            else:
+                deadline = monotonic() + spec.timeout
+                while True:
+                    stopped = cancellation(plan)
+                    if stopped is not None:
+                        return stopped
+                    remaining = deadline - monotonic()
+                    if remaining <= 0:
+                        return failed(FailureCode.TIMEOUT, "Tool timed out; worker stopped. Effects already performed may remain.", plan)
+                    if receiver.poll(min(0.05, remaining)):
+                        break
             payload = json.loads(receiver.recv_bytes())
+            stopped = cancellation(plan)
+            if stopped is not None:
+                return stopped
             if "error" in payload:
                 return failed(FailureCode.EXECUTION_FAILED, payload.get("message", "Tool handler failed."), plan, payload["error"])
             return ToolResult(ResultStatus.SUCCESS, plan, value=payload["value"])

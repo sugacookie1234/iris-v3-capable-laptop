@@ -84,8 +84,10 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
   source-labelled excerpts to ordinary model answers. See [vault reading](docs/OBSIDIAN-READING.md).
 - **Source briefings:** “Make a briefing from my notes on …” searches, reads up to three
   matching notes and checks their revisions before showing verbatim source excerpts.
-  It runs locally without a model call. “Plan a briefing from my notes on …” previews
-  the steps. General autonomous planning and durable background jobs remain pending.
+  It runs in the background without a model call. Open **Jobs** for progress, Cancel,
+  results, and Resume after an interruption. “Plan a briefing from my notes on …”
+  previews the steps. See [background jobs](docs/BACKGROUND-JOBS.md) for recovery and
+  retention. General autonomous planning remains pending.
 - **Restrained voice:** speech rendering removes acted sighs, laughs and other vocal
   cues, with lower Fish expressiveness and the same selected voice. Chat text stays
   intact. See [voice delivery](docs/VOICE-DELIVERY.md); spontaneous sounds from the

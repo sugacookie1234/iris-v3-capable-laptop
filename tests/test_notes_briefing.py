@@ -2,6 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 import tempfile
+import threading
 import unittest
 from unittest.mock import patch
 
@@ -153,6 +154,82 @@ class NotesBriefingTests(unittest.TestCase):
         self.assertTrue(excerpts[0]['text'].startswith('# Imported historical'))
         self.assertIn('telescope prototype', excerpts[-1]['text'])
         self.assertLessEqual(sum(len(item['text']) for item in excerpts), 1600)
+
+    def test_progress_contains_only_stage_metadata_after_validation(self):
+        self.write('Orion.md', 'Orion private fixture text.')
+        progress = []
+        result = self.app.run('Orion', progress=progress.append)
+        self.assertEqual(result['briefing']['status'], 'complete')
+        self.assertEqual(progress, [
+            {'stage': 'search', 'completed_steps': []},
+            {'stage': 'search', 'completed_steps': ['search']},
+            {'stage': 'read_1', 'completed_steps': ['search']},
+            {'stage': 'read_1', 'completed_steps': ['search', 'read_1']},
+            {'stage': 'draft', 'completed_steps': ['search', 'read_1']},
+            {'stage': 'draft', 'completed_steps': ['search', 'read_1', 'draft']},
+            {'stage': 'done', 'completed_steps': ['search', 'read_1', 'draft']},
+        ])
+        self.assertNotIn('Orion', str(progress))
+
+    def test_progress_storage_failure_stops_before_follow_on_work(self):
+        self.write('Orion.md', 'Orion private fixture text.')
+        def progress(value):
+            if value['completed_steps']:
+                raise RuntimeError('private storage detail')
+        with patch.object(self.app.executor, 'execute', wraps=self.app.executor.execute) as execute:
+            result = self.app.run('Orion', progress=progress)
+        self.assertEqual(result['briefing']['status'], 'failed')
+        self.assertEqual(execute.call_count, 1)
+        self.assertNotIn('private storage detail', str(result))
+
+    def test_cancellation_at_progress_boundary_never_starts_next_stage(self):
+        self.write('Orion.md', 'Orion private fixture text.')
+        cancel = threading.Event()
+        def progress(value):
+            if value['completed_steps'] == ['search']:
+                cancel.set()
+        with patch.object(self.app.executor, 'execute', wraps=self.app.executor.execute) as execute:
+            result = self.app.run('Orion', cancelled=cancel.is_set, progress=progress)
+        self.assertEqual(result['briefing']['status'], 'cancelled')
+        self.assertEqual(execute.call_count, 1)
+
+    def test_executor_cancellation_is_not_misreported_as_failed(self):
+        self.write('Orion.md', 'Orion private fixture text.')
+        cancelled = ToolResult(ResultStatus.FAILED, failure=ToolFailure(FailureCode.CANCELLED, 'Cancelled'))
+        original = self.app.executor.execute
+        def execute_step(call, **kwargs):
+            return original(call, **kwargs) if call.name == 'obsidian_search' else cancelled
+        with patch.object(self.app.executor, 'execute', side_effect=execute_step) as execute:
+            result = self.app.run('Orion', cancelled=lambda: False)
+        self.assertEqual(result['briefing']['status'], 'cancelled')
+        self.assertEqual(result['briefing']['completed_steps'], ['search'])
+        self.assertEqual(execute.call_count, 2)
+
+    def test_unverified_output_never_reports_completed_stage(self):
+        progress = []
+        malformed = ToolResult(ResultStatus.SUCCESS, value={'private': 'invalid result'})
+        with patch.object(self.app.executor, 'execute', return_value=malformed):
+            result = self.app.run('Orion', progress=progress.append)
+        self.assertEqual(result['briefing']['status'], 'failed')
+        self.assertEqual(progress, [{'stage': 'search', 'completed_steps': []}])
+
+    def test_progress_failure_before_start_prevents_worker(self):
+        def progress(value): raise RuntimeError('private storage detail')
+        with patch.object(self.app.executor, 'execute') as execute:
+            result = self.app.run('Orion', progress=progress)
+        self.assertEqual(result['briefing']['status'], 'failed')
+        self.assertNotIn('private storage detail', str(result))
+        execute.assert_not_called()
+
+    def test_cancellation_with_final_progress_discards_result_text(self):
+        self.write('Orion.md', 'Orion private fixture text.')
+        cancel = threading.Event()
+        def progress(value):
+            if value['stage'] == 'done':
+                cancel.set()
+        result = self.app.run('Orion', cancelled=cancel.is_set, progress=progress)
+        self.assertEqual(result['briefing']['status'], 'cancelled')
+        self.assertNotIn('private fixture text', result['reply'])
 
 
 if __name__ == '__main__':

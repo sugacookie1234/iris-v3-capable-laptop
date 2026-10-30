@@ -234,21 +234,24 @@ def main(argv: list[str] | None = None) -> int:
         print(f"IRIS voice flow unavailable: {message}", file=sys.stderr)
         return 2
     finally:
-        if hud is not None and not cancelled:
-            try:
-                input("Turn ended. Press Enter to close the HUD session and clear captions: ")
-            except (EOFError, KeyboardInterrupt):
-                pass
-        session = getattr(locals().get("runner"), "session", None)
-        if session is not None:
-            session.close()
-        if "sink" in locals():
-            sink.close()
-        runner = locals().get("runner")
-        if runner is not None and getattr(runner, "owns_memory_store", False):
-            runner.memory_store.close()
-        if hud is not None:
-            hud.close()
+        try:
+            if hud is not None and not cancelled:
+                try:
+                    input("Turn ended. Press Enter to close the HUD session and clear captions: ")
+                except (EOFError, KeyboardInterrupt):
+                    pass
+        finally:
+            # Prompt failures must not leave the session or its database open.
+            session = getattr(locals().get("runner"), "session", None)
+            if session is not None:
+                session.close()
+            if "sink" in locals():
+                sink.close()
+            runner = locals().get("runner")
+            if runner is not None and getattr(runner, "owns_memory_store", False):
+                runner.memory_store.close()
+            if hud is not None:
+                hud.close()
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ historical snapshots. See [the working design index](IRIS_DESIGN_INDEX.md).
 
 ## Source briefing execution (CAP-32)
 
-`Make a briefing from my notes on architecture` now runs a fixed local recipe:
+`Make a briefing from my notes on architecture` queues a fixed local recipe in Jobs:
 
 1. Search the configured vault for the literal topic phrase.
 2. Read up to three real search matches, prioritizing titles; keep sources separate.
@@ -65,9 +65,12 @@ The recipe uses at most five calls: search (30 seconds), up to three reads
 (20 seconds each), and draft/recheck (30 seconds). Each operation goes through
 ToolExecutor and the existing authority policy. Strict output contracts validate
 paths, hashes, text sizes and excerpt spans. An elapsed deadline or supplied host
-cancellation callback stops subsequent stages; cancellation is not yet a UI command.
+cancellation stops subsequent stages and stops the active worker process. Chat remains
+available during execution. Use **Jobs** for progress, Cancel and View result.
 
-This completes the first fixed search/read/draft execution slice. CAP-32 remains
-IN-PROGRESS: general task decomposition, arbitrary typed output references, durable
-background execution, visible progress/cancel/resume and restart recovery remain
-pending. No task survives an application restart in this foreground implementation.
+Job state survives reopening IRIS. Interrupted jobs require explicit **Resume**;
+the attempt starts again from search against current sources. Saved topics/results
+are encrypted for this Windows account and are never appended to model history.
+See [background jobs](BACKGROUND-JOBS.md) for limits, retention and deletion.
+CAP-32 remains IN-PROGRESS: general task decomposition, arbitrary typed output
+references and jobs with external effects remain pending.

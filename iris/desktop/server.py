@@ -45,17 +45,20 @@ class DesktopServer(ThreadingHTTPServer):
 
     def __init__(self, address, runtime):
         self.runtime = runtime
+        self._owns_runtime = False
         self.desktop_window = False
         self.session = secrets.token_urlsafe(32)
         self.clap_listener = NativeClapListener()
         super().__init__(address, Handler)
+        self._owns_runtime = True
         if hasattr(runtime, 'start_background'):
             runtime.start_background()
 
     def server_close(self):
         try:
             self.clap_listener.close()
-            if hasattr(self.runtime, 'close'):
+            if self._owns_runtime and hasattr(self.runtime, 'close'):
+                self._owns_runtime = False
                 self.runtime.close()
         finally:
             super().server_close()
@@ -159,6 +162,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/native-standby.js': ('native-standby.js', 'text/javascript'),
                   '/dashboard.js': ('dashboard.js', 'text/javascript'),
                   '/organizer.js': ('organizer.js', 'text/javascript'),
+                  '/jobs.js': ('jobs.js', 'text/javascript'),
                   '/voice-input.js': ('voice-input.js', 'text/javascript'),
                   '/desktop.css': ('desktop.css', 'text/css')}
         if path in assets:
@@ -194,6 +198,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {'pending': app.pending_approval()})
             elif path == '/api/capabilities':
                 self._json(200, app.capabilities())
+            elif path == '/api/jobs':
+                self._json(200, {'jobs': app.jobs.list()})
             elif path == '/api/markets':
                 self._json(200, dashboard_markets())
             elif path == '/api/memories':
@@ -281,6 +287,17 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, app.set_automatic_organization(value.get('enabled')))
             elif path == '/api/chat':
                 self._json(200, app.chat(value.get('text'), value.get('mode', 'auto')))
+            elif path == '/api/jobs/start':
+                self._json(200, app.jobs.submit(value.get('topic'), request_id=value.get('request_id')))
+            elif path == '/api/jobs/read':
+                self._json(200, app.jobs.detail(value.get('id')))
+            elif path == '/api/jobs/cancel':
+                self._json(200, app.jobs.cancel(value.get('id')))
+            elif path == '/api/jobs/resume':
+                self._json(200, app.jobs.resume(value.get('id')))
+            elif path == '/api/jobs/delete':
+                app.jobs.delete(value.get('id'))
+                self._json(200, {'ok': True})
             elif path == '/api/approval':
                 if type(value.get('approved')) is not bool:
                     raise ValueError('Choose approve or decline.')
@@ -318,37 +335,54 @@ def open_browser(url):
         return False
 
 
-def main():
+def main(argv=None):
+    from iris.desktop.instance import AlreadyRunning, instance_guard
     parser = argparse.ArgumentParser(description='IRIS unified desktop assistant')
     parser.add_argument('--port', type=int, default=8766)
     parser.add_argument('--no-browser', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if not 1 <= args.port <= 65535:
+        parser.error('Port must be between 1 and 65535.')
     try:
-        runtime = DesktopRuntime()
-    except Exception:
-        print('IRIS needs configuration. Run setup.bat, then start-iris.bat.')
-        return 1
-    server = None
-    for port in range(args.port, args.port + 10):
-        try:
-            server = DesktopServer(('127.0.0.1', port), runtime)
-            break
-        except OSError:
-            continue
-    if server is None:
-        print('No available IRIS port. Close the previous instance and try again.')
-        return 1
-    url = f'http://127.0.0.1:{server.server_address[1]}'
-    print(f'IRIS is ready at {url}\nClose this launcher to stop IRIS.', flush=True)
-    if not args.no_browser:
-        threading.Timer(0.5, open_browser, args=(url,)).start()
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        server.server_close()
-    return 0
+        # Acquire ownership before initialization can recover live job records.
+        with instance_guard(ROOT):
+            try:
+                runtime = DesktopRuntime()
+            except Exception:
+                print('IRIS needs configuration. Run setup.bat, then start-iris.bat.')
+                return 1
+            server = None
+            browser_timer = None
+            try:
+                for port in range(args.port, min(args.port + 10, 65536)):
+                    try:
+                        server = DesktopServer(('127.0.0.1', port), runtime)
+                        break
+                    except OSError:
+                        continue
+                if server is None:
+                    print('No available IRIS port. Close the previous instance and try again.')
+                    return 1
+                url = f'http://127.0.0.1:{server.server_address[1]}'
+                print(f'IRIS is ready at {url}\nClose this launcher to stop IRIS.', flush=True)
+                if not args.no_browser:
+                    browser_timer = threading.Timer(0.5, open_browser, args=(url,))
+                    browser_timer.start()
+                try:
+                    server.serve_forever()
+                except KeyboardInterrupt:
+                    pass
+                return 0
+            finally:
+                if browser_timer is not None:
+                    browser_timer.cancel()
+                if server is not None:
+                    server.server_close()
+                else:
+                    runtime.close()
+    except AlreadyRunning:
+        print('IRIS is already running. Open its existing desktop window or Chrome tab.')
+        return 0
 
 
 if __name__ == '__main__':

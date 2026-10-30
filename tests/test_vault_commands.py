@@ -1,5 +1,6 @@
 from pathlib import Path
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -68,8 +69,17 @@ class VaultCommandTests(unittest.TestCase):
         with patch.object(self.app.autonomy, 'submit') as organize:
             result = self.app.chat('Make a briefing from my notes on private fixture')
         self.assertEqual(result['route'], 'LOCAL')
-        self.assertIn('IRIS/About me.md', result['reply'])
-        self.assertIn('private fixture', result['reply'])
+        self.assertIn('job', result)
+        self.assertNotIn('IRIS/About me.md', result['reply'])
+        deadline = time.monotonic() + 12
+        while time.monotonic() < deadline:
+            detail = self.app.jobs.detail(result['job']['id'])
+            if detail['status'] not in {'queued', 'running', 'cancelling'}:
+                break
+            time.sleep(.02)
+        self.assertTrue(detail['result_available'], detail)
+        self.assertIn('IRIS/About me.md', detail['result']['reply'])
+        self.assertIn('private fixture', detail['result']['reply'])
         self.assertEqual(self.brain.calls, [])
         self.assertEqual(self.app.history, [])
         organize.assert_not_called()

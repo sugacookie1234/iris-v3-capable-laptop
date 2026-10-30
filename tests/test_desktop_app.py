@@ -6,7 +6,7 @@ import socket
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from urllib.parse import urlsplit
 import webbrowser
 
@@ -50,6 +50,13 @@ class FakeWebview:
 
 
 class DesktopAppTests(unittest.TestCase):
+    def test_exhausted_ports_close_native_runtime(self):
+        runtime = SimpleNamespace(close=Mock())
+        with patch.object(app, 'DesktopServer', side_effect=OSError('Synthetic occupied port')):
+            with self.assertRaisesRegex(RuntimeError, 'No available IRIS port'):
+                app.run_window(FakeWebview(), runtime)
+        runtime.close.assert_called_once_with()
+
     def test_owned_server_stops_on_close_and_renderer_failure(self):
         for fails in (False, True):
             with self.subTest(failure=fails), tempfile.TemporaryDirectory() as data, patch.dict(os.environ):

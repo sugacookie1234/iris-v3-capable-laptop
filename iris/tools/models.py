@@ -74,6 +74,7 @@ class FailureCode(StrEnum):
     APPROVAL_REQUIRED = "approval_required"
     APPROVAL_REJECTED = "approval_rejected"
     TIMEOUT = "timeout"
+    CANCELLED = "cancelled"
     EXECUTION_FAILED = "execution_failed"
 
 

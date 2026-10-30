@@ -114,6 +114,7 @@ function parseVoiceCommand(text) {
     memories:/^(?:(?:show|open|view)(?: me)? )?(?:(?:my|the) )?(?:memories|memory panel)$/,
     tasks:/^(?:(?:show|open|view)(?: me)? )?(?:(?:my|the) )?(?:tasks|task list)$/,
     goals:/^(?:(?:show|open|view)(?: me)? )?(?:(?:my|the) )?(?:goals|goal list)$/,
+    jobs:/^(?:(?:show|open|view)(?: me)? )?(?:(?:my|the) )?(?:jobs|background jobs|job list|job status)$/,
     notes:/^(?:(?:show|open|view)(?: me)? )?(?:(?:my|the) )?(?:notes|notebook)$/,
     activity:/^(?:(?:(?:show|open|view)(?: me)? )?(?:(?:my|the) )?(?:activity|automatic changes)|what did you (?:save|change))$/,
     undo:/^(?:undo (?:that|the last (?:change|automatic change))|undo last change)$/,

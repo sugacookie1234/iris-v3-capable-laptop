@@ -1,4 +1,4 @@
-# Validation — October 27, 2026
+# Validation
 
 ## Automatic organization and reminders
 
@@ -452,6 +452,53 @@ See [Fish's language contract](https://docs.fish.audio/features/speech-to-text#l
   into the voice model is not claimed. See [delivery limits](VOICE-DELIVERY.md).
 - Zero configured-secret matches in changed files. No new dependencies, vault
   changes or database migration. Rollback baseline: `f96db0d`.
+
+## 2026-10-30 — Durable background notes jobs
+
+- Final complete suite: **897 run, 893 passed, four skipped**, 139.303 seconds
+  with normal Windows permissions and the native app closed during the run.
+  Command: `.venv\Scripts\python.exe -m unittest discover -s tests -q`.
+- Added the fixed notes recipe's encrypted local job store and single bounded
+  worker, with metadata progress, cancellation, explicit retry/restart recovery,
+  retention/deletion and request deduplication. Chat releases its turn immediately.
+  Private result contents are opened explicitly and stay outside model history.
+- Focused supervisor suite: **26 passed**, including real Windows DPAPI and its
+  SQLite rollback journal, no automatic replay, current-source resume, cancellation
+  races, stale callbacks, queue limits, retention, failed writes/encryption and
+  unreadable-topic isolation. Synthetic fixtures only.
+- Runtime/authentication/launcher/receipt/cancellation checks: **50 passed** after
+  final integration. Shared desktop/browser ownership is acquired before storage
+  recovery; failed port binding no longer closes the runtime used by the next port.
+- All **eight desktop JavaScript checks passed**, covering single-inflight polling,
+  stale-response guards, quiet deduplicated notices, reload/unload, approval priority,
+  Cancel/Resume/Delete, and explicit text-only result rendering. Existing voice,
+  microphone, dashboard, organization and standby checks remained passing.
+- Two full-suite attempts exposed older timing-sensitive fixtures: a two-second
+  worker-start allowance in a receipt privacy test, and a two-second local HTTP
+  snapshot allowance in a HUD privacy/state test. Their budgets are now ten seconds;
+  actual timeout/cancellation tests are unchanged. The receipt test also explicitly
+  checks successful execution before assessing verification metadata.
+- The HUD failure exposed cleanup being skipped if its final prompt raises.
+  Cleanup now runs in `finally`; a new synthetic regression verifies that session,
+  sink, owned memory store and HUD all close. **26 focused receipt/HUD/cleanup
+  checks passed** after these corrections.
+- Local native-host acceptance completed a real architecture briefing: search,
+  three reads and source-checked draft; **partial** coverage, three sources and
+  **zero model calls**. Listing omitted result bodies; explicit detail retrieval
+  confirmed revision/excerpt checks. An initial five-second polling request timed
+  out during the concurrent full suite; subsequent list/detail checks passed.
+- After the final suite, a fresh native-host check queued its reply in **0.055
+  seconds**, observed the running state, confirmed chat availability, and completed
+  all five stages with three sources and zero model calls. The earlier completed
+  result survived reopening with one attempt; it was then deleted as test cleanup.
+  The fresh architecture briefing remains available in Jobs. IRIS was left running.
+- Native visual inspection was unavailable: the computer-use JavaScript helper
+  could not initialize its assets, including after reset. The interface evidence
+  above is automated DOM testing and authenticated HTTP, not a screenshot review.
+- No paid model/speech/phone requests were used for validation. A separate ignored
+  `.local/jobs.sqlite3` was added; existing databases and source notes are unchanged.
+  Configured-secret scan found zero matches in publishable changes. Source rollback
+  baseline: `fd9acb1`; see [job storage and rollback](BACKGROUND-JOBS.md).
 
 ### Earlier hardware and integration acceptance still outstanding
 

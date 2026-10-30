@@ -28,8 +28,10 @@ or a bulk import into the confirmed-memory database.
   Broader trace/cost coverage and runtime health verification remain pending.
 - **CAP-32 first execution slice:** bounded read-only proposal validation, a local
   preview and a fixed search/read/draft recipe. Source revisions and excerpt spans
-  are checked independently. General planning and durable background jobs remain
-  pending. [Vault and planning usage](OBSIDIAN-READING.md).
+  are checked independently. **CAP-22/32 background slice:** this fixed recipe now
+  has durable encrypted job records, visible progress, cancellation and explicit
+  restart recovery. General planning and jobs with external effects remain pending.
+  [Vault and planning usage](OBSIDIAN-READING.md), [job controls](BACKGROUND-JOBS.md).
 - New action handlers must pass through the existing `ToolExecutor` and authority
   checks. App launches use YELLOW approval and distinguish launch requests from
   independently observed windows. One workspace approval covers exactly Chrome,

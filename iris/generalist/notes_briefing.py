@@ -15,7 +15,7 @@ from iris.obsidian import (
     MAX_SEARCH_RESULTS, ObsidianKnowledgeAdapter, _safe_note_text, _vault_root,
     search_notes,
 )
-from iris.tools import AuthorityContext, RequestOrigin, ResultStatus, ToolCall, ToolExecutor, ToolRegistry
+from iris.tools import AuthorityContext, FailureCode, RequestOrigin, ResultStatus, ToolCall, ToolExecutor, ToolRegistry
 from iris.tools.models import ArgumentType, AuthorityLevel, ToolArgument, ToolSpec
 from iris.tools.workspace import MAX_READ_BYTES, _safe_parts
 
@@ -199,7 +199,7 @@ class NotesBriefing:
     def specifications(self):
         return self.executor.specifications()
 
-    def run(self, topic, cancelled=None):
+    def run(self, topic, cancelled=None, progress=None):
         topic = _topic(topic)
         deadline = time.monotonic() + MAX_SECONDS
         nodes, completed = [], []
@@ -207,46 +207,73 @@ class NotesBriefing:
         partial = False
         authority = AuthorityContext(True, _PERMISSIONS)
 
+        def check_cancelled():
+            if cancelled is not None:
+                try:
+                    requested = cancelled()
+                    if type(requested) is not bool:
+                        raise ValueError('Invalid host cancellation signal.')
+                except Exception:
+                    raise _Stopped('failed') from None
+                if requested:
+                    raise _Stopped('cancelled')
+
+        def report(stage):
+            check_cancelled()
+            if progress is not None:
+                try:
+                    progress({'stage': stage, 'completed_steps': list(completed)})
+                except Exception:
+                    # Losing durable progress must stop this job before more work.
+                    raise _Stopped('failed') from None
+            check_cancelled()
+
+        def finish_stage(identifier):
+            completed.append(identifier)
+            report(identifier)
+
         def invoke(identifier, tool, arguments, dependencies=()):
-            if cancelled is not None and cancelled():
-                raise _Stopped('cancelled')
+            check_cancelled()
             nodes.append({'id': identifier, 'tool': tool, 'arguments': arguments, 'depends_on': list(dependencies)})
             plan = validate_plan({'objective': f'Build a source briefing about {topic}.', 'nodes': nodes},
                                  self.specifications(), permissions=_PERMISSIONS, origin=RequestOrigin.USER)
             step = next(node for node in plan.nodes if node.id == identifier)
             if not set(dependencies).issubset(completed):
                 raise ValueError('A dependency has not completed.')
+            report(identifier)
             if time.monotonic() + step.timeout_seconds > deadline:
                 raise _Stopped('timeout')
-            result = self.executor.execute(ToolCall(tool, dict(step.arguments), RequestOrigin.USER), authority=authority)
-            if cancelled is not None and cancelled():
-                raise _Stopped('cancelled')
+            result = self.executor.execute(ToolCall(tool, dict(step.arguments), RequestOrigin.USER),
+                                           authority=authority, cancelled=cancelled)
+            check_cancelled()
             if time.monotonic() >= deadline:
                 raise _Stopped('timeout')
             if result.status != ResultStatus.SUCCESS:
-                raise _Stopped('failed')
+                raise _Stopped('cancelled' if result.failure and result.failure.code == FailureCode.CANCELLED else 'failed')
             return result.value
 
         try:
             found = invoke('search', 'obsidian_search', {'query': topic})
             paths, partial = _search_output(found, topic)
-            completed.append('search')
+            finish_stage('search')
             if not paths:
+                report('done')
                 return self._answer('No matching notes appeared in the vault folders I could check. Try a more specific phrase.',
                                     'No matching notes found.', 'no_matches', completed, partial=partial)
             for index, path in enumerate(paths):
                 identifier = f'read_{index + 1}'
                 note = SourceNote.parse(invoke(identifier, 'notes_briefing_read', {'path': path}, ('search',)), path)
                 notes.append(note)
-                completed.append(identifier)
+                finish_stage(identifier)
             selected = json.dumps([{'path': note.path, 'sha256': note.sha256} for note in notes], ensure_ascii=False, separators=(',', ':'))
             result = invoke('draft', 'notes_briefing_draft', {'topic': topic, 'sources_json': selected}, tuple(completed[1:]))
             sources = _verified_draft(result, notes)
-            completed.append('draft')
+            finish_stage('draft')
+            report('done')
         except _Stopped as stopped:
-            messages = {'cancelled': 'I stopped the notes briefing. No draft was completed.',
-                        'timeout': 'The notes briefing reached its time limit. No draft was completed.',
-                        'failed': 'I could not finish the notes briefing. A source may be unavailable or changed; no draft was completed.'}
+            messages = {'cancelled': 'I stopped the notes briefing. No draft was returned.',
+                        'timeout': 'The notes briefing reached its time limit. No draft was returned.',
+                        'failed': 'I could not finish the notes briefing. No draft was returned.'}
             return self._answer(messages[stopped.status], messages[stopped.status], stopped.status, completed)
         except (ValueError, OSError, TypeError, KeyError):
             return self._answer('I could not verify the notes briefing results, so I have not presented a completed draft.',

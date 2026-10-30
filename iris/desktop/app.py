@@ -4,8 +4,6 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 import ctypes
-from ctypes import wintypes
-import hashlib
 import logging
 import os
 from pathlib import Path
@@ -18,13 +16,10 @@ from iris.desktop.browser import ChromeBrowser
 from iris.desktop.runtime import DesktopRuntime, ROOT
 from iris.desktop.server import DesktopServer
 from iris.desktop.tray import install_tray
+from iris.desktop.instance import AlreadyRunning, instance_guard
 
 TITLE = 'I.R.I.S. — Personal Intelligence'
 LOG = logging.getLogger('iris.desktop')
-
-
-class AlreadyRunning(RuntimeError):
-    pass
 
 
 @contextmanager
@@ -32,21 +27,8 @@ def single_instance():
     """A per-checkout, per-Windows-session mutex, released even on launch failure."""
     if os.name != 'nt':
         raise RuntimeError('The standalone launcher requires Windows. Use browser mode on other systems.')
-    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-    kernel.CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
-    kernel.CreateMutexW.restype = wintypes.HANDLE
-    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-    kernel.CloseHandle.restype = wintypes.BOOL
-    identifier = hashlib.sha256(str(ROOT.resolve()).lower().encode()).hexdigest()[:24]
-    handle = kernel.CreateMutexW(None, False, 'Local\\IRIS-' + identifier)
-    if not handle:
-        raise OSError('Could not reserve the IRIS application instance.')
-    try:
-        if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
-            raise AlreadyRunning('IRIS is already open. Select its window on the taskbar.')
+    with instance_guard(ROOT):
         yield
-    finally:
-        kernel.CloseHandle(handle)
 
 
 def local_navigation(url, origin):
@@ -81,6 +63,8 @@ def run_window(webview, runtime, port=8766):
         except OSError:
             continue
     if server is None:
+        if hasattr(runtime, 'close'):
+            runtime.close()
         raise RuntimeError('No available IRIS port. Close the earlier instance and try again.')
     server.desktop_window = True
     thread = threading.Thread(target=server.serve_forever, name='IRIS local server', daemon=True)

@@ -44,6 +44,14 @@
   authority, strict output contracts, source revision/readback and excerpt checks.
   The output is labelled source excerpts, with no model cost or new write authority.
 
+- **ADR-026 — Implementation decision, 2026-10-30:** Run the fixed notes recipe in
+  one bounded background worker. Persist encrypted topics/results and metadata
+  progress, with explicit cancellation and at most three user-requested attempts.
+  Restarted jobs require Resume and reread current sources from the beginning.
+  Do not replay automatically, restore raw partial reads or expand tool authority.
+  Retain up to seven days/100 records, with explicit deletion. This is the first
+  CAP-22/M7 job slice, not generic external-effect recovery. See [job controls](BACKGROUND-JOBS.md).
+
 ### Decision change template
 
 ```text

@@ -192,7 +192,8 @@ class LiveHUDTests(unittest.TestCase):
             return re.search(r"IRIS session HUD: (http://\S+)", output.getvalue())[1]
 
         def snapshot():
-            with urlopen(url() + "api/conversation", timeout=2) as response:
+            # This verifies state/privacy, not scheduler latency under suite load.
+            with urlopen(url() + "api/conversation", timeout=10) as response:
                 return json.load(response)
 
         class Vosk:
@@ -264,7 +265,7 @@ class LiveHUDTests(unittest.TestCase):
                 self.assertEqual(snapshot()["state"], "error" if failure else "idle")
                 self.assertEqual(snapshot()["response"], reply if "synthesis" in stages else "")
                 self.assertNotIn("synthetic-private-detail", json.dumps(snapshot()))
-                with urlopen(url(), timeout=2) as page:
+                with urlopen(url(), timeout=10) as page:
                     rendered = page.read().decode()
                 if "synthesis" in stages:
                     self.assertIn(reply, rendered)
