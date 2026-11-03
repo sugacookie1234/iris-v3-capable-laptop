@@ -203,6 +203,7 @@ async function voiceCommand(text,context={}){
     if(command==='memories')await showMemories();if(command==='tasks')await showTasks();
     if(command==='goals')await showGoals();if(command==='notes')await showNotes();
     if(command==='jobs')showJobs();if(command==='experiences')await showExperiences();
+    if(command==='business')await showBusiness();
     if(command==='activity')await showActivity();if(command==='undo')await undoLastAutomatic();
     if(command==='council')showCouncil();if(command==='help')showHelp();return true;
   }
@@ -287,6 +288,22 @@ async function jobAction(action,id){
   finally{pendingJobs.delete(id);if(!disposed)renderJobPanel();}
 }
 $('jobsBtn').onclick=showJobs;
+$('businessBtn').onclick=showBusiness;
+async function showBusiness(){
+  if(disposed||pendingId){if(pendingId)toast('Finish the confirmation first.');return;}
+  if(typeof renderBusiness==='undefined'){toast('Restart IRIS to load Business controls.');return;}
+  const body=panel('Business'),version=panelVersion;paragraph(body,'Loading local business projects…');
+  const current=()=>!disposed&&!pendingId&&$('panel').open&&panelVersion===version;
+  try{
+    const data=await api('/api/business');if(!current())return;
+    if(!Array.isArray(data.items))throw new Error('Invalid response');
+    renderBusiness(body,{document,items:data.items,onSave:async value=>{
+      if(!current())throw new Error('Panel closed');
+      await api('/api/business/save',value);
+      if(current())await showBusiness();
+    }});
+  }catch{if(current()){body.replaceChildren();paragraph(body,'Business workspace could not be loaded. Close and reopen Business to retry.');}}
+}
 function currentExperiencePanel(version=panelVersion){return !disposed&&!pendingId&&experiencePanelView&&$('panel').open&&version===panelVersion;}
 function renderExperiencePanel(){
   if(!currentExperiencePanel())return;

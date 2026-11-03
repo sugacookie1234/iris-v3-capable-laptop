@@ -36,6 +36,12 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 
 ## What works through the unified interface
 
+- **Business workspace:** open Business or say “Show business” to save product
+  comparisons, supplied evidence and local cost scenarios. No external commercial
+  actions or paid research. See [workflow and limits](docs/BUSINESS-WORKSPACE.md).
+- **Offline evaluation:** run `.venv\Scripts\python.exe -m iris.generalist.evaluation`
+  for paired synthetic regression results with no API calls. See
+  [evaluation scope](docs/OFFLINE-EVALUATION.md).
 - **Reviewed task memory:** open Jobs → Task memory or say “Show task memory”.
   Completed notes briefings propose metadata-only summaries; keep, dismiss, mark
   incorrect or forget them. Kept summaries guide local notes-plan previews without

@@ -59,6 +59,18 @@
   records to provider context. Broader learning remains pending. See
   [task memory](TASK-MEMORY.md).
 
+- **ADR-028 — Implementation decision, 2026-11-03:** CAP-34 reuses independently
+  asserted contract fixtures for paired baseline/candidate runs and a separate
+  actual preview-guidance ablation. Reject all failures/regressions; never promote
+  behavior from scores. This is not evidence of improved model reasoning.
+- **ADR-029 — Implementation decision, 2026-11-03:** CAP-28 starts with bounded
+  supplied-evidence feasibility and decimal scenario arithmetic. Persist project
+  revisions in additive local memory tables outside fact retrieval. Explicit Save
+  authorizes only local persistence; existing session/origin controls remain.
+  No network job is needed for bounded calculations. Future research uses existing
+  job and tool authority rather than a new business agent. Net profit remains
+  unknown while taxes and overhead are unresolved.
+
 ### Decision change template
 
 ```text

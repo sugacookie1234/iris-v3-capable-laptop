@@ -63,13 +63,14 @@ def build_capabilities(config, settings, desktop_specs=(), brain_specs=(), permi
         'clap_standby': 'supported_while_app_running_microphone_required',
         'phone_bridge': 'separate_setup_status_unknown',
         'background_notes_jobs': 'configured' if config.obsidian_vault or config.obsidian_root else 'vault_required',
+        'business_workspace': 'local_supplied_evidence_only',
     }
     return {'version': 1, 'tools': tools, 'models': models, 'services': services,
         'local_commands': ['daily briefing', 'find files named …', 'what have you done today',
                            'show action history', 'clear action history', 'what can you do',
                            'check obsidian', 'search my notes for …', 'read note …', 'read next page',
                            'plan a briefing from my notes on …', 'make a briefing from my notes on …',
-                           'show jobs', 'cancel briefing', 'resume briefing', 'show task memory'],
+                           'show jobs', 'cancel briefing', 'resume briefing', 'show task memory', 'show business'],
         'skills': {'status': 'host_workflows_only', 'automatic_installation': False,
             'workflows': [{'name': definition.name, 'tools': [step.tool_name for step in definition.steps],
                            'status': 'registered', 'live_verified': False} for definition in workflows]},
@@ -91,6 +92,7 @@ def capability_reply(inventory):
     if 'desktop_volume_read' in names:
         lines.append('• Read system volume; changing it requires approval and a readback.')
     lines.append('• Find files by name, give a daily briefing, and show local action history.')
+    lines.append('• Business: save local product comparisons and cost scenarios from supplied inputs; no supplier, storefront or payment connections.')
     lines.append('• Review local notes-task summaries in Jobs → Task memory; kept summaries guide notes plan previews.')
     if services['obsidian_folder'] == 'configured':
         lines.append('• Search and read Obsidian notes locally, including long notes page by page. Ask “Check Obsidian” to check access.')

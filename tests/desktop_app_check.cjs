@@ -21,7 +21,7 @@ class Element {
   pause(){this.paused=true;}
   load(){}
 }
-function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermission,standbyPreference,jobs=false,experiences=false}={}){
+function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermission,standbyPreference,jobs=false,experiences=false,business=false}={}){
   const elements={};
   for(const match of fs.readFileSync(path.join(__dirname,'../web/index.html'),'utf8').matchAll(/id="([^"]+)"/g))elements[match[1]]=new Element(match[1]);
   const document={body:new Element('body'),events:{},getElementById:id=>elements[id]||null,createElement:()=>new Element(),addEventListener:Element.prototype.addEventListener,emit:Element.prototype.emit};
@@ -74,6 +74,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   const context=vm.createContext(sandbox);
   if(jobs){responses['/api/jobs']={jobs:[]};vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/jobs.js'),'utf8'),context);}
   if(experiences){responses['/api/experiences']={items:[]};vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/experiences.js'),'utf8'),context);}
+  if(business){responses['/api/business']={items:[]};vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/business.js'),'utf8'),context);}
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/app.js'),'utf8'),context);
   return {elements,document,window,requests,responses,intervals,storage,timeouts,
     get monitor(){return monitor;},get input(){return input;},set autoEnd(value){autoEnd=value;},
@@ -490,5 +491,16 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   memory.responses['/api/experiences']=()=>{throw Error('PRIVATE storage path');};await memory.run('showExperiences()');assert.match(memoryText(),/could not be loaded/);assert.doesNotMatch(memoryText(),/PRIVATE storage path/);
   const leavingMemory=memory.run('showExperiences()');memory.window.emit('pagehide');await leavingMemory;
   assert.equal(memory.timeouts.size,0,'Task memory leaves no polling or delayed work after unload');
-  console.log('Desktop routing, standby, speech, approvals, background jobs, task memory reviews, stale responses and cleanup passed.');
+  const business=app({business:true});await business.flush();
+  await business.elements.businessBtn.onclick();assert.equal(business.elements.panelTitle.textContent,'Business');
+  await business.run('send("show business")');assert.equal(chatRequests(business).length,0);
+  assert.equal(business.playCalls,0,'Opening business does not use paid speech');
+  let finishBusiness;
+  business.responses['/api/business']=()=>new Promise(done=>finishBusiness=done);
+  const loadingBusiness=business.run('showBusiness()');await business.flush();business.run('showHelp()');
+  finishBusiness({items:[]});await loadingBusiness;
+  assert.equal(business.elements.panelTitle.textContent,'Just ask IRIS','Late business response cannot replace a different panel');
+  const beforeBusiness=business.requests.length;business.run('pendingId="approval"');await business.run('showBusiness()');
+  assert.equal(business.requests.length,beforeBusiness,'Approval prevents Business access');
+  console.log('Desktop routing, standby, speech, approvals, background jobs, task memory, business, stale responses and cleanup passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

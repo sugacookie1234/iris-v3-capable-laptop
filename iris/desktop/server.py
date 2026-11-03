@@ -164,6 +164,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/organizer.js': ('organizer.js', 'text/javascript'),
                   '/jobs.js': ('jobs.js', 'text/javascript'),
                   '/experiences.js': ('experiences.js', 'text/javascript'),
+                  '/business.js': ('business.js', 'text/javascript'),
                   '/voice-input.js': ('voice-input.js', 'text/javascript'),
                   '/desktop.css': ('desktop.css', 'text/css')}
         if path in assets:
@@ -203,6 +204,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {'jobs': app.jobs.list()})
             elif path == '/api/experiences':
                 self._json(200, {'items': app.experiences()})
+            elif path == '/api/business':
+                from iris.generalist.business import BusinessWorkspace
+                self._json(200, {'items': BusinessWorkspace(app.memory_path).list()})
             elif path == '/api/markets':
                 self._json(200, dashboard_markets())
             elif path == '/api/memories':
@@ -303,6 +307,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {'ok': True})
             elif path == '/api/experiences/review':
                 self._json(200, app.review_experience(value.get('id'), value.get('revision'), value.get('decision')))
+            elif path == '/api/business/save':
+                self._json(200, app.save_business(value))
             elif path == '/api/experiences/forget':
                 app.forget_experience(value.get('id'), value.get('revision'))
                 self._json(200, {'ok': True})

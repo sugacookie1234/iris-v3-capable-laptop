@@ -19,6 +19,7 @@ CORPUS = (
     ('source_verification', 'tests.test_notes_briefing'),
     ('memory', 'tests.test_experiences'),
     ('routing', 'tests.test_router'),
+    ('business', 'tests.test_business'),
 )
 
 

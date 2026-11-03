@@ -18,6 +18,7 @@ from iris.tasks.store import TaskStore
 from iris.terminal import load_config, create_brain, _memory_proposal
 from iris.tools import Approval, ToolExecutor
 from iris.tools.models import ResultStatus
+from iris.tools.models import RequestOrigin, ToolResult, ToolFailure, FailureCode
 from iris.desktop.web_search import search_query, research
 from iris.desktop.autonomy import Autonomy, enabled as automatic_enabled
 from iris.desktop.commands import DesktopCommands, normalize
@@ -27,6 +28,7 @@ from iris.desktop.vault_commands import VaultCommands
 from iris.goals.store import GoalStore
 from iris.workflows import WorkflowRegistry
 from iris.generalist.plan import notes_briefing_preview
+from iris.generalist.business import BusinessWorkspace
 from iris.generalist.notes_briefing import NotesBriefing
 from iris.agent_jobs.notes import NotesJobs, JobError
 from iris.generalist.experiences import Experiences
@@ -289,8 +291,30 @@ class DesktopRuntime:
         except Exception:
             return 'Task memory is unavailable; this plan uses only the current recipe.'
 
+    def save_business(self, value):
+        if type(value) is not dict or set(value) - {'project', 'request_id', 'id', 'revision'}:
+            raise ValueError('Unknown business request fields or action.')
+        self.action_history.names.add('business_evaluate')
+        receipt = self.action_history.begin('business_evaluate', RequestOrigin.USER)
+        self.action_history.approval(receipt, 'approved')  # Explicit authenticated Save action.
+        try:
+            result = BusinessWorkspace(self.memory_path).save(value.get('project'), value.get('request_id'),
+                value.get('id'), value.get('revision'))
+        except Exception:
+            self.action_history.finish(receipt, ToolResult(ResultStatus.FAILED,
+                failure=ToolFailure(FailureCode.EXECUTION_FAILED, 'Business evaluation failed.')))
+            raise
+        self.action_history.finish(receipt, ToolResult(ResultStatus.SUCCESS))
+        return result
+
     def _awareness_command(self, text):
         command = normalize(text)
+        if command in {'show business', 'open business', 'show business projects', 'open business workspace'}:
+            items = BusinessWorkspace(self.memory_path).list()
+            return DesktopCommands.answer(
+                'Open Business to create or compare product scenarios. ' +
+                (f'{len(items)} saved projects are available.' if items else 'No business projects saved yet.'),
+                'The local business workspace is available.', business=items)
         if command in {'show task memory', 'show my task memory', 'show learned procedures'}:
             items = self.experiences()
             summary = '\n'.join(f"{item['state']}: {item['summary']}" for item in items[:10])

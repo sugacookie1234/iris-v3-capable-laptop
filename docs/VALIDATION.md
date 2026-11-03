@@ -538,3 +538,51 @@ for an optional local endpoint later, after checking its actual available VRAM.
 - This validates fixed notes-recipe metadata and preview reuse, not general
   learning quality, independent fact checking, microphone quality or OMEN hardware.
 
+## 2026-11-03: evaluation and business feasibility sprint
+
+Branch: `sprint/evaluation-business-os`, based on `b4e5c96`. Main is not merged.
+Evaluation foundation commit: `8fc9499`. CAP-34 and CAP-28 remain IN-PROGRESS.
+
+Commands and outcomes:
+
+```powershell
+.venv\Scripts\python.exe -m unittest tests.test_evaluation
+# 2 passed (gate failures, duplicates, missing cases and summary behavior)
+.venv\Scripts\python.exe -m unittest tests.test_business tests.test_desktop_business tests.test_evaluation tests.test_desktop_capabilities
+# 24 passed
+.venv\Scripts\python.exe -m unittest discover -s tests
+# 935 run: 931 passed, 4 skipped; 108.385 seconds
+Get-ChildItem tests/desktop_*_check.cjs | ForEach-Object { node $_.FullName; if ($LASTEXITCODE) { exit $LASTEXITCODE } }
+# All 10 checks passed
+node tests/desktop_app_check.cjs
+# Passed again after adding Business panel routing/stale-response/approval checks
+.venv\Scripts\python.exe -m iris.generalist.evaluation --output .local/evaluation-business-a
+.venv\Scripts\python.exe -m iris.generalist.evaluation --output .local/evaluation-business-b
+# Both PASS: 70/70 baseline, 70/70 candidate, zero regressions
+# SHA-256 comparison: results.json files byte-identical
+```
+
+The financial scenario suite independently checks exact decimal results, zero
+margin, conservative cash needs, sensitivity, missing costs, contradictory and
+injected evidence. Workspace/API checks cover persistence, backup/restore,
+idempotency, stale edits, malformed inputs, origin/session rejection and receipt
+privacy. No test assertion was weakened to make a failure pass; an initially
+unclosed SQLite backup fixture was corrected to close both connections.
+
+Native app was started on this development branch. Read-only loopback smoke check
+confirmed native host, current Business asset, zero saved business projects and
+the existing single Task memory item still pending. No real project was seeded,
+no owner review decision altered, and no commercial or paid provider call made.
+This is HTTP host acceptance plus automated DOM tests, not human visual or OMEN
+hardware acceptance. All broader microphone, provider and connector limits remain.
+
+Evaluation finding: reviewed memory adds coverage guidance but produces the same
+executable plan. No correctness gain or generalized learning improvement is proven.
+Gate metrics are asserted contract outcomes, not market validation or LLM quality.
+No promotion, source modification or permission expansion follows an evaluation.
+Configured-secret scan found zero matches in changed source/tests/docs.
+
+See [business limits](BUSINESS-WORKSPACE.md), [evaluation scope](OFFLINE-EVALUATION.md)
+and [next sprint backlog](SPRINT-BACKLOG.md). Business data is plaintext, local,
+bounded and indefinite; export/delete UI and live evidence verification remain open.
+

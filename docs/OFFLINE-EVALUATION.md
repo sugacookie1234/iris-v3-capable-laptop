@@ -34,7 +34,9 @@ and provider generation in the curated in-process corpus are rejected. Fixed
 local tool subprocesses execute only the existing notes adapters; this is not an
 OS sandbox for arbitrary third-party test plugins. Do not load untrusted modules.
 
-Initial result: 59/59 cases in each arm, zero regressions. Reviewed guidance adds
+Initial foundation: 59/59 cases in each arm. The business-expanded corpus has
+70 cases per arm, including eleven cost, evidence and persistence scenarios.
+Both runs have zero regressions. Reviewed guidance adds
 a coverage caution but leaves the executable plan unchanged. **No task-correctness
 improvement is demonstrated.** These fixtures do not measure LLM reasoning quality,
 live research truth, general-agent performance or holdout generalization. Future

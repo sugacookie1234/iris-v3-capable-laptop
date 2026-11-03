@@ -11,6 +11,9 @@ features remain proposals until their implementation and acceptance evidence exi
 - [Collaboration protocol](IRIS_CODEX_PROTOCOL.md)
 - [Actual validation evidence](VALIDATION.md)
 - [Reviewed task memory: first CAP-33 slice](TASK-MEMORY.md)
+- [Offline evaluation: first CAP-34 slice](OFFLINE-EVALUATION.md)
+- [Business feasibility: first CAP-28 slice](BUSINESS-WORKSPACE.md)
+- [Current sprint handoff and backlog](SPRINT-BACKLOG.md)
 
 Preserved source snapshots and a linked index were also imported into the owner's
 configured Obsidian vault under `IRIS/Design/2026-10-28/` and `IRIS/Start Here.md`.

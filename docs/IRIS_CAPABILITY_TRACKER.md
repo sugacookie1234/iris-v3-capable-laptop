@@ -50,14 +50,14 @@ Do not use a single ambiguous “done” marker. `TESTED` and `LIVE-VERIFIED` re
 | CAP-25 | Unified remote context | DESIGNED | M6 | Phone has bounded shared case access; channel restrictions |
 | CAP-26 | Proactive digest/notification policy | DESIGNED | M5 | No duplicate or stale alerts; owner quiet hours and pause |
 | CAP-27 | Always-on companion worker | DEFERRED | M8 | Service survives laptop sleep; secure sync and real costs |
-| CAP-28 | Business operations workflows | DESIGNED | M8 | Complete one approved, verifiable recurring business procedure |
+| CAP-28 | Business operations workflows | IN-PROGRESS | M8 | Local supplied-evidence feasibility workspace and cost comparisons implemented; live research, recurring operations and commercial connectors remain pending |
 | CAP-29 | Cost/privacy/security dashboard | DESIGNED | M5/M7 | Reconciled usage and actionable controls; data deletion proof |
 
 ## Progress rollup
 
 - **Baseline counts:** 12 `REPO-REPORTED`, 16 `DESIGNED`, 1 `DEFERRED` (29 total). These are **not** completion percentages.
-- **Last full offline suite:** October 30, 2026: 897 tests run, 893 passed / four skipped after background jobs and lifecycle fixes; all eight desktop JavaScript checks passed. See `docs/VALIDATION.md`.
-- **Current highest-value milestone:** M0 software baseline audited; complete OMEN hardware acceptance. CAP-30/31 receipts and CAP-22/32 fixed background notes jobs are implemented. CAP-33 now includes reviewed fixed-notes summaries; next is CAP-34 offline evaluation. Broader planning and M1/M2 remain pending.
+- **Last full offline suite:** November 3, 2026 development branch: 935 tests run, 931 passed / four skipped; all ten desktop JavaScript checks passed. Paired offline evaluation: 70/70 per arm, zero regressions. See `docs/VALIDATION.md`.
+- **Current highest-value milestone:** M0 software baseline audited; complete OMEN hardware acceptance. CAP-30/31 receipts and CAP-22/32 fixed background notes jobs are implemented. CAP-33 reviewed summaries, CAP-34 offline contract evaluation and the first CAP-28 local feasibility workspace are implemented. Next: business evidence provenance and data lifecycle. Broader planning and M1/M2 remain pending.
 - **Known gaps:** OMEN mic/voice hardware acceptance, external app connectors, phone's access to desktop memories, general desktop autonomy, persistent cross-app jobs, always-on operation.
 
 ## Active milestone board
@@ -72,7 +72,7 @@ Do not use a single ambiguous “done” marker. `TESTED` and `LIVE-VERIFIED` re
 | M5 Watchtower v1 | NOT STARTED | One real new update, no duplicates, quiet hours | Depends M1 + relevant M4 |
 | M6 Unified phone | NOT STARTED | Authenticated remote view of approved context | Depends M1, phone setup |
 | M7 Skills and jobs | IN-PROGRESS | Fixed read-only notes jobs with progress, cancellation and recovery | General jobs, trusted skill loading and coding-agent delegation pending |
-| M8 Business/always-on | DEFERRED | Security reviewed hosted worker and one business workflow | Depends M5–M7 |
+| M8 Business/always-on | FIRST LOCAL SLICE | Local feasibility implemented; hosted worker and autonomous operations deferred | See BUSINESS-WORKSPACE.md; broader dependencies M5–M7 |
 
 ## Risk and blocker register
 
@@ -122,7 +122,7 @@ These capabilities are separate from the existing model router and tool registry
 | CAP-31 | Unified read-only capability registry | IN-PROGRESS | Tested typed tool/model/host-workflow inventory and local capability answers. Configuration is not live health; broader specialist/connector inventory remains pending. |
 | CAP-32 | Validated task DAG proposals | IN-PROGRESS | Bounded proposals, preview and background search/read/draft execution with source checks, visible cancellation and explicit restart recovery implemented. General planning and external-effect jobs remain pending. |
 | CAP-33 | Verified experience memory | IN PROGRESS | Reviewed fixed-notes metadata summaries, provenance, retention and restart checks implemented; general experience learning pending |
-| CAP-34 | Offline improvement evaluation | DESIGNED | Baseline/holdout evaluation, injection and regression rejection |
+| CAP-34 | Offline improvement evaluation | IN-PROGRESS | Paired offline contract suite, guidance ablation and failure/regression gate implemented; frozen holdout and measured candidate improvement remain pending |
 | CAP-35 | Scoped specialist workers | DESIGNED | Typed input/output, bounded delegation and no inherited blanket authority |
 | CAP-36 | Supervised routing/skill improvement | DESIGNED | Evidence, owner-reviewed promotion and rollback |
 
