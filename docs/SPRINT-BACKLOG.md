@@ -1,5 +1,18 @@
 # Evaluation + Business OS handoff
 
+## Visual sprint continuation checkpoint
+
+CAP-37 first slice adds version-1 bounded line-chart data, deterministic monthly
+compound interest (end-month contributions), and text-safe SVG/table rendering
+inside ordinary chat. Ask “Explain compound interest”. Default scenario: 1,000
+units, 5% nominal annual rate, ten years. No fees/taxes or return forecast.
+Not yet implemented: adjustable controls, animation, bar/comparison/timeline
+renderers, point focus/hover and full renderer DOM tests. CAP-38 decision cards
+have not been implemented. Continue with chart controls and renderer tests, then
+decision state/authority isolation, before business integrations and lifecycle.
+The native process has not been restarted for this slice; do not claim live UI
+acceptance. Existing owner data and pending review decisions were not touched.
+
 Development branch: `sprint/evaluation-business-os`. Do not merge main without
 owner approval. Starting revision: `b4e5c96`; evaluation foundation: `8fc9499`.
 

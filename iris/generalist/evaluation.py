@@ -20,6 +20,7 @@ CORPUS = (
     ('memory', 'tests.test_experiences'),
     ('routing', 'tests.test_router'),
     ('business', 'tests.test_business'),
+    ('visuals', 'tests.test_visuals'),
 )
 
 

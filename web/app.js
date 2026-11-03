@@ -221,6 +221,7 @@ async function send(text,context={}){
     addLine('YOU',text);answer=addLine('IRIS','…');context.onAccepted?.();setState('thinking');
     const data=await api('/api/chat',{text,mode:'auto'});answer.textContent=data.reply;logEl.scrollTop=logEl.scrollHeight;
     if(data.job)jobs?.record(data.job);
+    if(data.visual&&typeof renderVisual==='function'){try{renderVisual(answer,data.visual);}catch{toast('Visual unavailable; the text explanation is still available.');}}
     addSources(answer,data.sources);
     latestCouncil=data.council||null;$('routeLabel').textContent=data.route==='LOCAL'?'LOCAL ACTION':data.route==='WEB'?'WEB SEARCH':data.route==='COUNCIL'?'COUNCIL CONSULTED':data.route==='DEEP'?'DEEP REASONING':'AUTOMATIC REASONING';
     spokenReply=typeof data.spoken_reply==='string'&&data.spoken_reply.trim()?data.spoken_reply:data.reply;

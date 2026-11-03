@@ -296,6 +296,12 @@ Separate the desktop control plane from a public webhook bridge; never expose th
 
 ## 15. Interface, visibility and settings
 
+Owner-requested extensions: CAP-37 uses bounded versioned visual data rendered by
+local components, never model-generated executable HTML/JavaScript. CAP-38 adds
+scoped decision cards; ordinary selection never grants consequential authority.
+Interactive compound interest and business comparisons are initial targets;
+implementation status remains in the capability tracker.
+
 Keep the existing restrained dark HUD, central iris animation, truthful microphone/listening states and live captions. Add on-demand panels for:
 
 - **Today:** briefing, events, tasks and outstanding cases.

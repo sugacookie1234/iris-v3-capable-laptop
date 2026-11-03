@@ -73,6 +73,12 @@
 
 ### Decision change template
 
+- ADR-030: Begin CAP-37 with deterministic monthly compound-interest data and
+  a bounded line-chart schema. Render only text and host-generated SVG paths;
+  no external resources. Keep financial examples educational and preserve the
+  text/spoken explanation when a visual is unavailable. Other visual types and
+  CAP-38 remain unfinished.
+
 ```text
 ID:
 Date:

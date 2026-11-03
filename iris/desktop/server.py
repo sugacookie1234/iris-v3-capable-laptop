@@ -165,6 +165,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/jobs.js': ('jobs.js', 'text/javascript'),
                   '/experiences.js': ('experiences.js', 'text/javascript'),
                   '/business.js': ('business.js', 'text/javascript'),
+                  '/visuals.js': ('visuals.js', 'text/javascript'),
                   '/voice-input.js': ('voice-input.js', 'text/javascript'),
                   '/desktop.css': ('desktop.css', 'text/css')}
         if path in assets:

@@ -521,6 +521,13 @@ The cloud-default build needs no local GPU model. The RTX 5060 can be considered
 for an optional local endpoint later, after checking its actual available VRAM.
 # 2026-11-03: reviewed task memory (CAP-33 first slice)
 
+Visual foundation checkpoint: `python -m unittest tests.test_visuals
+tests.test_desktop_capabilities` passed 12 tests; `node
+tests/desktop_app_check.cjs` passed. Added arithmetic tests cover monthly/end-month
+contributions, zero rate, invalid numbers and malformed specifications. Added to
+CAP-34 corpus, but the expanded evaluation and full suite have not yet been rerun.
+No actual display/microphone or new renderer DOM acceptance is claimed.
+
 - Full local regression: **921 tests run, 917 passed, four skipped**, 236.755 seconds.
 - Final focused task-memory/API and capability checks: **13 passed**, including
   missing-source-verification rejection added after the full run began.
