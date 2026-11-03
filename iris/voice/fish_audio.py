@@ -48,7 +48,8 @@ def normalize_tts_text(text: str) -> str:
     URL/path separators and identifier characters are boundaries we deliberately
     reject, so provider text such as ``/IRIS-v2`` or ``IRIS_MODEL`` is unchanged.
     """
-    text = clean_delivery_text(text)
+    from iris.voice.presentation import spoken_text
+    text = clean_delivery_text(spoken_text(text))
     boundary = r"A-Za-z0-9_./\\:"
     text = re.sub(
         rf"(?<![{boundary}])I\.R\.I\.S\.(?![{boundary}])",
