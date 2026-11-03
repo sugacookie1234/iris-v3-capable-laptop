@@ -237,6 +237,11 @@ class ConversationOrganizer:
                 + json.dumps({'matching': relevant, 'recent_activity': recent}, ensure_ascii=False)[:12000])
 
     def _evidence(self, operation, text):
+        if operation.get('op') == 'note_capture':
+            request = re.sub(r'\s+', ' ', text.strip().casefold()).rstrip('.!?')
+            if request in {'wake up', 'hello', 'hello iris', 'hi', 'hi iris'} or re.match(
+                    r'^(?:please )?(?:explain|teach me|what is|what are|how does|how do)\b', request):
+                raise ValueError('A greeting or educational request is not a lasting note.')
         evidence = operation.get('evidence')
         note_edit = operation.get('op') in ('note_update', 'note_organize')
         authority = _unquoted(evidence) if isinstance(evidence, str) and note_edit else evidence

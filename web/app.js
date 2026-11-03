@@ -166,7 +166,7 @@ async function speak(text){
     if(fallbackText!==null&&typeof window.speechSynthesis?.speak==='function'&&typeof window.SpeechSynthesisUtterance==='function')await new Promise(resolve=>{const utterance=new window.SpeechSynthesisUtterance(fallbackText);setState('speaking');speechDone=resolve;utterance.onend=resolve;utterance.onerror=resolve;window.speechSynthesis.speak(utterance);});
   }finally{if(token===speechToken){speechDone=null;setState('idle');detector.reset();}}
 }
-async function reply(text){if(disposed)return;addLine('IRIS',text);await speak(text);}
+async function reply(text,spoken=text){if(disposed)return;addLine('IRIS',text);await speak(spoken);}
 async function voiceCommand(text,context={}){
   const simple=text.toLowerCase().trim().replace(/[.!?]+$/,'');
   let command=parseVoiceCommand(text);if(pendingId&&simple==='cancel')command='decline';
@@ -181,7 +181,7 @@ async function voiceCommand(text,context={}){
     if(command==='pausemic'){pauseMic();return true;}
     if(command==='standby'){cancelFollowUp(true);stopSpeaking();setState(busy?'thinking':'idle');toast('Standing by. Double clap when you need me.');return true;}
     if(busy){toast(pendingId?'I’m waiting for your approval.':'IRIS is finishing your request.');return true;}
-    if(command==='time'){await reply('It’s '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'.');return true;}
+    if(command==='time'){const result=await api('/api/chat',{text:'What time is it?',mode:'auto'});await reply(result.reply,result.spoken_reply);return true;}
     if(command==='weather'){
       const data=await widgets.locate();
       let report=widgets.weatherMessage||'Weather is unavailable right now. Try again shortly.';
@@ -221,6 +221,8 @@ async function send(text,context={}){
     addLine('YOU',text);answer=addLine('IRIS','…');context.onAccepted?.();setState('thinking');
     const data=await api('/api/chat',{text,mode:'auto'});answer.textContent=data.reply;logEl.scrollTop=logEl.scrollHeight;
     if(data.job)jobs?.record(data.job);
+    if(data.open_business)await showBusiness(true);
+    else if(Array.isArray(data.business))await showBusiness();
     if(data.visual&&typeof renderVisual==='function'){try{renderVisual(answer,data.visual);}catch{toast('Visual unavailable; the text explanation is still available.');}}
     addSources(answer,data.sources);
     latestCouncil=data.council||null;$('routeLabel').textContent=data.route==='LOCAL'?'LOCAL ACTION':data.route==='WEB'?'WEB SEARCH':data.route==='COUNCIL'?'COUNCIL CONSULTED':data.route==='DEEP'?'DEEP REASONING':'AUTOMATIC REASONING';
@@ -290,7 +292,7 @@ async function jobAction(action,id){
 }
 $('jobsBtn').onclick=showJobs;
 $('businessBtn').onclick=showBusiness;
-async function showBusiness(){
+async function showBusiness(create=false){
   if(disposed||pendingId){if(pendingId)toast('Finish the confirmation first.');return;}
   if(typeof renderBusiness==='undefined'){toast('Restart IRIS to load Business controls.');return;}
   const body=panel('Business'),version=panelVersion;paragraph(body,'Loading local business projects…');
@@ -298,7 +300,7 @@ async function showBusiness(){
   try{
     const data=await api('/api/business');if(!current())return;
     if(!Array.isArray(data.items))throw new Error('Invalid response');
-    renderBusiness(body,{document,items:data.items,onSave:async value=>{
+    renderBusiness(body,{document,items:data.items,create:create===true,onSave:async value=>{
       if(!current())throw new Error('Panel closed');
       await api('/api/business/save',value);
       if(current())await showBusiness();

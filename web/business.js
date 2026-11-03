@@ -2,7 +2,7 @@
 const BUSINESS_COST_FIELDS={price:'Selling price (excluding tax)',unit_cost:'Product cost per unit',inbound_shipping:'Inbound shipping per unit',packaging:'Packaging per unit',fulfilment:'Fulfilment per unit',outbound_shipping:'Outbound shipping per unit',transaction_fixed:'Fixed transaction fee per sale',transaction_percent:'Transaction percentage',advertising:'Advertising per sale',returns_allowance:'Returns allowance per sale',duties:'Duties per unit',fixed_costs:'Total fixed setup costs'};
 const BUSINESS_RESEARCH_FIELDS={customer:'Target customer',problem:'Problem solved',competitors:'Competitors (supplied evidence only)',differentiation:'Differentiation',supplier:'Supplier feasibility and missing terms',fulfilment_plan:'Fulfilment plan',risks:'Risks and operational complexity'};
 
-function renderBusiness(container,{document,items,onSave}){
+function renderBusiness(container,{document,items,onSave,create=false}){
   container.replaceChildren();
   const add=(parent,tag,value='')=>{const e=document.createElement(tag);e.textContent=value;parent.append(e);return e;};
   add(container,'p','Local feasibility workspace. Inputs are assumptions until checked. No live research, supplier contact, purchases or payments. Blank costs remain unknown; enter 0 only when justified.');
@@ -76,5 +76,6 @@ function renderBusiness(container,{document,items,onSave}){
   button(container,'New project',()=>edit());
   if(!items.length){add(list,'p','No saved projects. Create one with your own budget and supplied evidence.');edit();}
   for(const item of items)display(item);
+  if(create&&items.length)edit();
 }
 if(typeof module!=='undefined')module.exports={renderBusiness,BUSINESS_COST_FIELDS};

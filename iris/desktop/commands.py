@@ -41,7 +41,14 @@ def normalize(text):
     for _ in range(3):
         text = re.sub(r'^(?:(?:hey )?iris|please)(?:[,!:]\s*|\s+)', '', text).strip()
         text = re.sub(r'^(?:can|could|would) you (?:please )?', '', text).strip()
-    return text
+    launch = re.fullmatch(r'(open|launch|start|bring up) (?:the )?(calculator|notepad|chrome|google chrome|obsidian|file explorer)(?: app| application)?(?: for me)?', text)
+    if launch:
+        return 'open ' + launch[2]
+    aliases = {'show me my business projects': 'show business projects',
+               "i'd like to create a new business project": 'create business project',
+               'create a new business project': 'create business project',
+               'check my obsidian notes': 'check obsidian'}
+    return aliases.get(text, text)
 
 
 class DesktopCommands:

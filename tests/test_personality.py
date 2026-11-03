@@ -20,6 +20,8 @@ class PersonalityTests(unittest.TestCase):
         self.assertEqual(first['reply'], 'Hello, sir.')
         self.assertEqual(first['spoken_reply'], first['reply'])
         self.assertEqual(second['reply'], 'Hello.')
+        self.assertEqual(runtime._awareness_command('Hello, IRIS.')['reply'], 'Hello.')
+        self.assertEqual(runtime._awareness_command('Hello again.')['reply'], 'Hello.')
 
     def test_local_reporting_keeps_errors_and_speech_distinct(self):
         response = DesktopCommands.answer('The action failed. Nothing was verified.', 'The action failed.')

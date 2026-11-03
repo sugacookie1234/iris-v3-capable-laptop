@@ -100,3 +100,5 @@ Implementation or migration consequences:
 - Data retention, encryption and backup expectations.
 
 ADR-031: Harden desktop HTTP parsing and cap concurrent handlers at 32; preserve browser operation and Windows error delivery with a brief bounded rejected-body drain. No secret/data migration or new authority introduced.
+
+ADR-032: Resolve only bounded known natural app aliases through the existing host dispatcher. Permit public deterministic educational explanations into bounded history while keeping private local results excluded. Time answers use the aware host clock/configured timezone. Unsupported speech mathematics refers to the visible formula instead of inferring meaning.

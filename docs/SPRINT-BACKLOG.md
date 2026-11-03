@@ -57,3 +57,5 @@ plaintext, bounded and indefinite; deletion UI remains outstanding. UI checks ar
 automated DOM tests, not a human visual/accessibility acceptance review.
 
 Security priority checkpoint: see SECURITY.md. HTTP framing, duplicate headers/JSON, loopback binding and bounded workers hardened. Native/browser session bootstrap remains open; do not treat loopback cookies as protection from same-user malware. Continue with bootstrap design and endpoint quotas before broader autonomy.
+
+Conversation sprint checkpoint: see CONVERSATION-SPRINT.md for implemented natural app aliases, safe educational follow-up context, backend clock answers, conservative speech formatting and irrelevant-note suppression. Separate native Visual Workspace, automatic research budgets and broader context correction remain unfinished. Do not touch microphone-device matching during this sprint.

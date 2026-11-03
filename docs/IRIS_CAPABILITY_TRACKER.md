@@ -212,3 +212,5 @@ These capabilities are separate from the existing model router and tool registry
   on private notes, and broader planning remains a separate unfinished capability.
 
 Security checkpoint (CAP-29): HTTP framing/concurrency defenses implemented; session bootstrap, rate quotas, protected data migration and comprehensive dependency audit remain incomplete. See SECURITY.md.
+
+Conversation repair slice: CAP-21 natural aliases retain approvals; CAP-01/02 public educational context is preserved; CAP-08 speech presentation handles supported math/code formatting without a voice change; CAP-10 rejects leading educational note captures. CAP-37 still has only in-chat visuals. See CONVERSATION-SPRINT.md for limits and acceptance.

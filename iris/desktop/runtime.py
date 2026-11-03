@@ -309,14 +309,21 @@ class DesktopRuntime:
 
     def _awareness_command(self, text):
         command = normalize(text)
-        if command in {'hello', 'hi', 'hello iris', 'hi iris', 'hey iris'}:
+        from iris.desktop.local_time import answer as clock_answer
+        current_time = clock_answer(command, getattr(getattr(self, 'config', None), 'timezone', None))
+        if current_time:
+            return DesktopCommands.answer(current_time)
+        if re.fullmatch(r'(?:hello|hi|hey)(?:,? iris)?(?: again)?', command):
             addressed = getattr(self, '_greeted_owner', False)
             self._greeted_owner = True
             return DesktopCommands.answer('Hello.' if addressed else 'Hello, sir.')
         if 'compound interest' in command and any(word in command for word in ('explain', 'show')):
             from iris.generalist.visuals import compound, validate
             return DesktopCommands.answer('Compound interest earns interest on earlier interest. This example starts with 1,000 units at a hypothetical 5% annual rate, compounded monthly for ten years. It is an educational illustration, not a forecast.',
-                'Compound interest earns interest on earlier interest. The chart shows a hypothetical example.', visual=validate(compound()))
+                'Compound interest earns interest on earlier interest. The chart shows a hypothetical example.', visual=validate(compound()), public_context=True)
+        if command == 'create business project':
+            return DesktopCommands.answer('Use the Business form to define your new project.',
+                'The new business project form is ready to open.', open_business=True)
         if command in {'show business', 'open business', 'show business projects', 'open business workspace'}:
             items = BusinessWorkspace(self.memory_path).list()
             return DesktopCommands.answer(
@@ -397,7 +404,7 @@ class DesktopRuntime:
                 self.action_history.clear()
                 return DesktopCommands.answer('Local action-history receipts erased.')
             return DesktopCommands.answer('I kept your action history.')
-        return self.vault_commands.handle(text)
+        return self.vault_commands.handle(command)
 
     def chat(self, text, mode='auto'):
         if not isinstance(text, str) or not text.strip() or len(text) > 12000:
@@ -412,7 +419,7 @@ class DesktopRuntime:
         try:
             text = text.strip()
             local_answer = self._awareness_command(text) if mode == 'auto' else None
-            private_local_answer = local_answer is not None
+            private_local_answer = local_answer is not None and not local_answer.get('public_context', False)
             if local_answer is None and mode == 'auto':
                 local_answer = self.desktop_commands.handle(text)
             if local_answer is not None:

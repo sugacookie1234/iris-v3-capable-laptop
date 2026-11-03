@@ -21,6 +21,8 @@ CORPUS = (
     ('routing', 'tests.test_router'),
     ('business', 'tests.test_business'),
     ('visuals', 'tests.test_visuals'),
+    ('conversation', 'tests.test_conversation_repairs'),
+    ('speech_presentation', 'tests.test_speech_presentation'),
 )
 
 

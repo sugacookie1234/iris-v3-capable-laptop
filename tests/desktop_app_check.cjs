@@ -354,9 +354,11 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   // Local commands use the same normalized wording as their voice parser and
   // report widget failures without inventing permission or numeric readings.
   const local=app();await local.flush();
+  local.responses['/api/chat']={reply:'It is 14:28 (America/Toronto).',spoken_reply:'It is 14:28.',route:'LOCAL'};
   await local.run('send("Iris, please, what time is it?")');
-  assert.match(local.elements.log.children.at(-1).children[1].textContent,/It’s/);
-  assert.equal(local.requests.filter(item=>item.url==='/api/chat').length,0);
+  assert.equal(local.elements.log.children.at(-1).children[1].textContent,'It is 14:28 (America/Toronto).');
+  assert.equal(local.requests.filter(item=>item.url==='/api/chat').length,1);
+  assert.equal(local.requests.find(item=>item.url==='/api/chat').body.text,'What time is it?');
   local.run('widgets.weatherMessage="Weather service is temporarily unavailable."; widgets.locate=async()=>null');
   await local.run('send("Please Iris, weather update")');
   assert.equal(local.elements.log.children.at(-1).children[1].textContent,'Weather service is temporarily unavailable.');
@@ -368,7 +370,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   const marketReply=local.elements.log.children.at(-1).children[1].textContent;
   assert.match(marketReply,/cached daily closes/);assert.match(marketReply,/as of 2026-10-23/);
   assert.doesNotMatch(marketReply,/0\.00 percent|NaN/);
-  assert.equal(local.requests.filter(item=>item.url==='/api/chat').length,0);
+  assert.equal(local.requests.filter(item=>item.url==='/api/chat').length,1,'Weather and markets add no model request after the clock request');
 
   const unsupported=app({recording:false});await unsupported.flush();await unsupported.elements.wake.onclick();
   unsupported.run('startListening(true)');assert.match(unsupported.elements.toast.textContent,/cannot record/);
