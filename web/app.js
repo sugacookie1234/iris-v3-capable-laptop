@@ -60,7 +60,7 @@ function setState(value){
   state=value;document.body.className='state-'+value;
   const ready=monitor?.active;
   const idle=micPaused?'Microphone paused':ready?'Standing by':monitor?.active?'Audio paused':'Ready when you are';
-  $('status').textContent={idle,listening:followUpListening?'Anything else?':'Listening',thinking:'Thinking',speaking:'Speaking',preparing:'Preparing voice',Transcribing:'Understanding'}[value]||value;
+  $('status').textContent={idle,listening:followUpListening?'Listening for a follow-up':'Listening',thinking:'Thinking',speaking:'Speaking',preparing:'Preparing voice',Transcribing:'Understanding'}[value]||value;
   $('wakeHint').textContent=micPaused||monitor?.active&&!ready?'Tap the core to resume standby.':pendingId?'Double clap, then approve or cancel.':ready?(muted?'Double clap to wake · replies muted':'Double clap to wake · or hold Space'):'One click to enable your microphone.';
   if(value==='listening')$('wakeHint').textContent=followUpListening?'Speak to continue · silence returns to standby':'Speak naturally · pause to send · Escape to cancel';
 }

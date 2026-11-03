@@ -175,7 +175,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   follow.timeouts.get(followTimer).fn();await follow.flush();
   assert.equal(follow.input.active,true);assert.equal(follow.input.recordOptions.autoStop,true);
   assert.equal(follow.input.recordOptions.initialSilenceMs,5000);
-  assert.equal(follow.elements.status.textContent,'Anything else?');
+  assert.equal(follow.elements.status.textContent,'Listening for a follow-up');
   const beforeSilence=chatRequests(follow).length;
   follow.input.cancel();follow.input.options.onSilence();await follow.flush();
   assert.equal(chatRequests(follow).length,beforeSilence,'Quiet follow-up does not invoke the model');

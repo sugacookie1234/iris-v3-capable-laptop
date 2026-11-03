@@ -309,6 +309,10 @@ class DesktopRuntime:
 
     def _awareness_command(self, text):
         command = normalize(text)
+        if command in {'hello', 'hi', 'hello iris', 'hi iris', 'hey iris'}:
+            addressed = getattr(self, '_greeted_owner', False)
+            self._greeted_owner = True
+            return DesktopCommands.answer('Hello.' if addressed else 'Hello, sir.')
         if 'compound interest' in command and any(word in command for word in ('explain', 'show')):
             from iris.generalist.visuals import compound, validate
             return DesktopCommands.answer('Compound interest earns interest on earlier interest. This example starts with 1,000 units at a hypothetical 5% annual rate, compounded monthly for ten years. It is an educational illustration, not a forecast.',
