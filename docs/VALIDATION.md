@@ -519,3 +519,22 @@ See [Fish's language contract](https://docs.fish.audio/features/speech-to-text#l
 
 The cloud-default build needs no local GPU model. The RTX 5060 can be considered
 for an optional local endpoint later, after checking its actual available VRAM.
+# 2026-11-03: reviewed task memory (CAP-33 first slice)
+
+- Full local regression: **921 tests run, 917 passed, four skipped**, 236.755 seconds.
+- Final focused task-memory/API and capability checks: **13 passed**, including
+  missing-source-verification rejection added after the full run began.
+- All **nine** desktop JavaScript checks passed, including task-memory rendering,
+  stale panel responses, duplicate clicks, approval priority and text-only output.
+- Store checks cover metadata validation, restart deduplication, current-revision
+  reviews, dispute revocation, same-vault reuse, retention, deletion markers and
+  overflow, concurrent reviews, and unchanged personal-memory exports.
+- Integration checks cover authenticated/origin-checked controls, capture failure
+  recovery without losing completed results, local planning and exclusion from
+  model history. No paid provider, voice, SMS or call request was made.
+- Configured-secret scan: zero matches in changed source, tests and docs.
+- Native app acceptance: current task-memory asset served; one retained briefing
+  reconciled into a pending review item. No owner review decision was changed.
+- This validates fixed notes-recipe metadata and preview reuse, not general
+  learning quality, independent fact checking, microphone quality or OMEN hardware.
+

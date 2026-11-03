@@ -50,7 +50,8 @@ def _steps(value):
 class NotesJobs:
     """Single-host owner. The desktop's per-checkout mutex prevents two owners."""
 
-    def __init__(self, path, vault_path, history=None, runner_factory=None, *, codec=None, clock=None):
+    def __init__(self, path, vault_path, history=None, runner_factory=None, *, codec=None, clock=None,
+                 on_completed=None):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         if self.path.is_symlink() or self.path.parent.is_symlink():
@@ -59,6 +60,8 @@ class NotesJobs:
         normalized = os.path.normcase(self.vault_path) if self.vault_path else ''
         self._vault = hashlib.sha256(normalized.encode('utf-8')).hexdigest() if normalized else ''
         self.history = history
+        self.on_completed = on_completed
+        self.experience_capture_failed = False
         self.observer_failed = False
         self._factory = runner_factory or NotesBriefing
         self._seal, self._open = codec or (protect, unprotect)
@@ -244,6 +247,37 @@ class NotesJobs:
             except sqlite3.Error:
                 raise JobError('Job storage is unavailable.') from None
 
+    def experience_event(self, identifier):
+        """Export only checked recipe metadata, never a topic, path or excerpt."""
+        with self._lock:
+            self._ready()
+            try:
+                with self._db() as db:
+                    self._prune(db)
+                    row = self._row(db, identifier)
+                    if row['status'] not in {'completed', 'partial'} or row['result'] is None:
+                        return None
+                    result = self._decode(row['result'])
+                    status, steps, _ = self._outcome(result)
+                    report = result['briefing']
+                    sources = report.get('sources')
+                    if (status != row['status'] or report.get('verification') != 'source_revision_and_excerpt_match'
+                            or type(sources) is not list or not 1 <= len(sources) <= 3
+                            or steps != ['search', *[f'read_{i+1}' for i in range(len(sources))], 'draft']
+                            or any(type(item) is not dict or set(item) != {'path', 'sha256'}
+                                   or type(item['path']) is not str or not item['path']
+                                   or type(item['sha256']) is not str
+                                   or not re.fullmatch('[a-f0-9]{64}', item['sha256']) for item in sources)):
+                        return None
+                    return {'schema_version': 1, 'recipe': 'notes_briefing_v1', 'job_id': row['id'],
+                            'attempt': row['attempts'], 'scope': row['vault'], 'completed_at': row['updated_at'],
+                            'outcome': status, 'completed_steps': steps, 'source_count': len(sources),
+                            'verification': report['verification'], 'model_calls': 0}
+            except (JobError, TypeError, KeyError, ValueError):
+                return None  # Unreadable or malformed evidence cannot become learned success.
+            except sqlite3.Error:
+                raise JobError('Job evidence is unavailable.') from None
+
     def cancel(self, identifier):
         with self._condition:
             self._ready()
@@ -369,6 +403,15 @@ class NotesJobs:
                                     payload, error, identifier, attempt))
                         self._prune(db)
                     self._active_id = None
+                if status in {'completed', 'partial'} and self.on_completed is not None:
+                    try:
+                        event = self.experience_event(identifier)
+                        if event is not None:
+                            self.on_completed(event)
+                    except Exception:
+                        # Learning cannot turn completed source checks into failure.
+                        # The desktop reconciles retained jobs on the next review.
+                        self.experience_capture_failed = True
             except Exception:
                 with self._lock:
                     if self._closed:

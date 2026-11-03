@@ -21,7 +21,7 @@ class Element {
   pause(){this.paused=true;}
   load(){}
 }
-function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermission,standbyPreference,jobs=false}={}){
+function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermission,standbyPreference,jobs=false,experiences=false}={}){
   const elements={};
   for(const match of fs.readFileSync(path.join(__dirname,'../web/index.html'),'utf8').matchAll(/id="([^"]+)"/g))elements[match[1]]=new Element(match[1]);
   const document={body:new Element('body'),events:{},getElementById:id=>elements[id]||null,createElement:()=>new Element(),addEventListener:Element.prototype.addEventListener,emit:Element.prototype.emit};
@@ -73,6 +73,7 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   if(recording)sandbox.MediaRecorder=function(){};
   const context=vm.createContext(sandbox);
   if(jobs){responses['/api/jobs']={jobs:[]};vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/jobs.js'),'utf8'),context);}
+  if(experiences){responses['/api/experiences']={items:[]};vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/experiences.js'),'utf8'),context);}
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../web/app.js'),'utf8'),context);
   return {elements,document,window,requests,responses,intervals,storage,timeouts,
     get monitor(){return monitor;},get input(){return input;},set autoEnd(value){autoEnd=value;},
@@ -440,5 +441,54 @@ function app({recording=true,desktop=false,nativeWindow=desktop,microphonePermis
   assert.equal(background.run('jobs.stopped'),true);assert.equal(background.timeouts.size,0);
   const missingJobs=app();await missingJobs.flush();missingJobs.elements.jobsBtn.onclick();
   assert.match(missingJobs.elements.toast.textContent,/Restart IRIS/);
-  console.log('Desktop routing, standby, speech, approvals, background jobs, explicit private-result viewing and cleanup passed.');
+  const memory=app({jobs:true,experiences:true});await memory.flush();
+  const descendants=root=>[root,...root.children.flatMap(descendants)];
+  const memoryButtons=()=>descendants(memory.elements.panelBody).filter(item=>item.textContent==='Keep'||item.textContent==='Dismiss'||item.textContent==='Mark incorrect'||item.textContent==='Forget');
+  const memoryText=()=>descendants(memory.elements.panelBody).map(item=>item.textContent).join('\n');
+  let memoryItem={id:'experience-1',revision:1,state:'pending',summary:'Metadata-only summary',lesson:'Review coverage',job_id:'job-1',attempt:1,completed_at:'2026-10-30T12:00:00Z',expires_at:'2026-11-29T12:00:00Z',outcome:'partial',source_count:2,verification:'source_revision_and_excerpt_match'};
+  memory.responses['/api/experiences']=()=>({items:[memoryItem]});
+  memory.elements.jobsBtn.onclick();await memory.flush();
+  const memoryButton=descendants(memory.elements.panelBody).find(item=>item.textContent==='Task memory');assert(memoryButton,'Task memory is reachable inside Jobs');
+  await memoryButton.onclick();assert.equal(memory.elements.panelTitle.textContent,'Task memory');
+  assert.match(memoryText(),/Completed with limited coverage/);
+  assert.equal(memory.requests.filter(item=>item.url==='/api/jobs/read').length,0);
+  assert.equal(memory.playCalls,0,'Task memory never speaks private content');
+  assert.equal(memory.elements.log.children.length,0,'Task memory stays out of conversation history');
+  memory.elements.panel.close();await memory.run('send("show learned procedures")');
+  assert.equal(memory.elements.panelTitle.textContent,'Task memory');assert.equal(chatRequests(memory).length,0,'Task memory is a local UI command');
+  let finishReview;
+  memory.responses['/api/experiences/review']=body=>{assert.deepEqual(body,{id:'experience-1',revision:1,decision:'keep'});return new Promise(done=>finishReview=done);};
+  const keeping=memoryButtons()[0].onclick();await memory.flush();
+  assert(memoryButtons().every(button=>button.disabled));
+  await memory.run('experienceAction("keep","experience-1",1)');
+  assert.equal(memory.requests.filter(item=>item.url==='/api/experiences/review').length,1,'Double clicks cannot duplicate a review');
+  memoryItem={...memoryItem,revision:2,state:'kept'};finishReview(memoryItem);await keeping;
+  assert.deepEqual(memoryButtons().map(button=>button.textContent),['Mark incorrect','Forget']);
+  memory.responses['/api/experiences/review']=body=>{assert.equal(body.revision,2);assert.equal(body.decision,'dispute');memoryItem={...memoryItem,revision:3,state:'disputed'};return memoryItem;};
+  await memoryButtons()[0].onclick();assert.match(memoryText(),/reuse revoked/);
+  memory.responses['/api/experiences/forget']=body=>{assert.deepEqual(body,{id:'experience-1',revision:3});return {ok:true};};
+  await memoryButtons()[1].onclick();assert.equal(memoryButtons().length,0);
+  let finishMemoryList;
+  memory.responses['/api/experiences']=()=>new Promise(done=>finishMemoryList=done);
+  const loadingMemory=memory.run('showExperiences()');await memory.flush();
+  const memoryGets=memory.requests.filter(item=>item.url==='/api/experiences').length;
+  await memory.run('showExperiences()');assert.equal(memory.requests.filter(item=>item.url==='/api/experiences').length,memoryGets,'Repeated open cannot duplicate a pending list request');
+  memory.run('showHelp()');finishMemoryList({items:[memoryItem]});await loadingMemory;
+  assert.equal(memory.elements.panelTitle.textContent,'Just ask IRIS','Late list responses cannot replace another panel');
+  const loadingClosed=memory.run('showExperiences()');await memory.flush();memory.elements.panel.close();finishMemoryList({items:[memoryItem]});await loadingClosed;
+  assert.equal(memory.elements.panel.open,false,'Late task memory cannot reopen a closed panel');
+  memory.run('pendingId="memory-approval"');await memory.run('showExperiences()');
+  assert.equal(memory.requests.filter(item=>item.url==='/api/experiences').length,memoryGets+1,'Approval prevents loading task memory');
+  assert.equal(memory.elements.panel.open,false);assert.equal(memory.run('pendingId'),'memory-approval');memory.run('pendingId=null');
+  memory.responses['/api/experiences']=()=>({items:[memoryItem]});await memory.run('showExperiences()');
+  memory.responses['/api/experiences/review']=()=>new Promise(done=>finishReview=done);
+  const lateReview=memoryButtons()[0].onclick();await memory.flush();memory.run('showJobs()');
+  finishReview({...memoryItem,state:'kept',revision:4});await lateReview;
+  assert.equal(memory.elements.panelTitle.textContent,'Jobs','A late review cannot overwrite Jobs');
+  await memory.run('showExperiences()');memory.responses['/api/experiences/review']=()=>{throw Error('PRIVATE path: revision conflict');};
+  await memoryButtons()[0].onclick();assert.match(memoryText(),/Use Refresh/);assert.doesNotMatch(memoryText(),/PRIVATE path/);
+  memory.responses['/api/experiences']=()=>{throw Error('PRIVATE storage path');};await memory.run('showExperiences()');assert.match(memoryText(),/could not be loaded/);assert.doesNotMatch(memoryText(),/PRIVATE storage path/);
+  const leavingMemory=memory.run('showExperiences()');memory.window.emit('pagehide');await leavingMemory;
+  assert.equal(memory.timeouts.size,0,'Task memory leaves no polling or delayed work after unload');
+  console.log('Desktop routing, standby, speech, approvals, background jobs, task memory reviews, stale responses and cleanup passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

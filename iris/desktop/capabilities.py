@@ -69,7 +69,7 @@ def build_capabilities(config, settings, desktop_specs=(), brain_specs=(), permi
                            'show action history', 'clear action history', 'what can you do',
                            'check obsidian', 'search my notes for …', 'read note …', 'read next page',
                            'plan a briefing from my notes on …', 'make a briefing from my notes on …',
-                           'show jobs', 'cancel briefing', 'resume briefing'],
+                           'show jobs', 'cancel briefing', 'resume briefing', 'show task memory'],
         'skills': {'status': 'host_workflows_only', 'automatic_installation': False,
             'workflows': [{'name': definition.name, 'tools': [step.tool_name for step in definition.steps],
                            'status': 'registered', 'live_verified': False} for definition in workflows]},
@@ -91,6 +91,7 @@ def capability_reply(inventory):
     if 'desktop_volume_read' in names:
         lines.append('• Read system volume; changing it requires approval and a readback.')
     lines.append('• Find files by name, give a daily briefing, and show local action history.')
+    lines.append('• Review local notes-task summaries in Jobs → Task memory; kept summaries guide notes plan previews.')
     if services['obsidian_folder'] == 'configured':
         lines.append('• Search and read Obsidian notes locally, including long notes page by page. Ask “Check Obsidian” to check access.')
         lines.append('• “Make a briefing from my notes on …”: work in the background without a model call. Jobs shows progress, cancellation, results and interrupted work you can resume after reopening IRIS.')

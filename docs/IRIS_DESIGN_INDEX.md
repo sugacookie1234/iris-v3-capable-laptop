@@ -10,6 +10,7 @@ features remain proposals until their implementation and acceptance evidence exi
 - [Architectural decisions](IRIS_DECISIONS.md)
 - [Collaboration protocol](IRIS_CODEX_PROTOCOL.md)
 - [Actual validation evidence](VALIDATION.md)
+- [Reviewed task memory: first CAP-33 slice](TASK-MEMORY.md)
 
 Preserved source snapshots and a linked index were also imported into the owner's
 configured Obsidian vault under `IRIS/Design/2026-10-28/` and `IRIS/Start Here.md`.

@@ -10,6 +10,8 @@ let activationVersion=0,disposed=false,approvalTimer=null;
 let latestActivity=null;
 let jobPanelView=null,panelVersion=0;
 const pendingJobs=new Set();
+let experiencePanelView=false,experienceItems=[],experienceLoad=null,experienceError='';
+const pendingExperiences=new Set();
 const detector=new DoubleClapDetector();
 const recordedInput=typeof MediaRecorder!=='undefined'&&navigator.mediaDevices?new RecordedVoiceInput({
   onState:value=>{listening=value!=='idle';setState(value);},
@@ -200,7 +202,7 @@ async function voiceCommand(text,context={}){
     if(command==='newchat')await resetChat();
     if(command==='memories')await showMemories();if(command==='tasks')await showTasks();
     if(command==='goals')await showGoals();if(command==='notes')await showNotes();
-    if(command==='jobs')showJobs();
+    if(command==='jobs')showJobs();if(command==='experiences')await showExperiences();
     if(command==='activity')await showActivity();if(command==='undo')await undoLastAutomatic();
     if(command==='council')showCouncil();if(command==='help')showHelp();return true;
   }
@@ -255,10 +257,13 @@ $('typeForm').addEventListener('submit',async event=>{
 });
 $('wake').onclick=activate;$('muteBtn').onclick=()=>micPaused?activate():pauseMic();
 window.addEventListener('pagehide',()=>{disposed=true;cancelFollowUp();activationVersion++;activating=false;monitor?.stop();stopSpeaking();recordedInput?.cancel();widgets.stop();organization?.stop();jobs?.stop();clearInterval(clockTimer);clearTimeout(approvalTimer);clearTimeout(toastTimer);});
-function panel(title){panelVersion++;jobPanelView=title==='Jobs'?'list':null;$('panelTitle').textContent=title;$('panelBody').replaceChildren();if(!$('panel').open)$('panel').showModal();return $('panelBody');}
+function panel(title){panelVersion++;jobPanelView=title==='Jobs'?'list':null;experiencePanelView=title==='Task memory';$('panelTitle').textContent=title;$('panelBody').replaceChildren();if(!$('panel').open)$('panel').showModal();return $('panelBody');}
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);return p;}
 $('closePanel').onclick=()=>$('panel').close();
-function renderJobPanel(){if(jobs&&jobPanelView==='list'&&$('panel').open)renderJobs($('panelBody'),jobs.jobs,{document,onAction:jobAction,pending:pendingJobs});}
+function renderJobPanel(){if(jobs&&jobPanelView==='list'&&$('panel').open){
+  const body=$('panelBody');renderJobs(body,jobs.jobs,{document,onAction:jobAction,pending:pendingJobs});
+  const memory=document.createElement('button');memory.textContent='Task memory';memory.onclick=showExperiences;body.append(memory);
+}}
 function showJobs(){
   if(!jobs){toast('Jobs controls are unavailable. Restart IRIS to load them.');return;}
   if(pendingId){toast('Finish the confirmation first.');return;}
@@ -282,6 +287,51 @@ async function jobAction(action,id){
   finally{pendingJobs.delete(id);if(!disposed)renderJobPanel();}
 }
 $('jobsBtn').onclick=showJobs;
+function currentExperiencePanel(version=panelVersion){return !disposed&&!pendingId&&experiencePanelView&&$('panel').open&&version===panelVersion;}
+function renderExperiencePanel(){
+  if(!currentExperiencePanel())return;
+  const body=$('panelBody');body.replaceChildren();
+  const controls=document.createElement('div');controls.className='experience-navigation';
+  const back=document.createElement('button');back.textContent='Back to jobs';back.onclick=showJobs;controls.append(back);
+  const refresh=document.createElement('button');refresh.textContent='Refresh';refresh.disabled=Boolean(experienceLoad?.version===panelVersion)||pendingExperiences.size>0;refresh.onclick=showExperiences;controls.append(refresh);body.append(controls);
+  if(experienceLoad?.version===panelVersion){paragraph(body,'Loading task memory…');return;}
+  if(experienceError){paragraph(body,experienceError);return;}
+  const list=document.createElement('div');body.append(list);renderExperiences(list,experienceItems,{document,onAction:experienceAction,pending:pendingExperiences});
+}
+async function showExperiences(){
+  if(disposed)return;
+  if(pendingId){toast('Finish the confirmation first.');return;}
+  if(typeof renderExperiences==='undefined'){toast('Task memory controls are unavailable. Restart IRIS to load them.');return;}
+  if(currentExperiencePanel()&&experienceLoad?.version===panelVersion)return;
+  panel('Task memory');experienceItems=[];experienceError='';
+  const request={version:panelVersion};experienceLoad=request;renderExperiencePanel();
+  try{
+    const data=await api('/api/experiences');
+    if(!currentExperiencePanel(request.version))return;
+    if(!Array.isArray(data?.items))throw new Error('Invalid task memory response');
+    const unique=new Map();for(const raw of data.items.slice(0,100)){const item=experienceSnapshot(raw);if(item)unique.set(item.id,item);}
+    experienceItems=[...unique.values()];
+  }catch{if(currentExperiencePanel(request.version))experienceError='Task memory could not be loaded. Use Refresh to try again.';}
+  finally{if(experienceLoad===request)experienceLoad=null;if(currentExperiencePanel(request.version))renderExperiencePanel();}
+}
+async function experienceAction(action,id,revision){
+  if(!currentExperiencePanel()||pendingExperiences.has(id)||!['keep','dismiss','dispute','forget'].includes(action))return;
+  if(!experienceItems.some(item=>item.id===id&&item.revision===revision))return;
+  const version=panelVersion;pendingExperiences.add(id);renderExperiencePanel();
+  try{
+    const data=await api('/api/experiences/'+(action==='forget'?'forget':'review'),{id,revision,...(action==='forget'?{}:{decision:action})});
+    if(!currentExperiencePanel(version))return;
+    if(action==='forget'){
+      if(data?.ok!==true)throw new Error('Invalid task memory response');
+      experienceItems=experienceItems.filter(item=>item.id!==id);
+    }else{
+      const item=experienceSnapshot(data);
+      if(!item||item.id!==id||item.revision<=revision)throw new Error('Invalid task memory response');
+      experienceItems=experienceItems.map(previous=>previous.id===id?item:previous);
+    }
+  }catch{if(currentExperiencePanel(version))experienceError='That change could not be confirmed. Use Refresh to check the latest task memory before trying again.';}
+  finally{pendingExperiences.delete(id);if(currentExperiencePanel())renderExperiencePanel();}
+}
 async function showMemories(){try{const data=await api('/api/memories'),body=panel('Memories');if(!data.items.length)paragraph(body,'No saved memories yet. Say “remember that…” to add one.');for(const item of data.items)paragraph(body,item.summary);await speak(data.items.length?'Your saved memories. '+data.items.slice(0,5).map(item=>item.summary).join('. '):'No saved memories yet.');}catch(error){toast(error.message);}}
 async function showTasks(){try{const data=await api('/api/tasks'),body=panel('Tasks');if(!data.items.length)paragraph(body,'No tasks yet. With automatic organization on, tell me what you need to get done.');for(const task of data.items)paragraph(body,task.title+' · '+task.status+(task.due_at?' · '+new Date(task.due_at).toLocaleString():''));await speak(data.items.length?'Your tasks. '+data.items.slice(0,5).map(task=>task.title+', '+task.status).join('. '):'No tasks yet.');}catch(error){toast(error.message);}}
 async function showGoals(){try{const data=await api('/api/goals'),body=panel('Goals');if(!data.items.length)paragraph(body,'Tell me what you are working towards. Clear long-term goals can be saved automatically.');for(const goal of data.items)paragraph(body,goal.title+' · '+goal.status+' · '+goal.progress+'%'+(goal.target_date?' · '+goal.target_date:''));}catch(error){toast(error.message);}}
@@ -302,7 +352,7 @@ async function showActivity(){try{const data=await api('/api/activity'),body=pan
 $('activityBtn').onclick=showActivity;
 function showCouncil(){if(!latestCouncil){toast('There is no council review in this conversation yet.');return;}const body=panel('Council review');for(const candidate of latestCouncil.candidates)paragraph(body,candidate.seat+' · '+candidate.model+'\n'+candidate.text);for(const ranking of latestCouncil.rankings)paragraph(body,ranking.reviewer+' review\n'+ranking.text);if(latestCouncil.failures.length)paragraph(body,'Partial failures: '+latestCouncil.failures.join(', '));}
 function showHelp(){const body=panel('Just ask IRIS');const list=document.createElement('div');list.className='command-list';body.append(list);
-  for(const text of ['“Show my tasks”','“Show my goals”','“Show my notes”','“Show jobs”','“Show activity”','“Undo the last change”','“Pause automatic organization”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
+  for(const text of ['“Show my tasks”','“Show my goals”','“Show my notes”','“Show jobs”','“Show task memory”','“Show activity”','“Undo the last change”','“Pause automatic organization”','“Show my memories”','“Start a new chat”','“Weather update”','“Market update”','“What time is it?”','“Mute” / “Unmute”','“Show council review”','“Close the panel”','“Approve” / “Cancel”'])paragraph(list,text);
   paragraph(body,'Double clap to wake, then speak naturally. A pause sends your request. After a spoken reply, “Anything else?” opens five seconds to begin a follow-up without clapping again. Silence returns to standby without an upload. Say “That’s all” to finish, or hold Space for manual recording. Click the core or hold Space to interrupt a spoken reply.');
   paragraph(body,'IRIS chooses how deeply to reason from your request. You can also ask it to consult the council explicitly.');
   paragraph(body,'“Check Obsidian” checks vault access. “Search my notes for …”, “Read note …”, and “Read next page” display notes locally without a model request. Use the relative note path if titles are ambiguous. “Make a briefing from my notes on …” runs in the background, reads up to three matching notes and checks source excerpts without a model call. “Show jobs” opens progress, Cancel, Resume and results. Interrupted jobs stay paused after a restart; Resume reads current notes again. “Cancel briefing” stops the active briefing. “Plan a briefing from my notes on …” previews the steps.');

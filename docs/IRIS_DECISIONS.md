@@ -52,6 +52,13 @@
   Retain up to seven days/100 records, with explicit deletion. This is the first
   CAP-22/M7 job slice, not generic external-effect recovery. See [job controls](BACKGROUND-JOBS.md).
 
+- **ADR-027 — Implementation decision, 2026-11-03:** Begin CAP-33 with fixed,
+  metadata-only notes-job summaries in additive memory tables. Require explicit
+  Keep before local preview reuse; support dismissal, dispute, forgetting, stale
+  review rejection and bounded retention. Never copy source text or add these
+  records to provider context. Broader learning remains pending. See
+  [task memory](TASK-MEMORY.md).
+
 ### Decision change template
 
 ```text

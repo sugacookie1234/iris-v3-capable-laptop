@@ -36,6 +36,10 @@ Run **`check-speech.bat`** to test the local fallback on a public recording and 
 
 ## What works through the unified interface
 
+- **Reviewed task memory:** open Jobs → Task memory or say “Show task memory”.
+  Completed notes briefings propose metadata-only summaries; keep, dismiss, mark
+  incorrect or forget them. Kept summaries guide local notes-plan previews without
+  model calls. See [scope and retention](docs/TASK-MEMORY.md).
 - **Capability awareness and action history:** ask “What can you do?” or “What have you done today?”
   for local answers grounded in registered tools, configuration and execution receipts. “Show action
   history” includes earlier retained attempts; “Clear action history” asks before erasing them.

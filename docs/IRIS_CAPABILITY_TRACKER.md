@@ -57,7 +57,7 @@ Do not use a single ambiguous “done” marker. `TESTED` and `LIVE-VERIFIED` re
 
 - **Baseline counts:** 12 `REPO-REPORTED`, 16 `DESIGNED`, 1 `DEFERRED` (29 total). These are **not** completion percentages.
 - **Last full offline suite:** October 30, 2026: 897 tests run, 893 passed / four skipped after background jobs and lifecycle fixes; all eight desktop JavaScript checks passed. See `docs/VALIDATION.md`.
-- **Current highest-value milestone:** M0 software baseline audited; complete OMEN hardware acceptance. CAP-30/31 receipts and CAP-22/32 fixed background notes jobs are implemented. Next generalist slice is CAP-33 reviewed experience summaries; broader planning and M1/M2 remain pending.
+- **Current highest-value milestone:** M0 software baseline audited; complete OMEN hardware acceptance. CAP-30/31 receipts and CAP-22/32 fixed background notes jobs are implemented. CAP-33 now includes reviewed fixed-notes summaries; next is CAP-34 offline evaluation. Broader planning and M1/M2 remain pending.
 - **Known gaps:** OMEN mic/voice hardware acceptance, external app connectors, phone's access to desktop memories, general desktop autonomy, persistent cross-app jobs, always-on operation.
 
 ## Active milestone board
@@ -121,7 +121,7 @@ These capabilities are separate from the existing model router and tool registry
 | CAP-30 | Privacy-safe outcome traces | IN-PROGRESS | Tested desktop/chat-tool receipts, retention, deletion, privacy and interruption recovery. Route/model/cost tracing, background and phone coverage remain pending. |
 | CAP-31 | Unified read-only capability registry | IN-PROGRESS | Tested typed tool/model/host-workflow inventory and local capability answers. Configuration is not live health; broader specialist/connector inventory remains pending. |
 | CAP-32 | Validated task DAG proposals | IN-PROGRESS | Bounded proposals, preview and background search/read/draft execution with source checks, visible cancellation and explicit restart recovery implemented. General planning and external-effect jobs remain pending. |
-| CAP-33 | Verified experience memory | DESIGNED | Durable summaries, provenance, consent, retention and restart tests |
+| CAP-33 | Verified experience memory | IN PROGRESS | Reviewed fixed-notes metadata summaries, provenance, retention and restart checks implemented; general experience learning pending |
 | CAP-34 | Offline improvement evaluation | DESIGNED | Baseline/holdout evaluation, injection and regression rejection |
 | CAP-35 | Scoped specialist workers | DESIGNED | Typed input/output, bounded delegation and no inherited blanket authority |
 | CAP-36 | Supervised routing/skill improvement | DESIGNED | Evidence, owner-reviewed promotion and rollback |

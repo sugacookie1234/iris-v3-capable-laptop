@@ -29,6 +29,7 @@ from iris.workflows import WorkflowRegistry
 from iris.generalist.plan import notes_briefing_preview
 from iris.generalist.notes_briefing import NotesBriefing
 from iris.agent_jobs.notes import NotesJobs, JobError
+from iris.generalist.experiences import Experiences
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -108,8 +109,12 @@ class DesktopRuntime:
         self._autonomy_lock = threading.Lock()
         self._closed = False
         self.autonomy = Autonomy(self.data_dir, self.settings, self.config)
+        self._experience_lock = threading.RLock()
+        self._experiences = None
+        self._experience_seen = set()
         self.jobs = NotesJobs(self.data_dir / 'jobs.sqlite3',
-            self.config.obsidian_vault or self.config.obsidian_root, history=self.action_history)
+            self.config.obsidian_vault or self.config.obsidian_root, history=self.action_history,
+            on_completed=self._record_experience)
         self._base_context = self.brain._runtime_context
 
     def start_background(self):
@@ -232,8 +237,65 @@ class DesktopRuntime:
             self._notes_briefing = NotesBriefing(vault, history=self.action_history)
         return self._notes_briefing
 
+    def _experience_store(self):
+        # Callers hold the experience lock; each store operation owns its connection.
+        if self._experiences is None:
+            self._experiences = Experiences(self.memory_path)
+        return self._experiences
+
+    def _record_experience(self, event):
+        with self._experience_lock:
+            key = (event['job_id'], event['attempt'])
+            if key not in self._experience_seen:
+                self._experience_store().capture(event)
+                self._experience_seen.add(key)
+                if len(self._experience_seen) > 100:
+                    self._experience_seen = {key}  # Durable fingerprints still deduplicate.
+
+    def _reconcile_experiences(self):
+        # Recover a crash between job completion and summary capture, including
+        # pre-upgrade jobs. No source contents reach the experience store.
+        for job in self.jobs.list():
+            if job['status'] not in {'completed', 'partial'}:
+                continue
+            with self._experience_lock:
+                if (job['id'], job['attempts']) in self._experience_seen:
+                    continue
+            event = self.jobs.experience_event(job['id'])
+            if event is not None:
+                self._record_experience(event)
+
+    def experiences(self):
+        try:
+            self._reconcile_experiences()
+            with self._experience_lock:
+                return self._experience_store().list()
+        except Exception:
+            raise ValueError('Task memory is unavailable. Your jobs and notes are unchanged. Try again later.') from None
+
+    def review_experience(self, identifier, revision, decision):
+        with self._experience_lock:
+            return self._experience_store().review(identifier, revision, decision)
+
+    def forget_experience(self, identifier, revision):
+        with self._experience_lock:
+            self._experience_store().forget(identifier, revision)
+
+    def _experience_guidance(self):
+        try:
+            self._reconcile_experiences()
+            with self._experience_lock:
+                return self._experience_store().guidance(self.jobs._vault)
+        except Exception:
+            return 'Task memory is unavailable; this plan uses only the current recipe.'
+
     def _awareness_command(self, text):
         command = normalize(text)
+        if command in {'show task memory', 'show my task memory', 'show learned procedures'}:
+            items = self.experiences()
+            summary = '\n'.join(f"{item['state']}: {item['summary']}" for item in items[:10])
+            return DesktopCommands.answer(summary or 'No task memories yet. Complete a notes briefing first.',
+                'Task memory is available for review. Open Jobs, then Task memory.', experiences=items)
         if command in {'show jobs', 'show my jobs', 'show background jobs', 'job status', 'what are you working on'}:
             jobs = self.jobs.list()
             lines = [f"{job['topic']} — {job['status']}; {job['stage']}" for job in jobs[:10]]
@@ -279,6 +341,9 @@ class DesktopRuntime:
                 '3. Recheck their revisions and prepare a brief of source excerpts.',
                 'This is a preview. No notes have been searched or read. '
                 f'To start, say “Make a briefing from my notes on {preview[1]}”.']
+            guidance = self._experience_guidance() if ready else ''
+            if guidance:
+                lines.append(guidance)
             return DesktopCommands.answer('\n'.join(lines),
                 'I have shown the proposed steps. This is a preview; I have not started the task.', plan=plan)
         if command in {'what can you do', 'what can you do so far', 'show capabilities', 'list capabilities'}:
