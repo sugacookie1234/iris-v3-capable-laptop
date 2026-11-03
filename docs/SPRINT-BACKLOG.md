@@ -55,3 +55,5 @@ guidance, not plans; no correctness improvement is demonstrated. Business source
 verification and external connectors are absent. Business storage is local
 plaintext, bounded and indefinite; deletion UI remains outstanding. UI checks are
 automated DOM tests, not a human visual/accessibility acceptance review.
+
+Security priority checkpoint: see SECURITY.md. HTTP framing, duplicate headers/JSON, loopback binding and bounded workers hardened. Native/browser session bootstrap remains open; do not treat loopback cookies as protection from same-user malware. Continue with bootstrap design and endpoint quotas before broader autonomy.

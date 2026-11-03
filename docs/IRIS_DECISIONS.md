@@ -98,3 +98,5 @@ Implementation or migration consequences:
 - Budgets for LLM, Fish, search, phone and always-on hosting.
 - Monitoring/quiet hours and escalation triggers.
 - Data retention, encryption and backup expectations.
+
+ADR-031: Harden desktop HTTP parsing and cap concurrent handlers at 32; preserve browser operation and Windows error delivery with a brief bounded rejected-body drain. No secret/data migration or new authority introduced.

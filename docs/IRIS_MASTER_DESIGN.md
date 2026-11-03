@@ -413,3 +413,5 @@ Repository (as of baseline):
 - `iris/desktop/runtime.py`, `iris/brain/engine.py`, `iris/brain/council.py`, `iris/tools/executor.py`, `iris/automation/scheduler.py`, `iris/workflows/engine.py` — inspected source entry points.
 
 External products and integrations must be verified against current official API, pricing, security and terms **at implementation time**. This document intentionally does not promise free calls, unlimited memory, perpetual cloud access, unverified device support or constant availability.
+
+Security implementation checkpoint: SECURITY.md records current evidence and residual risks. Local session cookies do not authenticate against same-user malware; native bootstrap and protected data migration remain required work.

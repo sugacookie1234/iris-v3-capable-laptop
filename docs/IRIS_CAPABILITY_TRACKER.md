@@ -210,3 +210,5 @@ These capabilities are separate from the existing model router and tool registry
 - Next: CAP-33 reviewed, provenance-linked experience summaries, with retention
   and correction controls. This does not authorize self-modification or training
   on private notes, and broader planning remains a separate unfinished capability.
+
+Security checkpoint (CAP-29): HTTP framing/concurrency defenses implemented; session bootstrap, rate quotas, protected data migration and comprehensive dependency audit remain incomplete. See SECURITY.md.

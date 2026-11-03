@@ -7,6 +7,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -24,3 +26,6 @@ jobs:
       - run: node tests/desktop_dashboard_check.cjs
       - run: node tests/desktop_organizer_check.cjs
       - run: node --check web/app.js
+      - run: node tests/desktop_jobs_check.cjs
+      - run: node tests/desktop_experiences_check.cjs
+      - run: node tests/desktop_business_check.cjs

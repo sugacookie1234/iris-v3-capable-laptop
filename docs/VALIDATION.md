@@ -593,3 +593,6 @@ See [business limits](BUSINESS-WORKSPACE.md), [evaluation scope](OFFLINE-EVALUAT
 and [next sprint backlog](SPRINT-BACKLOG.md). Business data is plaintext, local,
 bounded and indefinite; export/delete UI and live evidence verification remain open.
 
+
+## Security hardening checkpoint
+Baseline 593cddf. Added raw loopback security tests for framing, duplicate headers/JSON, non-finite numbers, rejected bodies, public binding and worker capacity. Nine focused security/business tests pass after the Windows rejected-body drain correction. All ten desktop checks pass. Full suite run: 945 tests, 941 passed, four skipped (126.346 seconds). Final wall-clock drain refinement was subsequently covered by the nine focused tests; see .local/security-final-tests.log for the additional full run. No paid calls, external penetration testing, data migration or native hardware acceptance. Changed-file configured-secret scan: zero matches. Comprehensive dependency/phone audit and protected-storage migration remain open; SECURITY.md is the operator guide and evidence-based risk register.

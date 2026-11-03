@@ -6,6 +6,7 @@ import json
 import os
 import secrets
 import threading
+import time
 import urllib.error
 import urllib.request
 from http.cookies import SimpleCookie
@@ -44,6 +45,9 @@ class DesktopServer(ThreadingHTTPServer):
     daemon_threads = True
 
     def __init__(self, address, runtime):
+        if address[0] not in ('127.0.0.1', 'localhost'):
+            raise ValueError('Desktop server must bind to IPv4 loopback.')
+        self._connections = threading.BoundedSemaphore(32)
         self.runtime = runtime
         self._owns_runtime = False
         self.desktop_window = False
@@ -63,6 +67,22 @@ class DesktopServer(ThreadingHTTPServer):
         finally:
             super().server_close()
 
+    def process_request(self, request, client_address):
+        if not self._connections.acquire(blocking=False):
+            self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except BaseException:
+            self._connections.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._connections.release()
+
 
 class Handler(BaseHTTPRequestHandler):
     server_version = 'IRIS/3'
@@ -77,9 +97,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def _trusted_host(self):
         port = self.server.server_address[1]
-        return self.headers.get('Host') in (f'127.0.0.1:{port}', f'localhost:{port}')
+        return len(self.headers.get_all('Host', [])) == 1 and self.headers.get('Host') in (f'127.0.0.1:{port}', f'localhost:{port}')
 
     def _authorized(self, write=False):
+        if any(len(self.headers.get_all(key, [])) > 1 for key in
+               ('Origin', 'Cookie', 'X-IRIS-Request', 'Sec-Fetch-Site')):
+            return False
         if not self._trusted_host():
             return False
         origin = self.headers.get('Origin')
@@ -118,12 +141,27 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send(self, code, body, kind='application/json', cookie=False):
         if code >= 400 and self.command == 'POST' and not self._body_read:
+            # Brief bounded drain avoids Windows resetting replies with unread data.
+            # Never wait the normal ten seconds on an unauthorized sender.
             try:
-                size = int(self.headers.get('Content-Length', '0'))
+                lengths = self.headers.get_all('Content-Length', [])
+                size = int(lengths[0]) if len(lengths) == 1 else 0
                 if 0 < size <= 64000 and not self.headers.get('Transfer-Encoding'):
-                    self.rfile.read(size)
+                    deadline = time.monotonic() + .05
+                    while size > 0:
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            break
+                        self.connection.settimeout(remaining)
+                        chunk = self.rfile.read1(min(size, 8192))
+                        if not chunk:
+                            break
+                        size -= len(chunk)
             except (ValueError, OSError):
                 pass
+            finally:
+                self.connection.settimeout(10)
+            self.close_connection = True
             self._body_read = True
         self._headers(code, kind, len(body), cookie)
         try:
@@ -145,7 +183,18 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError('Request is empty or too large.')
         raw = self.rfile.read(size)
         self._body_read = True
-        value = json.loads(raw)
+        if len(raw) != size:
+            raise ValueError('Incomplete request body.')
+        def unique(pairs):
+            result = {}
+            for key, item in pairs:
+                if key in result:
+                    raise ValueError('Duplicate JSON field.')
+                result[key] = item
+            return result
+        def invalid_constant(_):
+            raise ValueError('Non-finite JSON number.')
+        value = json.loads(raw, object_pairs_hook=unique, parse_constant=invalid_constant)
         if not isinstance(value, dict):
             raise ValueError('Expected an object.')
         return value
@@ -254,6 +303,10 @@ class Handler(BaseHTTPRequestHandler):
             self.close_connection = True
 
     def do_POST(self):
+        lengths = self.headers.get_all('Content-Length', [])
+        if self.headers.get_all('Transfer-Encoding') or len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdigit():
+            self._json(400, {'error': 'Invalid request framing.'})
+            return
         if not self._authorized(write=True):
             self._json(403, {'error': 'Request not authorized from this interface.'})
             return
