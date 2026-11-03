@@ -36,3 +36,5 @@ Do not bypass that review. Resume the pending bootstrap/native regression comman
 when review is available, fix failures, then commit personality and security work
 in separate logical units. Main and owner data are unchanged. Quotas and protected
 backup/export remain outstanding after pairing completion.
+
+Continuation update: approval review recovered. The 28 pairing/desktop/native/security tests now pass; the native fixture performs the actual synthetic pairing exchange. Fragment cleanup also runs on authenticated pages. Full regressions and hardware acceptance still remain. The earlier blocked-command description is historical.

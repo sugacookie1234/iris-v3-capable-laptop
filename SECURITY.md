@@ -71,3 +71,6 @@ and expensive-operation quotas; opt-in encrypted business backup/export with
 interrupted recovery tests; dependency lock/advisory and secret-history audit;
 visual DOM adversarial testing; fresh phone and approval/replay audits. Preserve
 all existing owner records and review states. Never promote policies automatically.
+
+## Bootstrap continuation
+Homepage no longer issues sessions. Trusted native and Chrome launchers mint 60-second, single-use pairing tokens carried in a URL fragment; local pair.js removes the fragment before redeeming via same-origin POST. The authenticated page also loads pair.js to clear launch fragments on an already-paired window. Ten failed token redemptions per minute block further redemption temporarily. Same-user malware can inspect launch arguments/memory; this is not an OS security boundary. No-browser mode does not currently provide manual pairing. 28 focused tests pass; actual WebView/Chrome/microphone acceptance and full regressions remain pending. Restart is required to load changes. No data migration. Continue with browser pairing recovery, quotas and protected backups.

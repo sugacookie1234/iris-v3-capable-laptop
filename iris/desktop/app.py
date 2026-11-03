@@ -88,7 +88,7 @@ def run_window(webview, runtime, port=8766):
             if not any(value.split('=')[0] == flag.split('=')[0] for value in flags):
                 flags.append(flag)
         os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = ' '.join(flags)
-        window = webview.create_window(TITLE, url, width=1240, height=820, min_size=(720, 620),
+        window = webview.create_window(TITLE, server.bootstrap_url(), width=1240, height=820, min_size=(720, 620),
                                        background_color='#050d15', text_select=True)
         def prepare_window():
             nonlocal tray

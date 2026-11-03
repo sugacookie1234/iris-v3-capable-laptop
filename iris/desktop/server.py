@@ -52,6 +52,9 @@ class DesktopServer(ThreadingHTTPServer):
         self._owns_runtime = False
         self.desktop_window = False
         self.session = secrets.token_urlsafe(32)
+        self._bootstrap_lock = threading.Lock()
+        self._bootstrap = None
+        self._auth_failures = []
         self.clap_listener = NativeClapListener()
         super().__init__(address, Handler)
         self._owns_runtime = True
@@ -66,6 +69,25 @@ class DesktopServer(ThreadingHTTPServer):
                 self.runtime.close()
         finally:
             super().server_close()
+
+    def bootstrap_url(self):
+        with self._bootstrap_lock:
+            token = secrets.token_urlsafe(32)
+            self._bootstrap = (token, time.monotonic() + 60)
+        return f'http://127.0.0.1:{self.server_address[1]}/#pair={token}'
+
+    def redeem_bootstrap(self, token):
+        with self._bootstrap_lock:
+            now = time.monotonic()
+            self._auth_failures = [stamp for stamp in self._auth_failures if now-stamp < 60]
+            if len(self._auth_failures) >= 10:
+                return False
+            active = self._bootstrap
+            if type(token) is str and token.isascii() and active and now < active[1] and secrets.compare_digest(token, active[0]):
+                self._bootstrap = None
+                return True
+            self._auth_failures.append(now)
+            return False
 
     def process_request(self, request, client_address):
         if not self._connections.acquire(blocking=False):
@@ -215,6 +237,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/experiences.js': ('experiences.js', 'text/javascript'),
                   '/business.js': ('business.js', 'text/javascript'),
                   '/visuals.js': ('visuals.js', 'text/javascript'),
+                  '/pair.js': ('pair.js', 'text/javascript'),
                   '/voice-input.js': ('voice-input.js', 'text/javascript'),
                   '/desktop.css': ('desktop.css', 'text/css')}
         if path in assets:
@@ -222,7 +245,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(403, {'error': 'Local access only.'})
                 return
             filename, kind = assets[path]
-            self._send(200, (ROOT / 'web' / filename).read_bytes(), kind, cookie=path == '/')
+            if path == '/' and not self._authorized():
+                self._send(200, b'<!doctype html><meta charset="utf-8"><title>Pair IRIS</title><p id="pairStatus">Open IRIS using its desktop or Chrome launcher to pair this window.</p><script src="/pair.js"></script>', 'text/html; charset=utf-8')
+                return
+            self._send(200, (ROOT / 'web' / filename).read_bytes(), kind)
             return
         if path == '/favicon.ico':
             self._send(204, b'')
@@ -306,6 +332,20 @@ class Handler(BaseHTTPRequestHandler):
         lengths = self.headers.get_all('Content-Length', [])
         if self.headers.get_all('Transfer-Encoding') or len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdigit():
             self._json(400, {'error': 'Invalid request framing.'})
+            return
+        if urlsplit(self.path).path == '/api/pair':
+            origin = f'http://127.0.0.1:{self.server.server_address[1]}'
+            if (not self._trusted_host() or self.headers.get_all('Origin', []) != [origin]
+                    or self.headers.get_all('X-IRIS-Request', []) != ['1']
+                    or self.headers.get('Sec-Fetch-Site') == 'cross-site'):
+                self._json(403, {'error': 'Pairing rejected.'})
+                return
+            try:
+                value = self._body()
+                valid = set(value) == {'token'} and self.server.redeem_bootstrap(value['token'])
+            except (ValueError, UnicodeError):
+                valid = False
+            self._send(200 if valid else 403, b'{"ok":true}' if valid else b'{"error":"Pairing rejected. Relaunch IRIS."}', cookie=valid)
             return
         if not self._authorized(write=True):
             self._json(403, {'error': 'Request not authorized from this interface.'})
@@ -399,7 +439,7 @@ def open_browser(url):
     try:
         return open_chrome(url)
     except (RuntimeError, OSError) as exc:
-        print(f'{exc}\nOpen Google Chrome and visit {url}.', flush=True)
+        print('Chrome could not open. Install Chrome and restart the launcher.', flush=True)
         return False
 
 
@@ -434,7 +474,7 @@ def main(argv=None):
                 url = f'http://127.0.0.1:{server.server_address[1]}'
                 print(f'IRIS is ready at {url}\nClose this launcher to stop IRIS.', flush=True)
                 if not args.no_browser:
-                    browser_timer = threading.Timer(0.5, open_browser, args=(url,))
+                    browser_timer = threading.Timer(0.5, open_browser, args=(server.bootstrap_url(),))
                     browser_timer.start()
                 try:
                     server.serve_forever()

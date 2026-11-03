@@ -1,5 +1,6 @@
 """Desktop server ownership, navigation boundary, and explicit Chrome launch."""
 import http.client
+import json
 import os
 from pathlib import Path
 import socket
@@ -42,6 +43,17 @@ class FakeWebview:
             connection.request('GET', '/')
             response = connection.getresponse()
             assert response.status == 200
+            assert response.getheader('Set-Cookie') is None
+            assert b'/pair.js' in response.read()
+            token = target.fragment.removeprefix('pair=')
+            connection.request('POST', '/api/pair', json.dumps({'token': token}),
+                {'Origin': f'http://127.0.0.1:{target.port}', 'Content-Type': 'application/json', 'X-IRIS-Request': '1'})
+            response = connection.getresponse()
+            assert response.status == 200
+            cookie = response.getheader('Set-Cookie').split(';')[0]
+            response.read()
+            connection.request('GET', '/', headers={'Cookie': cookie})
+            response = connection.getresponse()
             assert b'LOCAL WEATHER' in response.read()
         finally:
             connection.close()

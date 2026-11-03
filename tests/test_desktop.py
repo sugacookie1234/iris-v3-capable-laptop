@@ -164,15 +164,22 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(response.status, 403); response.read()
         connection.request('GET', '/')
         response = connection.getresponse()
-        cookie = response.getheader('Set-Cookie').split(';')[0]
+        self.assertIsNone(response.getheader('Set-Cookie'))
         self.assertEqual(response.status, 200); response.read()
+        token = server.bootstrap_url().split('#pair=')[1]
+        connection.request('POST', '/api/pair', json.dumps({'token': token}),
+            {'Origin': f'http://127.0.0.1:{server.server_address[1]}', 'Content-Type': 'application/json', 'X-IRIS-Request': '1'})
+        response = connection.getresponse()
+        self.assertEqual(response.status, 200)
+        cookie = response.getheader('Set-Cookie').split(';')[0]
+        response.read()
         headers = {'Cookie': cookie, 'X-IRIS-Request': '1', 'Content-Type': 'application/json',
                    'Origin': 'https://untrusted.example'}
         connection.request('POST', '/api/chat', json.dumps({'text': 'hello'}), headers)
         response = connection.getresponse()
         self.assertEqual(response.status, 403); response.read()
         del headers['Origin']
-        connection.request('POST', '/api/chat', json.dumps({'text': 'hello'}), headers)
+        connection.request('POST', '/api/chat', json.dumps({'text': 'Explain a synthetic topic'}), headers)
         response = connection.getresponse()
         self.assertEqual(response.status, 200)
         self.assertEqual(json.loads(response.read())['reply'], 'Iris is ready.')
