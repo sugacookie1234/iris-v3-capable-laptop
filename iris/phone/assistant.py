@@ -45,8 +45,10 @@ class PhoneAssistant:
     No history is stored by this object, and generating a reply never sends it.
     """
 
-    def __init__(self, settings: Mapping[str, str]):
+    def __init__(self, settings: Mapping[str, str], *, usage=None):
         self.config = load_config(settings)
+        if usage is not None:
+            self.config = replace(self.config, provider=replace(self.config.provider, usage=usage))
         self.provider = OpenAICompatibleProvider(replace(self.config.provider, timeout_seconds=45))
         self.identity = compile_identity_prompt(load_identity())
 

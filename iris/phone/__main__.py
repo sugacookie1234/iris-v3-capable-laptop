@@ -52,7 +52,9 @@ def main(argv=None):
     from iris.phone.assistant import PhoneAssistant
     from iris.phone.service import PhoneService
     from iris.phone.server import PhoneServer
-    service = PhoneService(config, store, PhoneAssistant(settings), transport)
+    from iris.usage import ProviderUsage
+    usage = ProviderUsage(ROOT / '.local' / 'provider_usage.sqlite3', settings)
+    service = PhoneService(config, store, PhoneAssistant(settings, usage=usage), transport)
     # Bind before recovering jobs: a second launcher must not alter the live queue.
     server = PhoneServer(config, service)
     try:

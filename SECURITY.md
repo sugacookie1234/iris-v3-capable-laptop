@@ -137,3 +137,5 @@ remain. Runtime packages remain direct-version pinned, not fully transitive/hash
 No comprehensive current-advisory or repository-history secret audit was completed.
 No broad dependency upgrades were performed; only the requested backup dependency
 was added. Pinning and package consistency checks are not vulnerability certification.
+
+Phone launcher continuation: its model and explicit research provider now receive the same checkout ledger as the desktop. Direct library construction without an injected policy and standalone terminal/Fish entry points remain uncovered. Carrier messaging/call accounting still uses the existing phone-specific controls; the new ledger is not a Twilio billing budget. No bridge was started.

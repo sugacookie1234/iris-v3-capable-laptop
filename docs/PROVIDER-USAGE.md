@@ -44,3 +44,5 @@ high-priority continuation, not a claim of universal provider enforcement. Exist
 phone-specific queue limits still apply. Network cancellation cannot undo a request
 already received by a provider. No live provider/billing verification was performed.
 Rollback source with the app stopped; keep the metadata ledger for future recovery.
+
+Phone launcher continuation: its model and explicit research provider now receive the same checkout ledger as the desktop. Direct library construction without an injected policy and standalone terminal/Fish entry points remain uncovered. Carrier messaging/call accounting still uses the existing phone-specific controls; the new ledger is not a Twilio billing budget. No bridge was started.

@@ -33,19 +33,6 @@ class ProviderUsageTests(unittest.TestCase):
                     self.assertEqual(list(pool.map(attempt,range(8))),[False]*8)
                 raise KeyboardInterrupt
         with first.reserve('model'):pass
-    def test_provider_error_counts_and_quota_prevents_transport(self):
-        usage=ProviderUsage(self.path,{'IRIS_PROVIDER_LIMIT_HOUR':'1'})
-        provider=OpenAICompatibleProvider(OpenAICompatibleConfig('test','http://127.0.0.1:9',usage=usage))
-        request=SimpleNamespace(web_search=False)
-        with patch.object(provider,'_generate',side_effect=RuntimeError('synthetic')) as transport:
-            with self.assertRaises(RuntimeError):provider.generate(request)
-            with self.assertRaises(OpenAICompatibleError):provider.generate(request)
-            transport.assert_called_once()
-    def test_database_failure_blocks_transport(self):
-        provider=OpenAICompatibleProvider(OpenAICompatibleConfig('test','http://127.0.0.1:9',usage=ProviderUsage(self.path/'missing')))
-        with patch.object(provider,'_generate') as transport:
-            with self.assertRaises(OpenAICompatibleError):provider.generate(SimpleNamespace(web_search=False))
-            transport.assert_not_called()
     def test_abandoned_reservation_remains_blocking_after_restart(self):
         usage=ProviderUsage(self.path,{'IRIS_PROVIDER_LIMIT_CONCURRENT':'1'})
         db=usage._connect()
@@ -78,3 +65,10 @@ class ProviderUsageTests(unittest.TestCase):
         db=usage._connect()
         try:self.assertEqual(db.execute('SELECT state FROM provider_attempts').fetchone()[0],'owner_abandoned')
         finally:db.close()
+
+    def test_phone_provider_and_research_share_injected_policy(self):
+        from iris.phone.assistant import PhoneAssistant
+        usage=ProviderUsage(self.path)
+        assistant=PhoneAssistant({'IRIS_MODEL':'synthetic','IRIS_PROVIDER_URL':'http://127.0.0.1:9'},usage=usage)
+        self.assertIs(assistant.provider._usage,usage)
+        self.assertIs(assistant.config.provider.usage,usage)

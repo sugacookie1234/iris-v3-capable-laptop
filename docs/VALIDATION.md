@@ -610,3 +610,15 @@ Visual-security continuation: all eleven desktop JavaScript checks passed, inclu
 Durable provider slice: 19 provider-ledger/Council tests passed, including cross-instance concurrency, restart counts, failed calls, cancellation, unavailable storage, abandoned-reservation recovery and fan-out bounds. Full regression rerun in progress; no paid calls.
 
 Provider regression: 975 run, 971 passed, four skipped (104.582s), before the final owner-recovery test and backup addition. Subsequent focused provider/Council run: 19 passed. Encrypted backup: five tests passed using temporary stores and synthetic DPAPI payloads. No real owner backup/restoration performed.
+
+## Security continuation final regression
+Full suite: 982 run, 978 passed, four skipped (99.923s), covering encrypted backups,
+provider admission, Council bounds and phone framing. The subsequent phone-launcher
+policy injection and test split passed 23 focused tests. All eleven desktop JS checks
+passed; pip check reports no broken requirements. Configured-secret diff scan: zero
+matches (not a Git-history audit). No hardware, carrier or billable provider tests.
+Expanded evaluation initially failed 2/93 cases per arm because its blanket generate
+mock intercepted adapter tests. Kept the guard intact and moved those unchanged
+adapter assertions to test_provider_adapter.py, retained in full unittest discovery.
+The offline corpus covers ledger contracts and clock payloads; it does not exercise
+actual provider generation. Final rerun results are in SECURITY-CONTINUATION.md.
