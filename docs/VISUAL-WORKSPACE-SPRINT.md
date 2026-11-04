@@ -46,6 +46,10 @@ older UI responses overwriting a newer workflow. All state is session memory onl
 The 15-minute skill expiry and bounded turns remain; polling does not extend them.
 
 Controls use explicit Update/Reset buttons, not speculative frontend calculations.
+Dirty forms retain their edit-start revision. A voice update received while editing
+cannot silently rebase old inputs onto the new revision: submission conflicts and
+refreshes the controls, without automatically retrying the stale mutation. An
+asynchronous simulated DOM test exercises polling, input, submission and recovery.
 The page polls every 1.5 seconds, with no overlapping poll loop; pending edits remain
 visible. Cleanup aborts requests on pagehide. Responsive dark layout has labelled
 inputs, keyboard focus, SVG axes/legend, backend totals, and an accessible table.
@@ -131,3 +135,32 @@ covering authentication, cross-window access, injection, approvals, data exposur
 dependencies and provider quotas. Current unit tests and synthetic native smoke are
 not a penetration test. Unified Intelligence 2.0 follows that assessment. Screen
 awareness, computer control, communications and Business OS expansion were not added.
+
+## Changed files in this sprint
+
+- `.github/workflows/tests.yml`
+- `SECURITY.md`
+- `docs/IRIS_CAPABILITY_TRACKER.md`
+- `docs/IRIS_DECISIONS.md`
+- `docs/ORCHESTRATION-SPRINT.md`
+- `docs/SECURITY-CONTINUATION.md`
+- `docs/SPRINT-BACKLOG.md`
+- `docs/VALIDATION.md`
+- `docs/VISUAL-WORKSPACE-SPRINT.md`
+- `iris/desktop/app.py`
+- `iris/desktop/runtime.py`
+- `iris/desktop/server.py`
+- `iris/desktop/visual_window.py`
+- `iris/generalist/evaluation.py`
+- `iris/generalist/orchestration.py`
+- `tests/desktop_workspace_check.cjs`
+- `tests/native_visual_workspace_smoke.py`
+- `tests/test_bootstrap.py`
+- `tests/test_desktop_app.py`
+- `tests/test_visual_workspace.py`
+- `web/pair.js`
+- `web/standby.js`
+- `web/visual-workspace.css`
+- `web/visual-workspace.html`
+- `web/visual-workspace.js`
+- `web/visuals.js`

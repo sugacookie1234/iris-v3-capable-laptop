@@ -13,7 +13,7 @@ function visualUpdatePayload(state,values){
 function newerVisual(current,next){return !!next&&Number.isInteger(next.sequence)&&(!current||next.sequence>=current.sequence)&&(!current||next.id!==current.id||next.revision>=current.revision);}
 if(typeof module!=='undefined')module.exports={visualUpdatePayload,newerVisual};
 if(typeof window!=='undefined'&&document.getElementById('controls')){
-  let state=null,stopped=false,busy=false,dirty=false,timer;
+  let state=null,editState=null,stopped=false,busy=false,dirty=false,timer;
   const abort=new AbortController(),get=id=>document.getElementById(id);
   const lease=sessionStorage.getItem('iris.visual.lease');
   async function request(path,value){
@@ -41,11 +41,11 @@ if(typeof window!=='undefined'&&document.getElementById('controls')){
     busy=true;get('apply').disabled=true;get('reset').disabled=true;
     try{
       const values=Object.fromEntries(['principal','rate','years','contribution','compared_rate'].map(key=>[key,get(key).value]));
-      const payload=reset?{id:state.id,revision:state.revision,changes:{reset:true}}:visualUpdatePayload(state,values);
-      const next=await request('/api/visual/update',payload);dirty=false;display(next);
-    }catch(error){if(error.status===409){dirty=false;try{display(await request('/api/visual/state'));}catch{}}get('status').textContent=error.message;}finally{busy=false;get('apply').disabled=false;get('reset').disabled=false;}
+      const payload=reset?{id:state.id,revision:state.revision,changes:{reset:true}}:visualUpdatePayload(editState||state,values);
+      const next=await request('/api/visual/update',payload);dirty=false;editState=null;display(next);
+    }catch(error){if(error.status===409){dirty=false;editState=null;try{display(await request('/api/visual/state'));}catch{}}get('status').textContent=error.message;}finally{busy=false;get('apply').disabled=false;get('reset').disabled=false;}
   }
-  get('controls').addEventListener('input',()=>{dirty=true;});
+  get('controls').addEventListener('input',()=>{if(!dirty)editState=state;dirty=true;});
   get('controls').addEventListener('submit',event=>{event.preventDefault();update();});
   get('reset').addEventListener('click',()=>update(true));
   window.addEventListener('pagehide',()=>{stopped=true;clearTimeout(timer);abort.abort();});
