@@ -23,6 +23,8 @@ CORPUS = (
     ('visuals', 'tests.test_visuals'),
     ('conversation', 'tests.test_conversation_repairs'),
     ('speech_presentation', 'tests.test_speech_presentation'),
+    ('natural_clock', 'tests.test_natural_clock'),
+    ('provider_usage', 'tests.test_provider_usage'),
 )
 
 

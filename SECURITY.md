@@ -119,3 +119,21 @@ The earlier absent-backup/dependency statements are superseded: cryptography
 remain plaintext; vault/managed files and portable settings are NOT included.
 Same-user malware, plaintext recovery staging after abrupt termination and
 cross-machine path rebinding remain limitations. No owner data was migrated.
+
+## Phone and supply-chain review (2026-11-03)
+Read phone/security.py, server.py, service.py and assistant.py. Callback signatures
+use the configured public URL, not forwarded headers. Account/owner/destination
+checks, per-call PIN attempts, token/SID deduplication and isolated conversation-only
+assistant remain intact. Tightened callback framing: one Content-Type, ASCII numeric
+length and no Transfer-Encoding (even empty). 85 synthetic phone boundary/service/
+store/assistant tests pass. No calls, SMS, account access or bridge activation.
+Residuals: signature validation is not a timestamp/freshness proof; replay prevention
+depends on existing service/store IDs and retention. Phone provider calls still need
+the new durable policy. The signature/PIN review is not an external penetration test.
+
+Existing checkout v4, setup-python v5 and setup-node v4 actions now use exact commits
+resolved from their official GitHub tag refs; contents:read and persist-credentials:false
+remain. Runtime packages remain direct-version pinned, not fully transitive/hash locked.
+No comprehensive current-advisory or repository-history secret audit was completed.
+No broad dependency upgrades were performed; only the requested backup dependency
+was added. Pinning and package consistency checks are not vulnerability certification.

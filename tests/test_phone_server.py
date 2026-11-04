@@ -85,6 +85,13 @@ class PhoneServerTests(unittest.TestCase):
                        self.config.from_number, self.config.account_sid, self.config.public_url):
             self.assertNotIn(secret.encode(), result[2])
 
+    def test_ambiguous_framing_is_rejected_before_dispatch(self):
+        for length in ('+10', '-1', '1_0', ''):
+            self.assert_rejected(self.request('POST','/phone/sms',headers=[
+                ('Content-Type','application/x-www-form-urlencoded'),('Content-Length',length)]),400)
+        self.assert_rejected(self.post(extra_headers=[('Content-Type','text/plain')]),400)
+        self.assert_rejected(self.post(extra_headers=[('Transfer-Encoding','')]),400)
+
     def test_listener_binds_only_to_loopback(self):
         self.assertEqual(self.server.server_address[0], "127.0.0.1")
 

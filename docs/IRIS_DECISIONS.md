@@ -105,3 +105,10 @@ ADR-032: Resolve only bounded known natural app aliases through the existing hos
 
 ## ADR-033 — Structured clock speech and conservative admission accounting
 Derive display and speech from the same aware timestamp; never regex-reinterpret arbitrary filenames as dates. Route bounded corrections locally without changing the host clock. Count admitted HTTP attempts, including failed attempts, separately from billing. Share limits across desktop windows and release concurrency in finally blocks. Process restart resets these counters; this is not a durable financial budget.
+
+## ADR-034 — Durable request reservations and explicit portable database recovery
+Desktop providers share an atomic content-free ledger below the router. Failed
+calls count; unresolved crash reservations require explicit owner review. Standalone
+entry points remain a documented gap. Backup uses maintained authenticated encryption,
+SQLite snapshots and new-folder-only restore; live encryption and full vault migration
+are separate work. No live owner data was migrated or restored.

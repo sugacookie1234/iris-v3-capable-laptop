@@ -58,9 +58,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            if self.headers.get_content_type() != 'application/x-www-form-urlencoded': raise ValueError
-            if self.headers.get('Transfer-Encoding') or len(self.headers.get_all('Content-Length', [])) != 1: raise ValueError
-            size = int(self.headers.get('Content-Length', '0'))
+            if len(self.headers.get_all('Content-Type', [])) != 1 or self.headers.get_content_type() != 'application/x-www-form-urlencoded': raise ValueError
+            lengths = self.headers.get_all('Content-Length', [])
+            if self.headers.get_all('Transfer-Encoding') or len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdigit(): raise ValueError
+            size = int(lengths[0])
             if not 0 < size <= 16384: raise ValueError
             raw = self.rfile.read(size)
             if len(raw) != size: raise ValueError
