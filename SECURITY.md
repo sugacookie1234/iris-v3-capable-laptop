@@ -148,3 +148,13 @@ standard durable ledger; explicit desktop/phone policy injection is preserved.
 103 mocked transport tests pass with temporary ledgers. Deliberately modified Python
 or injected custom providers remain outside the threat boundary. No budget is actual
 billing, and clocks/ledger access retain the documented same-user limitations.
+
+
+## Local-result history isolation
+Confirmed ordering bug in DesktopRuntime.chat: the private/public flag was computed
+before DesktopCommands.handle, so a subsequent local command result could enter
+ordinary model history. Fixed by classifying the final local answer. Local replies
+are private unless explicitly host-marked public; compound examples use canonical
+public queries, not raw owner asides. Synthetic regression verifies private markers
+never reach FakeBrain/history. No historic cloud transmission was investigated or
+claimed. Existing saved conversations were not modified.

@@ -624,3 +624,17 @@ The offline corpus covers ledger contracts and clock payloads; it does not exerc
 actual provider generation. Final rerun results are in SECURITY-CONTINUATION.md.
 
 Final expanded CAP-34 gate: PASS, 92/92 per arm, zero regressions. Detailed exact checkpoint and residual risks: SECURITY-CONTINUATION.md.
+
+
+## Orchestration closeout validation
+Baseline 875bbed: 983 run, 979 passed, four skipped (101.987s). Provider closure
+focus: 103 passed; combined provider/skill/privacy focus: 112 passed. Existing
+ToolExecutor + cancellation + new authority/skill tests: 24 passed. Final skill
+and authority suite: eight passed, including independent Decimal arithmetic.
+All eleven desktop JS checks pass. Expanded CAP-34: 100/100 each arm, zero regressions.
+First full integrated run: 993 run, two errors, four skipped. One legacy test required
+private local command output in model history; revised it to require verified local
+response evidence and empty cloud history. The other exposed Windows TCP reset on
+rejected phone framing; fixed with a bounded 50ms wall-clock drain, preserving rejection.
+After fixes, 33 focused tests pass. Final full rerun is recorded below when complete.
+No real owner-data operations, external providers or hardware acceptance performed.

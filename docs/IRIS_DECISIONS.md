@@ -112,3 +112,6 @@ calls count; unresolved crash reservations require explicit owner review. Standa
 entry points remain a documented gap. Backup uses maintained authenticated encryption,
 SQLite snapshots and new-folder-only restore; live encryption and full vault migration
 are separate work. No live owner data was migrated or restored.
+
+## ADR-035 — Local orchestration without authority promotion
+Use validated host decisions and one bounded public educational skill. Reuse existing arithmetic and visual contract; private tool results and approval state stay in their original host systems. Only canonical public example context enters model history. Direct provider defaults must reserve durable capacity. No arbitrary model code or new tool execution is introduced.

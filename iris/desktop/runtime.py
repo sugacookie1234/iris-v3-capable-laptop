@@ -45,6 +45,8 @@ class DesktopRuntime:
         self.settings = effective_environment() if settings is None else dict(settings)
         self.data_dir = Path(data_dir or ROOT / '.local')
         self.data_dir.mkdir(parents=True, exist_ok=True)
+        from iris.generalist.orchestration import Orchestrator
+        self.orchestrator = Orchestrator()
         self.memory_path = self.data_dir / 'memory.sqlite3'
         self.tasks_path = self.data_dir / 'tasks.sqlite3'
         cfg = {**self.settings,
@@ -222,6 +224,7 @@ class DesktopRuntime:
             raise BusyError('Wait for the current response before clearing the conversation.')
         try:
             self.history.clear()
+            self.orchestrator.clear()
             self.vault_commands.current = None
         finally:
             self.turn_lock.release()
@@ -328,10 +331,6 @@ class DesktopRuntime:
             addressed = getattr(self, '_greeted_owner', False)
             self._greeted_owner = True
             return DesktopCommands.answer('Hello.' if addressed else 'Hello, sir.')
-        if 'compound interest' in command and any(word in command for word in ('explain', 'show')):
-            from iris.generalist.visuals import compound, validate
-            return DesktopCommands.answer('Compound interest earns interest on earlier interest. This example starts with 1,000 units at a hypothetical 5% annual rate, compounded monthly for ten years. It is an educational illustration, not a forecast.',
-                'Compound interest earns interest on earlier interest. The chart shows a hypothetical example.', visual=validate(compound()), public_context=True)
         if command == 'create business project':
             return DesktopCommands.answer('Use the Business form to define your new project.',
                 'The new business project form is ready to open.', open_business=True)
@@ -429,15 +428,17 @@ class DesktopRuntime:
         capture_history = tuple(self.history[-8:])
         try:
             text = text.strip()
-            local_answer = self._awareness_command(text) if mode == 'auto' else None
-            private_local_answer = local_answer is not None and not local_answer.get('public_context', False)
+            local_answer = self.orchestrator.handle(text) if mode == 'auto' else None
+            if local_answer is None:
+                local_answer = self._awareness_command(text) if mode == 'auto' else None
             if local_answer is None and mode == 'auto':
                 local_answer = self.desktop_commands.handle(text)
+            private_local_answer = local_answer is not None and not local_answer.get('public_context', False)
             if local_answer is not None:
                 # Receipts and local configuration must not ride along in a later
                 # model prompt. The UI still displays the complete local answer.
                 if not private_local_answer:
-                    self.history.extend([LLMMessage(MessageRole.USER, text),
+                    self.history.extend([LLMMessage(MessageRole.USER, local_answer.get('public_context_query', text)),
                                          LLMMessage(MessageRole.ASSISTANT, local_answer['reply'])])
                     limit = self.config.max_history_turns * 2
                     self.history = self.history[-limit:] if limit else []

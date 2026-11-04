@@ -75,7 +75,9 @@ class DesktopCommandTests(unittest.TestCase):
         self.assertEqual(self.controls.calls, [('app', 'chrome')])
         self.assertEqual(self.brain.calls, [])
         organize.assert_not_called()
-        self.assertEqual(self.app.history[-1].content, result['reply'])
+        self.assertEqual(self.app.history, [])  # Local evidence must not become cloud context.
+        self.assertTrue(result['actions'][0]['verified'])
+        self.assertEqual(result['actions'][0]['detail'], result['reply'])
         self.assertEqual(self.app.last_route, 'LOCAL')
         self.assertFalse(self.app.turn_lock.locked())
 

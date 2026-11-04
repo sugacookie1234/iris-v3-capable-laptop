@@ -25,6 +25,8 @@ CORPUS = (
     ('speech_presentation', 'tests.test_speech_presentation'),
     ('natural_clock', 'tests.test_natural_clock'),
     ('provider_usage', 'tests.test_provider_usage'),
+    ('orchestration', 'tests.test_orchestration'),
+    ('orchestration_authority', 'tests.test_orchestration_authority'),
 )
 
 
