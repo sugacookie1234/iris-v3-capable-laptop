@@ -29,3 +29,4 @@ jobs:
       - run: node tests/desktop_jobs_check.cjs
       - run: node tests/desktop_experiences_check.cjs
       - run: node tests/desktop_business_check.cjs
+      - run: node tests/desktop_visuals_check.cjs
