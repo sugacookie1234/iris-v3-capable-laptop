@@ -102,3 +102,6 @@ Implementation or migration consequences:
 ADR-031: Harden desktop HTTP parsing and cap concurrent handlers at 32; preserve browser operation and Windows error delivery with a brief bounded rejected-body drain. No secret/data migration or new authority introduced.
 
 ADR-032: Resolve only bounded known natural app aliases through the existing host dispatcher. Permit public deterministic educational explanations into bounded history while keeping private local results excluded. Time answers use the aware host clock/configured timezone. Unsupported speech mathematics refers to the visible formula instead of inferring meaning.
+
+## ADR-033 — Structured clock speech and conservative admission accounting
+Derive display and speech from the same aware timestamp; never regex-reinterpret arbitrary filenames as dates. Route bounded corrections locally without changing the host clock. Count admitted HTTP attempts, including failed attempts, separately from billing. Share limits across desktop windows and release concurrency in finally blocks. Process restart resets these counters; this is not a durable financial budget.

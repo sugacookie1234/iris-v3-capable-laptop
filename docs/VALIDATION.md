@@ -601,3 +601,6 @@ Personality update 6c36f54: 13 identity/personality tests and desktop applicatio
 
 ## Conversation sprint checkpoint
 Full Python suite: 959 run, 955 passed, four skipped (101.842 seconds). All ten desktop JavaScript checks passed. Offline evaluation expanded with conversation and speech fixtures: 82/82 in each arm, zero regressions. Final punctuation/repeated-greeting refinement: 11 focused tests passed; the full suite had already loaded the prior greeting implementation. Combined speech/organizer repair suite: 71 passed. Initial full run exposed inline-code cue loss; fixed without weakening its assertion. No paid APIs, native-window/microphone acceptance or owner data changes. See CONVERSATION-SPRINT.md for exact scope and unfinished phases. Changed-file configured-secret scan found zero matches.
+
+## Natural clock and admission limits (2026-11-03)
+32 focused clock, desktop, bootstrap, HTTP-security and usage-limit tests passed. Initial restricted run had one Windows DPAPI environment error; rerun with Windows account protection available passed. No provider calls or hardware acceptance. Structured clock speech is tested through the actual TTS request payload; arbitrary prose date/currency conversion remains conservative.

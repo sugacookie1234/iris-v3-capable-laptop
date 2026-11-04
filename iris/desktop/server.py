@@ -14,6 +14,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
 from iris.desktop.runtime import DesktopRuntime, BusyError, ROOT
+from iris.desktop.limits import UsageLimits, UsageLimitError
+from contextlib import ExitStack
 from iris.brain.providers.openai_compatible import OpenAICompatibleError
 from iris.brain.council import CouncilExecutionError
 from iris.desktop.recognition import transcribe, speech_status, MAX_AUDIO_BYTES
@@ -49,6 +51,7 @@ class DesktopServer(ThreadingHTTPServer):
             raise ValueError('Desktop server must bind to IPv4 loopback.')
         self._connections = threading.BoundedSemaphore(32)
         self.runtime = runtime
+        self.limits = UsageLimits(getattr(runtime, "settings", {}))
         self._owns_runtime = False
         self.desktop_window = False
         self.session = secrets.token_urlsafe(32)
@@ -303,6 +306,13 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {'error': str(exc)})
 
     def _stream_voice(self, text):
+        try:
+            with self.server.limits.reserve('voice'):
+                self._stream_voice_reserved(text)
+        except UsageLimitError as exc:
+            self._json(429, {'error': str(exc)})
+
+    def _stream_voice_reserved(self, text):
         started = False
         try:
             request = voice_request(self.server.runtime.settings, text)
@@ -329,6 +339,25 @@ class Handler(BaseHTTPRequestHandler):
             self.close_connection = True
 
     def do_POST(self):
+        # A server-owned limiter is shared across windows. Reject before any
+        # provider or database work; failures consume attempt capacity too.
+        if not self._authorized(write=True):
+            return self._post_dispatch()
+        path = urlsplit(self.path).path
+        group = {'/api/chat':'chat', '/api/transcribe':'transcribe',
+                 '/api/jobs/start':'jobs', '/api/jobs/resume':'jobs'}.get(path)
+        if path.startswith(('/api/business/', '/api/experiences/', '/api/notes/')):
+            group = 'database'
+        try:
+            with ExitStack() as stack:
+                stack.enter_context(self.server.limits.reserve('http'))
+                if group:
+                    stack.enter_context(self.server.limits.reserve(group))
+                self._post_dispatch()
+        except UsageLimitError as exc:
+            self._json(429, {'error': str(exc)})
+
+    def _post_dispatch(self):
         lengths = self.headers.get_all('Content-Length', [])
         if self.headers.get_all('Transfer-Encoding') or len(lengths) != 1 or not lengths[0].isascii() or not lengths[0].isdigit():
             self._json(400, {'error': 'Invalid request framing.'})

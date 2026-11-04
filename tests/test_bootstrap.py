@@ -41,3 +41,24 @@ class BootstrapTests(unittest.TestCase):
             fresh=self.server.bootstrap_url().split('#pair=')[1]
             for _ in range(10):self.assertFalse(self.server.redeem_bootstrap('wrong'))
             self.assertFalse(self.server.redeem_bootstrap(fresh))
+
+    def test_concurrent_redemption_has_one_winner(self):
+        from concurrent.futures import ThreadPoolExecutor
+        token=self.server.bootstrap_url().split('#pair=')[1]
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results=list(pool.map(self.server.redeem_bootstrap,[token]*8))
+        self.assertEqual(sum(results),1)
+
+    def test_authenticated_chat_quota_prevents_execution(self):
+        from iris.desktop.limits import UsageLimits
+        from unittest.mock import Mock
+        self.server.limits=UsageLimits({'IRIS_LIMIT_CHAT_PER_MINUTE':'1'})
+        self.server.runtime.chat=Mock(return_value={'reply':'Synthetic'})
+        for expected in (200,429):
+            c=http.client.HTTPConnection(*self.server.server_address,timeout=3)
+            try:
+                c.request('POST','/api/chat',json.dumps({'text':'hello'}),
+                    {'Cookie':'iris_session='+self.server.session,'X-IRIS-Request':'1','Content-Type':'application/json'})
+                r=c.getresponse();self.assertEqual(r.status,expected);r.read()
+            finally:c.close()
+        self.server.runtime.chat.assert_called_once()

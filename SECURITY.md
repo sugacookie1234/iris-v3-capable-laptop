@@ -12,7 +12,7 @@ targeted server/development review, not a completed whole-repository audit.
 
 | Risk / evidence | Severity | Likelihood and impact | Treatment |
 |---|---|---|---|
-| Home page issues the session cookie to a local requester (`Handler.do_GET`) | High | Local malicious process can obtain a session and access APIs | OPEN: design native-host bootstrap and browser pairing; cannot isolate against same-user process compromise merely with a cookie |
+| Former homepage session issuance | High, mitigated | Unauthenticated local GET formerly acquired API access | Fixed in c8533d0: expiring single-use trusted-launch pairing. Same-user malware remains outside this boundary. |
 | ThreadingHTTPServer created handlers without an application limit | Medium | Local connection flood consumes threads | Fixed: maximum 32 handlers; excess connections closed, existing socket timeout retained |
 | Rejected POST read an unauthenticated client's advertised body before replying | Medium | Slow client occupied handler until timeout | Fixed: brief 50 ms socket-timeout drain and close connection (Windows reply compatibility) |
 | JSON POST accepted ambiguous framing/duplicate fields/non-finite constants | Medium | Parser disagreement or invalid values could reach downstream code; no bypass demonstrated | Fixed: single numeric length, no transfer encoding, duplicate JSON keys and NaN/Infinity rejected |
@@ -20,7 +20,7 @@ targeted server/development review, not a completed whole-repository audit.
 | Personal/business SQLite stores remain plaintext (`MemoryStore`, business tables) | High | Same-user malware, copied databases or unprotected backups disclose content | OPEN: opt-in encrypted migration with verified backup/recovery; no existing data migrated |
 | Dependencies pinned directly but transitive versions/hashes and action SHAs not fully locked | Medium | Supply-chain replacement or vulnerable transitive package | OPEN: reproducible lock and advisory audit; no vulnerability claim about a particular installed version |
 | GitHub checkout persisted credentials by default | Medium | Test/dependency code could access checkout credential | Fixed: persist-credentials false; workflow retains contents:read, no added secrets |
-| Visual renderer lacks dedicated adversarial DOM coverage | Medium | Validation/rendering regression could introduce unsafe presentation | OPEN: bounded line schema/text nodes exist; do not treat them as complete XSS assurance |
+| Visual rendering trust boundary | Medium residual | Rendering regression could introduce unsafe presentation | Exact fields, bounded numeric data and text-only DOM sinks tested. Simulated DOM tests are not browser-engine XSS certification. |
 
 ## Boundaries and residual exposure
 
@@ -74,3 +74,29 @@ all existing owner records and review states. Never promote policies automatical
 
 ## Bootstrap continuation
 Homepage no longer issues sessions. Trusted native and Chrome launchers mint 60-second, single-use pairing tokens carried in a URL fragment; local pair.js removes the fragment before redeeming via same-origin POST. The authenticated page also loads pair.js to clear launch fragments on an already-paired window. Ten failed token redemptions per minute block further redemption temporarily. Same-user malware can inspect launch arguments/memory; this is not an OS security boundary. No-browser mode does not currently provide manual pairing. 28 focused tests pass; actual WebView/Chrome/microphone acceptance and full regressions remain pending. Restart is required to load changes. No data migration. Continue with browser pairing recovery, quotas and protected backups.
+
+## Admission control checkpoint — 2026-11-03
+Authenticated POST requests share process-local counters across windows. Defaults
+(per minute / concurrent / per process session): chat 30/2/500; transcription
+30/1/500; job submission/resume 10/2/100; selected database operations 60/4/2000;
+all authenticated POST 240/8/20000. Actual streamed TTS calls use 60/2/1000.
+Owner configuration keys: IRIS_LIMIT_<GROUP>_PER_MINUTE, _CONCURRENT and
+_PER_SESSION, where GROUP is CHAT, TRANSCRIBE, JOBS, DATABASE, HTTP or VOICE.
+Positive integers only (1..100000); invalid values fail startup rather than disable
+limits. No settings UI was added. Quota rejection returns 429 with no automatic
+retry. Admitted failed/cancelled attempts consume count; concurrency releases in
+finally. These counters do not represent monetary cost or confirmed provider usage.
+
+Residual HIGH resource risk: Council fan-out and non-desktop provider entry points
+lack shared provider-level accounting. GET database reads remain outside this new
+quota; socket handlers remain capped at 32. Counters reset on process restart and
+are not durable budgets. Existing pairing failed-token limit remains independent.
+No new paid provider fallback was enabled. Provider timeout/cancellation semantics
+are unchanged; a disconnected client may still finish an upstream request.
+
+Concurrent bootstrap redemption now has an eight-contender test: exactly one wins.
+Authenticated HTTP quota tests prove a rejected chat does not execute the runtime.
+Native/Chrome restart acceptance and session-expiry improvements remain pending.
+Rollback source commits with IRIS stopped; no database migration or owner-data
+operation occurred. Do not delete .local. Portable encrypted backups remain absent;
+cryptography is not installed in this environment, and no custom cipher was added.
