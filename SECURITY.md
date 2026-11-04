@@ -139,3 +139,12 @@ No broad dependency upgrades were performed; only the requested backup dependenc
 was added. Pinning and package consistency checks are not vulnerability certification.
 
 Phone launcher continuation: its model and explicit research provider now receive the same checkout ledger as the desktop. Direct library construction without an injected policy and standalone terminal/Fish entry points remain uncovered. Carrier messaging/call accounting still uses the existing phone-specific controls; the new ledger is not a Twilio billing budget. No bridge was started.
+
+
+## Critical provider closeout
+The prior silent default-policy gap is closed for OpenAI-compatible generation and
+diagnostic HTTP, standalone Fish TTS and Fish ASR. Default paths now reserve in the
+standard durable ledger; explicit desktop/phone policy injection is preserved.
+103 mocked transport tests pass with temporary ledgers. Deliberately modified Python
+or injected custom providers remain outside the threat boundary. No budget is actual
+billing, and clocks/ledger access retain the documented same-user limitations.

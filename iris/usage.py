@@ -31,7 +31,7 @@ class ProviderUsage:
 
     @contextmanager
     def reserve(self, category):
-        if category not in ('model','research','fish_tts','fish_asr'):
+        if category not in ('model','research','fish_tts','fish_asr','diagnostic'):
             raise ValueError('Unknown provider usage category.')
         identifier=uuid.uuid4().hex
         now=self.clock()
@@ -61,6 +61,14 @@ class ProviderUsage:
             except sqlite3.Error:
                 raise ProviderLimitError('Provider result accounting failed. Do not automatically retry.') from None
 
+
+
+def default_usage():
+    """Trusted standalone default; no adapter can silently omit accounting."""
+    from iris.local_config import config_path, effective_environment
+    path=config_path().parent
+    path.mkdir(parents=True,exist_ok=True)
+    return ProviderUsage(path/'provider_usage.sqlite3',effective_environment())
 
 def main(argv=None):
     """Explicit offline recovery; never called by startup or model tools."""

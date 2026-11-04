@@ -46,3 +46,19 @@ already received by a provider. No live provider/billing verification was perfor
 Rollback source with the app stopped; keep the metadata ledger for future recovery.
 
 Phone launcher continuation: its model and explicit research provider now receive the same checkout ledger as the desktop. Direct library construction without an injected policy and standalone terminal/Fish entry points remain uncovered. Carrier messaging/call accounting still uses the existing phone-specific controls; the new ledger is not a Twilio billing budget. No bridge was started.
+
+
+## Closeout: default transport policy
+Unconfigured OpenAI-compatible adapters now lazily obtain the standard checkout
+ledger instead of bypassing admission. This covers terminal/readiness constructions,
+Council/research adapters and direct library use. Health checks reserve a separate
+diagnostic category; they are not counted as model billing. Standalone Fish synthesis
+and the actual Fish ASR helper also reserve at transport entry. Desktop ASR no longer
+reserves around local Whisper, avoiding double counting and counting local work as
+cloud requests. Desktop streamed TTS retains its injected runtime policy.
+The default path is config_path().parent/provider_usage.sqlite3, with owner settings
+from effective_environment. Failure to load policy/storage prevents transport.
+Application code can still deliberately supply another policy/path; this is host-owned
+Python, not a sandbox against malicious same-user code. Custom data-directory desktop
+ASR currently uses the standard config ledger; normal launchers share that location.
+Transport fixtures use isolated temporary ledgers. No real provider call was made.

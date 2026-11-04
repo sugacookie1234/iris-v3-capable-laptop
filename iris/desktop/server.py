@@ -390,8 +390,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._body_read = True
                 if len(audio) != size:
                     raise ValueError('Recording upload was incomplete.')
-                with app.provider_usage.reserve('fish_asr') if hasattr(app, 'provider_usage') else nullcontext():
-                    text = transcribe(app.settings, audio, self.headers.get('Content-Type', ''))
+                text = transcribe(app.settings, audio, self.headers.get('Content-Type', ''))
                 self._json(200, {'text': text, 'speech': speech_status(app.settings)})
                 return
             value = self._body()

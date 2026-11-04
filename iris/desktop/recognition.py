@@ -23,6 +23,11 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def _fish_transcribe(settings, audio):
+    from iris.usage import default_usage
+    with default_usage().reserve("fish_asr"):
+        return _fish_transcribe_reserved(settings, audio)
+
+def _fish_transcribe_reserved(settings, audio):
     key = settings.get('IRIS_FISH_API_KEY', '').strip()
     if not key:
         raise FishRecognitionError('No Fish Audio key is configured.')

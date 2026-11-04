@@ -110,6 +110,16 @@ class OpenAICompatibleProvider:
         return headers
 
     def healthcheck(self) -> bool:
+        from iris.usage import default_usage, ProviderLimitError
+        try:
+            if self._usage is None:
+                self._usage = default_usage()
+            with self._usage.reserve('diagnostic'):
+                return self._healthcheck()
+        except (ProviderLimitError, OSError, ValueError):
+            return False
+
+    def _healthcheck(self) -> bool:
         """
         Check whether the provider endpoint is reachable.
 
@@ -130,7 +140,8 @@ class OpenAICompatibleProvider:
 
     def generate(self, request: LLMRequest) -> LLMResponse:
         if self._usage is None:
-            return self._generate(request)
+            from iris.usage import default_usage
+            self._usage = default_usage()
         from iris.usage import ProviderLimitError
         try:
             with self._usage.reserve('research' if request.web_search else 'model'):

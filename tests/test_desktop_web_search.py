@@ -118,3 +118,16 @@ class WebResearchTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def setUpModule():
+    import tempfile
+    import unittest
+    from pathlib import Path
+    from unittest.mock import patch
+    from iris.usage import ProviderUsage
+    temporary=tempfile.TemporaryDirectory()
+    unittest.addModuleCleanup(temporary.cleanup)
+    replacement=patch('iris.usage.default_usage',return_value=ProviderUsage(Path(temporary.name)/'usage.sqlite3',{'IRIS_PROVIDER_LIMIT_HOUR':'10000','IRIS_PROVIDER_LIMIT_DAY':'10000','IRIS_PROVIDER_LIMIT_SESSION':'10000'}))
+    replacement.start()
+    unittest.addModuleCleanup(replacement.stop)

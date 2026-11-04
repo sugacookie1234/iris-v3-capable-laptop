@@ -889,7 +889,8 @@ class FishAudioSynthesizer(LocalSpeechSynthesizer):
         )
         self._stopped = False
         try:
-            with urlopen(request, timeout=self.timeout_seconds) as response:
+            from iris.usage import default_usage
+            with default_usage().reserve('fish_tts'), urlopen(request, timeout=self.timeout_seconds) as response:
                 if not 200 <= response.status < 300:
                     raise FishAudioError(f"Fish Audio returned HTTP {response.status}.")
                 content_type = _response_content_type(response)
