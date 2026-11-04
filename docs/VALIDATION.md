@@ -680,3 +680,28 @@ native WebView2 smoke exited zero with SVG, keyboard-activation flag, same-windo
 updates, UI-to-host submission, main continuity and reopen verified; zero provider
 calls. These are synthetic tests, not physical audio/keyboard, multi-monitor or
 target-OMEN acceptance. No production runtime restart or penetration test claimed.
+
+
+## Security adversarial assessment
+Baseline 008f453 clean. New disposable HTTP baseline: 3 pass / 1 expected failure
+(private memory read with visual-only credential returned 200). After remediation,
+28 focused HTTP/bootstrap/native-app tests passed. 52 existing provider-adapter,
+usage, backup, authority and phone checks passed. Final new HTTP/authority set:
+10 passed. Hostile encrypted-manifest traversal and invalid SQLite recovery checks
+added; all 6 backup tests pass with source preservation. All 12 desktop JS checks
+passed. Native cross-origin attempt and normal lifecycle passed with fake providers,
+blocked provider HTTP and disabled microphone update; no real owner data.
+
+Native diagnostic attempts reproduced renderVisual-is-not-defined on reopen; later
+isolated smoke passed. Initial async probe failure was an evaluate_js Promise test
+mistake, corrected by awaiting a completion marker; one readiness lookup returned
+None and was corrected to wait. None establishes an auth bypass. Temporary profile
+cleanup can remain deferred. Full regression and expanded CAP-34 follow below.
+
+
+Final full regression: 1018 run, 1014 passed, four skipped, zero failures/errors
+(114.074s), .local/security-pentest-full.log. Includes the previously timed-out HTTP
+review test, which passed unchanged. All twelve desktop JS checks passed. Native
+synthetic cross-origin fetch blocked; normal SVG/update/UI-to-host/close/reopen
+passed with zero provider calls. The native renderer timeout root cause remains
+unresolved despite a later pass. No security assertion or timeout was weakened.

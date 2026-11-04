@@ -47,6 +47,20 @@ class BackupTests(unittest.TestCase):
         self.assertFalse(list(self.root.glob('.iris-restore-*')))
     def test_stop_assertion_required(self):
         with self.assertRaises(BackupError):create(self.source,self.archive,self.password)
+
+    def test_authenticated_hostile_manifest_cannot_escape_or_publish_invalid_database(self):
+        import base64,json,os
+        from iris.backup import MAGIC,_cipher
+        for name in ('../escape.sqlite3','memory.sqlite3'):
+            salt=os.urandom(16)
+            manifest={'version':1,'stores':{name:base64.b64encode(b'not a sqlite database').decode()}}
+            self.archive.write_bytes(MAGIC+salt+_cipher(self.password,salt).encrypt(json.dumps(manifest).encode()))
+            with self.assertRaises((BackupError,sqlite3.Error)):
+                restore(self.archive,self.target,self.password,app_stopped=True)
+            self.assertFalse(self.target.exists())
+            self.assertFalse((self.root/'escape.sqlite3').exists())
+            self.assertFalse(list(self.root.glob('.iris-restore-*')))
+            self.assertEqual((self.source/'memory.sqlite3').read_bytes(),self.before)
     def test_jobs_payloads_are_reprotected_on_restore(self):
         from iris.desktop.secrets import protect,unprotect
         with closing(sqlite3.connect(self.source/'jobs.sqlite3')) as db:

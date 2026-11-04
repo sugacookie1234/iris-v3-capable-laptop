@@ -51,7 +51,7 @@ Do not use a single ambiguous “done” marker. `TESTED` and `LIVE-VERIFIED` re
 | CAP-26 | Proactive digest/notification policy | DESIGNED | M5 | No duplicate or stale alerts; owner quiet hours and pause |
 | CAP-27 | Always-on companion worker | DEFERRED | M8 | Service survives laptop sleep; secure sync and real costs |
 | CAP-28 | Business operations workflows | IN-PROGRESS | M8 | Local supplied-evidence feasibility workspace and cost comparisons implemented; live research, recurring operations and commercial connectors remain pending |
-| CAP-29 | Cost/privacy/security dashboard | DESIGNED | M5/M7 | Reconciled usage and actionable controls; data deletion proof |
+| CAP-29 | Cost/privacy/security dashboard | IN-PROGRESS | M5/M7 | Durable provider admission and local adversarial assessment implemented; installer update, plaintext storage and broader security acceptance remain open |
 
 ## Progress rollup
 

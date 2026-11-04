@@ -78,3 +78,12 @@ Owner's 1:44 PM continuation order: finish Native Visual Workspace acceptance an
 closeout, then dedicated security penetration-testing/red-team assessment in a
 disposable environment, then Unified Intelligence 2.0. No later milestone is part of
 this native-workspace sprint. Ordinary automated tests are not red-team completion.
+
+
+Security assessment completed bounded HTTP/browser/source/advisory passes; see
+SECURITY-PENTEST-REPORT.md. High visual credential-scope finding repaired. Follow-up
+release gates: owner-controlled pip update (Windows access denied), intermittent
+native asset loading, long-session and OMEN acceptance, transitive hash locking,
+whole-source indirect injection coverage and plaintext-data lifecycle. No external
+security certification. Next major feature remains Unified Intelligence 2.0 after
+these release risks are reviewed; no broader controls/connectors were enabled.

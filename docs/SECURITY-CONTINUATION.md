@@ -204,3 +204,27 @@ following documentation-only commit records this checkpoint. Working-tree change
 at this point are only these closeout docs; no unfinished implementation remains.
 Transient test failures and limits are preserved in VALIDATION.md. Push this
 development branch; do not merge main. Owner hardware acceptance remains pending.
+
+
+## Security assessment checkpoint — 2026-11-04
+See SECURITY-PENTEST-REPORT.md. Baseline 008f453 was clean. Commit 2d8fc7f
+repairs confirmed HIGH visual-bootstrap privilege escalation using independent
+localhost visual / 127.0.0.1 main origins and credentials on one listener/runtime.
+Commit d319da4 pins a hash-verified installer update before setup/CI dependencies.
+Live pip 24.3.1 update failed with WinError 5; do not claim it patched or change
+permissions automatically. Source/runtime dependencies and owner data are preserved.
+
+Actual bounded raw-HTTP and native WebView2 adversarial probes were conducted only
+against temporary synthetic instances. Native visual-to-main fetch is blocked.
+A separate same-agent challenge pass is documented; no external independent test.
+The intermittent native reopen failure reproduced with renderVisual unavailable,
+then passed in later isolated runs. Its root cause remains unresolved. No timeout
+or assertion was weakened. Synthetic profile cleanup may be delayed by WebView2.
+
+Continuation: review the exact evidence and final regression below, resolve the
+installer permissions through an owner-controlled environment repair, investigate
+native asset readiness and complete long-session/OMEN acceptance. Keep private
+SQLite/backup-staging/ACL and model-semantic limitations explicit. Unified
+Intelligence 2.0 is the next major feature, not part of this assessment. Do not
+expand permissions or merge main. Reproduce with tests.test_security_redteam and
+tests.test_redteam_authority; native smoke must run separately from the full suite.
