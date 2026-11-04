@@ -58,6 +58,8 @@ class DesktopServer(ThreadingHTTPServer):
         self.session = secrets.token_urlsafe(32)
         self._bootstrap_lock = threading.Lock()
         self._bootstrap = None
+        self._visual_bootstrap = None
+        self._visual_session = None
         self._auth_failures = []
         self.clap_listener = NativeClapListener()
         super().__init__(address, Handler)
@@ -67,6 +69,7 @@ class DesktopServer(ThreadingHTTPServer):
 
     def server_close(self):
         try:
+            self.revoke_visual()
             self.clap_listener.close()
             if self._owns_runtime and hasattr(self.runtime, 'close'):
                 self._owns_runtime = False
@@ -79,6 +82,34 @@ class DesktopServer(ThreadingHTTPServer):
             token = secrets.token_urlsafe(32)
             self._bootstrap = (token, time.monotonic() + 60)
         return f'http://127.0.0.1:{self.server_address[1]}/#pair={token}'
+
+    def visual_bootstrap_url(self):
+        with self._bootstrap_lock:
+            token=secrets.token_urlsafe(32)
+            self._visual_bootstrap=(token,time.monotonic()+60)
+            self._visual_session=None
+        return f'http://127.0.0.1:{self.server_address[1]}/visual#pair={token}'
+
+    def revoke_visual(self):
+        with self._bootstrap_lock:
+            self._visual_bootstrap=None;self._visual_session=None
+
+    def redeem_visual(self,token):
+        with self._bootstrap_lock:
+            now=time.monotonic()
+            self._auth_failures=[stamp for stamp in self._auth_failures if now-stamp<60]
+            if len(self._auth_failures)>=10:return None
+            active=self._visual_bootstrap
+            if type(token) is not str or not token.isascii() or not active or time.monotonic()>=active[1] or not secrets.compare_digest(token,active[0]):return None
+            self._visual_bootstrap=None
+            lease=secrets.token_urlsafe(32)
+            self._visual_session=(lease,time.monotonic()+900)
+            return lease
+
+    def visual_authorized(self,token):
+        with self._bootstrap_lock:
+            active=self._visual_session
+            return bool(type(token) is str and token.isascii() and active and time.monotonic()<active[1] and secrets.compare_digest(token,active[0]))
 
     def redeem_bootstrap(self, token):
         with self._bootstrap_lock:
@@ -127,7 +158,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _authorized(self, write=False):
         if any(len(self.headers.get_all(key, [])) > 1 for key in
-               ('Origin', 'Cookie', 'X-IRIS-Request', 'Sec-Fetch-Site')):
+               ('Origin', 'Cookie', 'X-IRIS-Request', 'X-IRIS-Visual', 'Sec-Fetch-Site')):
             return False
         if not self._trusted_host():
             return False
@@ -240,6 +271,9 @@ class Handler(BaseHTTPRequestHandler):
                   '/jobs.js': ('jobs.js', 'text/javascript'),
                   '/experiences.js': ('experiences.js', 'text/javascript'),
                   '/business.js': ('business.js', 'text/javascript'),
+                  '/visual': ('visual-workspace.html', 'text/html; charset=utf-8'),
+                  '/visual-workspace.js': ('visual-workspace.js', 'text/javascript'),
+                  '/visual-workspace.css': ('visual-workspace.css', 'text/css'),
                   '/visuals.js': ('visuals.js', 'text/javascript'),
                   '/pair.js': ('pair.js', 'text/javascript'),
                   '/voice-input.js': ('voice-input.js', 'text/javascript'),
@@ -249,7 +283,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(403, {'error': 'Local access only.'})
                 return
             filename, kind = assets[path]
-            if path == '/' and not self._authorized():
+            if path in ('/','/visual') and not self._authorized():
                 self._send(200, b'<!doctype html><meta charset="utf-8"><title>Pair IRIS</title><p id="pairStatus">Open IRIS using its desktop or Chrome launcher to pair this window.</p><script src="/pair.js"></script>', 'text/html; charset=utf-8')
                 return
             self._send(200, (ROOT / 'web' / filename).read_bytes(), kind)
@@ -262,7 +296,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         app = self.server.runtime
         try:
-            if path == '/api/status':
+            if path == '/api/visual/state':
+                if not self.server.visual_authorized(self.headers.get('X-IRIS-Visual')):
+                    self._json(403, {'error':'Visual window session expired or closed.'});return
+                self._json(200, app.visual_state())
+            elif path == '/api/status':
                 cfg = app.settings
                 self._json(200, {'name': 'IRIS', 'brain': True, 'voice': bool(cfg.get('IRIS_FISH_API_KEY')),
                     'desktop_window': self.server.desktop_window,
@@ -372,10 +410,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 value = self._body()
-                valid = set(value) == {'token'} and self.server.redeem_bootstrap(value['token'])
+                lease = self.server.redeem_visual(value.get('token')) if set(value)=={'token'} else None
+                valid = bool(lease) or (set(value) == {'token'} and self.server.redeem_bootstrap(value['token']))
             except (ValueError, UnicodeError):
-                valid = False
-            self._send(200 if valid else 403, b'{"ok":true}' if valid else b'{"error":"Pairing rejected. Relaunch IRIS."}', cookie=valid)
+                valid = False;lease=None
+            body={'ok':True,**({'visual_token':lease} if lease else {})} if valid else {'error':'Pairing rejected. Relaunch IRIS.'}
+            self._send(200 if valid else 403, json.dumps(body).encode(), cookie=valid)
             return
         if not self._authorized(write=True):
             self._json(403, {'error': 'Request not authorized from this interface.'})
@@ -395,7 +435,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             value = self._body()
             path = urlsplit(self.path).path
-            if path == '/api/clap':
+            if path == '/api/visual/update':
+                if len(self.headers.get_all('X-IRIS-Visual',[]))!=1 or not self.server.visual_authorized(self.headers.get('X-IRIS-Visual')):
+                    self._json(403, {'error':'Visual window session expired or closed.'});return
+                self._json(200, app.update_visual(value))
+            elif path == '/api/clap':
                 owner = value.get('owner')
                 if value.get('action') == 'update':
                     if type(value.get('busy')) is not bool:

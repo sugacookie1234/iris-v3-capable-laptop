@@ -71,6 +71,7 @@ def run_window(webview, runtime, port=8766):
     thread.start()
     previous_open = webbrowser.open
     tray = None
+    visual_controller = None
     try:
         url = f'http://127.0.0.1:{server.server_address[1]}/'
         # pywebview delegates target=_blank links to this function. Replace it
@@ -90,9 +91,23 @@ def run_window(webview, runtime, port=8766):
         os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = ' '.join(flags)
         window = webview.create_window(TITLE, server.bootstrap_url(), width=1240, height=820, min_size=(720, 620),
                                        background_color='#050d15', text_select=True)
+        from iris.desktop.visual_window import VisualWindowController
+        def dispatch_visual(callback):
+            from System import Action
+            window.native.BeginInvoke(Action(callback))
+        def create_visual():
+            child=webview.create_window('I.R.I.S. — Visual Workspace',server.visual_bootstrap_url(),
+                width=1080,height=780,min_size=(640,520),resizable=True,focus=False,
+                background_color='#050d15',text_select=True)
+            if child is None:raise RuntimeError('Visual window was not created.')
+            guard_navigation(child,url)
+            return child
+        visual_controller=VisualWindowController(dispatch_visual,create_visual,server.revoke_visual)
+        runtime.visual_window=visual_controller
         def prepare_window():
             nonlocal tray
             guard_navigation(window, url)
+            window.native.FormClosed += lambda sender,event: visual_controller.shutdown_on_ui()
             try:
                 tray = install_tray(window, ROOT)
             except Exception as exc:
@@ -105,6 +120,9 @@ def run_window(webview, runtime, port=8766):
         webview.start(gui='edgechromium', debug=False, private_mode=False,
                       storage_path=str(Path(runtime.data_dir) / 'webview'))
     finally:
+        if visual_controller is not None:
+            try:visual_controller.dispose()
+            except Exception:server.revoke_visual()
         if tray is not None:
             try:
                 tray.dispose()

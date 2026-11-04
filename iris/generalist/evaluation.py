@@ -27,6 +27,7 @@ CORPUS = (
     ('provider_usage', 'tests.test_provider_usage'),
     ('orchestration', 'tests.test_orchestration'),
     ('orchestration_authority', 'tests.test_orchestration_authority'),
+    ('visual_workspace','tests.test_visual_workspace'),
 )
 
 

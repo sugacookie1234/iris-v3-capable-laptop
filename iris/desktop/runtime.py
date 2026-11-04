@@ -47,6 +47,9 @@ class DesktopRuntime:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         from iris.generalist.orchestration import Orchestrator
         self.orchestrator = Orchestrator()
+        self.visual_window = None
+        self._visual_updated = 0
+        self._visual_sequence = 0
         self.memory_path = self.data_dir / 'memory.sqlite3'
         self.tasks_path = self.data_dir / 'tasks.sqlite3'
         cfg = {**self.settings,
@@ -219,12 +222,63 @@ class DesktopRuntime:
         with GoalStore(path, read_only=True) as store:
             return [g.to_dict() for g in store.list()]
 
+    def _visual_state_locked(self):
+        self.orchestrator._expire()
+        context=self.orchestrator.context
+        if context is None:raise ValueError('No active visual. Ask IRIS to explain compound interest.')
+        result=self.orchestrator.presentation()
+        skill=context.skill
+        total=skill.principal+skill.contribution*12*skill.years
+        final=result['visual']['points'][-1][1]
+        return {'version':1,'id':context.visual_reference,'revision':context.revision,
+            'sequence':self._visual_sequence,'workflow':context.workflow,'parameters':skill.parameters(),'visual':result['visual'],
+            'summary':result['reply'],'spoken_reply':result['spoken_reply'],
+            'updated_at':self._visual_updated,'expires_in':max(0,context.expires-self.orchestrator.clock()),
+            'presentation':self.visual_window.state if self.visual_window else 'in_chat',
+            'totals':{'final':final,'contributed':total,'growth':round(final-total,2)}}
+
+    def visual_state(self):
+        if not self.turn_lock.acquire(blocking=False):raise ValueError('Conversation update in progress; try again.')
+        try:return self._visual_state_locked()
+        finally:self.turn_lock.release()
+
+    def update_visual(self,value):
+        if type(value) is not dict or set(value)!={'id','revision','changes'}:raise ValueError('Invalid visual update fields.')
+        if not self.turn_lock.acquire(blocking=False):raise BusyError('Conversation update in progress.')
+        try:
+            self.orchestrator._expire();context=self.orchestrator.context
+            if context is None or value['id']!=context.visual_reference or type(value['revision']) is not int or value['revision']!=context.revision:
+                raise BusyError('The visual changed or expired. Refresh before editing.')
+            changes=value['changes']
+            if changes=={'reset':True}:context.skill.reset()
+            else:context.skill.change(changes)
+            context.revision+=1;context.turns+=1;self._visual_updated=time.time();self._visual_sequence+=1
+            state=self._visual_state_locked()
+            self.history.extend([LLMMessage(MessageRole.USER,'Update the public compound-interest example.'),
+                                 LLMMessage(MessageRole.ASSISTANT,state['summary'])])
+            limit=self.config.max_history_turns*2
+            self.history=self.history[-limit:] if limit else []
+            return state
+        finally:self.turn_lock.release()
+
+    def _publish_visual(self,answer):
+        context=self.orchestrator.context
+        if context is not None and 'visual' in answer:
+            context.revision+=1;self._visual_updated=time.time();self._visual_sequence+=1
+            if self.visual_window:
+                try:self.visual_window.request(context.visual_reference,context.revision,action=answer.get('window_action','update'))
+                except Exception:answer['reply']+=' The separate window is unavailable; the chart remains in this conversation.'
+        elif answer.get('window_action')=='close' and self.visual_window:
+            try:self.visual_window.request(action='close')
+            except Exception:answer['reply']='The graph window could not be closed. Use its close button.'
+
     def reset(self):
         if not self.turn_lock.acquire(blocking=False):
             raise BusyError('Wait for the current response before clearing the conversation.')
         try:
             self.history.clear()
             self.orchestrator.clear()
+            if self.visual_window:self.visual_window.request(action="close")
             self.vault_commands.current = None
         finally:
             self.turn_lock.release()
@@ -435,6 +489,7 @@ class DesktopRuntime:
                 local_answer = self.desktop_commands.handle(text)
             private_local_answer = local_answer is not None and not local_answer.get('public_context', False)
             if local_answer is not None:
+                self._publish_visual(local_answer)
                 # Receipts and local configuration must not ride along in a later
                 # model prompt. The UI still displays the complete local answer.
                 if not private_local_answer:

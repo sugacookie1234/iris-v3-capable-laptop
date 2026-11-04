@@ -62,3 +62,33 @@ class BootstrapTests(unittest.TestCase):
                 r=c.getresponse();self.assertEqual(r.status,expected);r.read()
             finally:c.close()
         self.server.runtime.chat.assert_called_once()
+
+    def test_visual_pairing_does_not_replace_main_and_is_revocable(self):
+        from concurrent.futures import ThreadPoolExecutor
+        main=self.server.bootstrap_url().split('#pair=')[1]
+        visual=self.server.visual_bootstrap_url().split('#pair=')[1]
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            leases=list(pool.map(self.server.redeem_visual,[visual]*4))
+        valid=[lease for lease in leases if lease]
+        self.assertEqual(len(valid),1)
+        self.assertTrue(self.server.redeem_bootstrap(main))
+        self.assertTrue(self.server.visual_authorized(valid[0]))
+        self.server.revoke_visual()
+        self.assertFalse(self.server.visual_authorized(valid[0]))
+        self.assertIsNone(self.server.redeem_visual(visual))
+
+    def test_visual_expiry_and_api_requires_both_session_and_window_lease(self):
+        from unittest.mock import Mock
+        self.server.runtime.visual_state=Mock(return_value={'synthetic':True})
+        with patch('iris.desktop.server.time.monotonic',return_value=10):
+            token=self.server.visual_bootstrap_url().split('#pair=')[1]
+            lease=self.server.redeem_visual(token)
+            for cookie,key,expected in [('',lease,403),('iris_session='+self.server.session,'public-visual-id',403),('iris_session='+self.server.session,lease,200)]:
+                c=http.client.HTTPConnection(*self.server.server_address,timeout=3)
+                try:
+                    c.request('GET','/api/visual/state',headers={'Cookie':cookie,'X-IRIS-Visual':key})
+                    response=c.getresponse();self.assertEqual(response.status,expected);response.read()
+                finally:c.close()
+        with patch('iris.desktop.server.time.monotonic',return_value=911):
+            self.assertFalse(self.server.visual_authorized(lease))
+        self.server.runtime.visual_state.assert_called_once()

@@ -163,3 +163,5 @@ replace failing encryption with plaintext to make restricted test runs pass.
 - tests/test_provider_adapter.py
 - tests/test_provider_usage.py
 - web/visuals.js
+
+Native workspace continuation: independent single-use visual bootstrap leaves main pairing intact; visual reads/edits require the existing cookie plus a short-lived revocable window lease. Revisions reject stale/duplicate mutations. Real local WebView2 synthetic smoke passed the functional window path, with separately resolved temporary-profile cleanup. Same-user malware, main-session expiry and target-hardware acceptance remain limitations. See VISUAL-WORKSPACE-SPRINT.md.

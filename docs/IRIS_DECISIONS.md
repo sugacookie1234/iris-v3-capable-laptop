@@ -115,3 +115,6 @@ are separate work. No live owner data was migrated or restored.
 
 ## ADR-035 — Local orchestration without authority promotion
 Use validated host decisions and one bounded public educational skill. Reuse existing arithmetic and visual contract; private tool results and approval state stay in their original host systems. Only canonical public example context enters model history. Direct provider defaults must reserve durable capacity. No arbitrary model code or new tool execution is introduced.
+
+## ADR-036 — One runtime, scoped native visual lease, authoritative skill inputs
+Reuse pywebview and the existing loopback session. Marshal native changes through WinForms BeginInvoke; maintain one coalesced secondary window. An independent expiring single-use bootstrap issues a revocable visual lease in addition to the main cookie. Visual IDs never authenticate. All inputs live in CompoundSkill; compare-and-update revisions and a global sequence reject stale writes/responses. Browser fallback remains in-chat. No privileged JS API or tool approval is introduced.

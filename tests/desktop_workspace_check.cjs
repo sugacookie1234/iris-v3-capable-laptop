@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {visualUpdatePayload,newerVisual}=require('../web/visual-workspace.js');
+const state={id:'public-id',revision:2,sequence:4};
+assert.deepEqual(visualUpdatePayload(state,{principal:'1000',rate:'7',years:'10',contribution:'200',compared_rate:''}),{id:'public-id',revision:2,changes:{principal:1000,rate:7,years:10,contribution:200,compared_rate:null}});
+assert.throws(()=>visualUpdatePayload(state,{principal:'<script>'}));
+assert.equal(newerVisual(state,{id:'public-id',revision:1,sequence:3}),false);
+assert.equal(newerVisual(state,{id:'older-workflow',revision:99,sequence:2}),false);
+assert.equal(newerVisual(state,{id:'new-workflow',revision:1,sequence:5}),true);
+const fs=require('node:fs');
+const source=fs.readFileSync(require.resolve('../web/visual-workspace.js'),'utf8');
+assert.ok(!source.includes('innerHTML'));assert.ok(!source.includes('eval('));
+assert.ok(source.includes('abort.abort()'));assert.ok(source.includes('if(busy||!state||stopped)return'));
+const html=fs.readFileSync(require.resolve('../web/visual-workspace.html'),'utf8');
+for(const field of ['principal','rate','years','contribution','compared_rate'])assert.ok(html.includes(`id="${field}"`));
+console.log('Workspace typed updates, stale revision/workflow rejection, field labels and cleanup contracts passed.');

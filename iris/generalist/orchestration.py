@@ -1,5 +1,6 @@
 """Bounded owner-turn orchestration. Decisions never grant tool authority."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from uuid import uuid4
 from enum import Enum
 import re
 import time
@@ -32,15 +33,26 @@ class State(str,Enum):
 
 @dataclass
 class CompoundSkill:
+    principal: float=1000
+    years: int=10
+    contribution: float=0
     rate: float=5
     compared_rate: float | None=None
     state: State=State.ACTIVE
 
+    def parameters(self):
+        return {key:getattr(self,key) for key in ('principal','rate','years','contribution','compared_rate')}
+    def change(self,changes):
+        if self.state is not State.ACTIVE:raise ValueError('Resume the example first.')
+        if type(changes) is not dict or not changes or not set(changes)<=set(self.parameters()):raise ValueError('Invalid visual changes.')
+        candidate=replace(self,**changes)
+        candidate.visual()
+        for key,value in changes.items():setattr(self,key,value)
+    def reset(self):
+        self.change({'principal':1000,'rate':5,'years':10,'contribution':0,'compared_rate':None})
     def update(self,rate,*,compare=False):
         if self.state is not State.ACTIVE:raise ValueError('Resume the active example first.')
-        compound(rate=rate)  # Existing arithmetic/input contract is authoritative.
-        if compare:self.compared_rate=rate
-        else:self.rate,self.compared_rate=rate,None
+        self.change({'compared_rate':rate} if compare else {'rate':rate,'compared_rate':None})
     def resume(self):
         if self.state is not State.PAUSED:raise ValueError('No paused example to resume.')
         self.state=State.ACTIVE
@@ -49,9 +61,9 @@ class CompoundSkill:
     def complete(self):self.state=State.COMPLETE
     def expire(self):self.state=State.EXPIRED
     def visual(self):
-        first=compound(rate=self.rate)
+        first=compound(self.principal,self.rate,self.years,self.contribution)
         if self.compared_rate is None:return validate(first)
-        second=compound(rate=self.compared_rate)
+        second=compound(self.principal,self.compared_rate,self.years,self.contribution)
         return validate({'version':1,'kind':'line','title':'Hypothetical compound-interest comparison',
             'labels':[f'{self.rate:g}% annual rate',f'{self.compared_rate:g}% annual rate'],
             'points':[[a[0],a[1],b[1]] for a,b in zip(first['points'],second['points'])],
@@ -61,7 +73,8 @@ class CompoundSkill:
 class ActiveContext:
     topic: str='compound interest'
     workflow: str='compound_interest_v1'
-    visual_reference: str='compound_interest_v1'
+    visual_reference: str=field(default_factory=lambda:uuid4().hex)
+    revision: int=0
     expires: float=0
     turns: int=0
     skill: CompoundSkill=field(default_factory=CompoundSkill)
@@ -95,7 +108,9 @@ class Orchestrator:
         from iris.desktop.local_time import response
         if response(query,'UTC') is not None:return Decision(Intent.LOCAL,'clock')
         if re.fullmatch(r'open (?:calculator|notepad|chrome|obsidian|file explorer)',query):return Decision(Intent.TOOL,'allowlisted')
-        reference=bool(re.search(r'\b(?:compare|difference|gap|original|initial|interest rate|percent|resume|pause|cancel|finish)\b|%',query))
+        if query in ('open it again','bring it back','open it in the workspace','open that in the workspace'):
+            return Decision(Intent.SKILL if self.context else Intent.CLARIFY,'followup' if self.context else 'unresolved')
+        reference=bool(re.search(r'\b(?:compare|difference|gap|original|initial|interest rate|principal|contribute|contribution|monthly|years|balance|graph|workspace|percent|resume|pause|cancel|finish)\b|%',query))
         if reference:return Decision(Intent.SKILL if self.context else Intent.CLARIFY,'followup' if self.context else 'unresolved')
         return Decision(Intent.CONVERSATION,'ordinary')
     @staticmethod
@@ -109,6 +124,10 @@ class Orchestrator:
             self.context=ActiveContext(expires=self.clock()+self.ttl)
         elif decision.intent is Intent.SKILL:
             context=self.context;skill=context.skill;context.turns+=1
+            if query in ('open it again','bring it back','open it in the workspace','open that in the workspace') or re.fullmatch(r'(?:show(?: me)?|open|bring)(?: (?:me|it|that|the))?(?: graph| back| again| in the workspace| workspace)(?: again| back)?',query):
+                return self.presentation(window_action='open')
+            if query in ('close the graph','close graph','close the workspace'):
+                return self._reply('The graph window has been asked to close. The example remains available.',window_action='close')
             if re.fullmatch(r'(?:cancel|stop|finish|complete|pause|resume)(?: (?:this|the))?(?: example| explanation| skill)?',query):
                 operation=query.split()[0]
                 if operation=='pause':skill.pause();return self._reply('The example is paused.')
@@ -120,12 +139,20 @@ class Orchestrator:
                     self.clear();return self._reply('The example is closed. No financial action was taken.')
             elif re.search(r'\b(?:original|initial|starting)\b',query) and re.search(r'\b(?:back|restore|return|reset)\b',query):
                 if skill.state is not State.ACTIVE:return self._reply('Resume the paused example first.')
-                skill.rate,skill.compared_rate=5,None
-            elif re.search(r'\bwhy\b',query) and re.search(r'\b(?:difference|different|gap|more|growth)\b',query):
-                if skill.compared_rate is None:return self._reply('Choose a second rate to compare first.')
+                skill.reset()
+            elif re.search(r'\b(?:why|explain)\b',query) and re.search(r'\b(?:difference|different|gap|more|growth|balance|increase)\b',query):
+                if skill.compared_rate is None:return self.presentation(prefix='The balance reflects the current principal, contributions and rate; earlier interest also earns interest. ')
                 visual=skill.visual();last=visual['points'][-1]
                 if skill.rate == skill.compared_rate:return self._reply('The rates and assumptions are identical, so the balances are equal. This is a hypothetical example, before fees and taxes.',visual=visual)
-                return self._reply(f'At {skill.rate:g}% the balance is {last[1]:,.2f} units; at {skill.compared_rate:g}% it is {last[2]:,.2f}. The difference is {abs(last[1]-last[2]):,.2f} units after ten years. Each month, the higher rate applies to an increasingly larger balance, including earlier interest. These are hypothetical constant rates, before fees and taxes.',visual=visual)
+                return self._reply(f'At {skill.rate:g}% the balance is {last[1]:,.2f} units; at {skill.compared_rate:g}% it is {last[2]:,.2f}. The difference is {abs(last[1]-last[2]):,.2f} units after {skill.years} years. Each month, the higher rate applies to an increasingly larger balance, including earlier interest. These are hypothetical constant rates, before fees and taxes.',visual=visual)
+            elif re.search(r'\b(?:contribute|contribution|principal|years)\b',query):
+                numbers=re.findall(r'(?<![\w.])-?\d+(?:\.\d+)?',query)
+                if len(numbers)!=1:return self._reply('Give one numeric principal, duration or monthly contribution.')
+                key='contribution' if re.search(r'contribut',query) else 'principal' if 'principal' in query else 'years'
+                value=float(numbers[0])
+                if key=='years' and value.is_integer():value=int(value)
+                try:skill.change({key:value})
+                except ValueError:return self._reply('That input is outside the supported educational limits. The example is unchanged.')
             elif re.search(r'\b(?:what if|rate|compare|use|change|increase|decrease|make)\b',query):
                 values=rates(query)
                 if len(values)!=1:return self._reply('Which single annual percentage rate should I use for this example?')
@@ -141,9 +168,14 @@ class Orchestrator:
         else:
             # Any unrelated owner turn releases this narrow skill context.
             self.clear();return None
+        return self.presentation()
+
+    def presentation(self,*,prefix='',window_action=None):
         skill=self.context.skill;visual=skill.visual();last=visual['points'][-1]
-        if skill.compared_rate is None:
-            text=f'Compound interest earns interest on earlier interest. Starting with 1,000 units at {skill.rate:g}% annually, compounded monthly for ten years, the balance is {last[1]:,.2f} units. No contributions, fees or taxes are included; this is an educational example, not a forecast.'
-        else:
-            text=f'With the same 1,000 units and monthly compounding for ten years: {skill.rate:g}% gives {last[1]:,.2f} units; {skill.compared_rate:g}% gives {last[2]:,.2f} units. No contributions, fees or taxes; these are hypothetical rates, not forecasts.'
-        return self._reply(text,visual=visual)
+        text=f'Compound interest earns interest on earlier interest. Starting with {skill.principal:,.2f} units at {skill.rate:g}% annually, compounded monthly for {skill.years} years, with {skill.contribution:,.2f} units contributed at each month end, the balance is {last[1]:,.2f} units.'
+        if skill.compared_rate is not None:text+=f' At {skill.compared_rate:g}% the balance is {last[2]:,.2f} units; the difference is {abs(last[1]-last[2]):,.2f} units.'
+        text+=' No fees or taxes; hypothetical constant rates, not forecasts.'
+        result=self._reply(prefix+text,visual=visual)
+        result['spoken_reply']=f'At {skill.rate:g} percent, the final balance is {last[1]:,.2f} units.' + (f' At {skill.compared_rate:g} percent, it is {last[2]:,.2f} units.' if skill.compared_rate is not None else '')
+        if window_action:result['window_action']=window_action
+        return result

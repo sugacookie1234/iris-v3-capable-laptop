@@ -9,6 +9,10 @@ function renderVisual(parent,spec){
   const colors=['#55ddff','#f2ba63','#92df9d','#dd92ff'];
   const path=(d,color)=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke',color);p.setAttribute('stroke-width','2');svg.append(p);};
   path('M 45 15 L 45 260 L 585 260','#8899aa');
+  const label=(value,x,y)=>{const node=document.createElementNS('http://www.w3.org/2000/svg','text');node.textContent=String(value);node.setAttribute('x',x);node.setAttribute('y',y);node.setAttribute('fill','#adc7d4');node.setAttribute('font-size','11');svg.append(node);};
+  label('Units',48,12);label('Year',540,293);
+  for(let n=0;n<=4;n++){label(Math.round(min+(max-min)*n/4).toLocaleString(),2,260-n*60);label((low+(high-low)*n/4).toFixed(1),45+n*135,278);}
+
   spec.labels.forEach((label,i)=>{path(spec.points.map((p,n)=>(n?'L':'M')+' '+(45+(p[0]-low)/(high-low)*540)+' '+(260-(p[i+1]-min)/(max-min)*240)).join(' '),colors[i]);const legend=document.createElement('p');legend.textContent=label;legend.style.color=colors[i];box.append(legend);});
   box.append(svg);const summary=document.createElement('p');summary.textContent=spec.summary;box.append(summary);
   const details=document.createElement('details'),caption=document.createElement('summary');caption.textContent='Accessible data table';details.append(caption);

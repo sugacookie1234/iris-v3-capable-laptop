@@ -640,3 +640,6 @@ After fixes, 33 focused tests pass. Final full rerun is recorded below when comp
 No real owner-data operations, external providers or hardware acceptance performed.
 
 Final corrected regression: 994 run, 990 passed, four skipped (101.607s), .local/orchestration-verified.log. All eleven desktop checks passed. CAP-34: 100/100 per arm, zero regressions. Seventeen phone-server tests include bounded rejected-body timing. Sprint-range configured-secret scan: zero matches. No hardware acceptance, real provider calls or owner-data migration.
+
+## Native Visual Workspace initial checks
+Focused initial orchestration/bootstrap/native-app/visual checks: 21 passed. Integrated workspace/bootstrap/orchestration: 19 passed after public-context synchronization. Six workspace tests cover replay, invalid/stale/expired updates, concurrent edits, closed-form contributions and native lifecycle mocks. Actual local WebView2 synthetic smoke rendered SVG, updated one child, submitted UI principal changes, closed/reopened while retaining main, with zero provider calls. Initial smoke exit failed only on delayed WebView2 cache cleanup; the verified synthetic folder was later removed. No microphone/audio/OMEN/multi-monitor acceptance claimed. Final full regression and evaluation results follow.

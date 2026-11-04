@@ -107,3 +107,5 @@ secondary-window authentication and cross-machine recovery remain in SECURITY.md
 - tests/test_speech_delivery.py
 
 Final corrected regression: 994 run, 990 passed, four skipped (101.607s), .local/orchestration-verified.log. All eleven desktop checks passed. CAP-34: 100/100 per arm, zero regressions. Seventeen phone-server tests include bounded rejected-body timing. Sprint-range configured-secret scan: zero matches. No hardware acceptance, real provider calls or owner-data migration.
+
+Native workspace extension: CompoundSkill now owns principal, years, contribution and comparison rate; authenticated UI edits and conversation share that same object under the runtime turn lock. See VISUAL-WORKSPACE-SPRINT.md. No private context or tool authority was added.
