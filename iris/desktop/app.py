@@ -53,6 +53,22 @@ def guard_navigation(window, origin):
     control.NavigationStarting += navigating
 
 
+
+def allow_visual_activation(window):
+    """After a non-activating initial Show, allow ordinary keyboard focus on click."""
+    from ctypes import wintypes
+    user32=ctypes.WinDLL('user32',use_last_error=True)
+    get_style=user32.GetWindowLongW
+    get_style.argtypes=[wintypes.HWND,ctypes.c_int];get_style.restype=ctypes.c_long
+    set_style=user32.SetWindowLongW
+    set_style.argtypes=[wintypes.HWND,ctypes.c_int,ctypes.c_long];set_style.restype=ctypes.c_long
+    handle=int(window.native.Handle.ToInt64())
+    style=get_style(handle,-20)
+    # Only the owned secondary window is changed, on its WinForms thread.
+    window.focus=True
+    set_style(handle,-20,style & ~0x08000000)
+
+
 def run_window(webview, runtime, port=8766):
     """Keep server ownership explicit; no browser is opened and no orphan remains."""
     server = None
@@ -100,9 +116,15 @@ def run_window(webview, runtime, port=8766):
                 width=1080,height=780,min_size=(640,520),resizable=True,focus=False,
                 background_color='#050d15',text_select=True)
             if child is None:raise RuntimeError('Visual window was not created.')
-            guard_navigation(child,url)
+            try:
+                guard_navigation(child,url)
+                allow_visual_activation(child)
+            except Exception:
+                child.destroy()
+                raise
             return child
-        visual_controller=VisualWindowController(dispatch_visual,create_visual,server.revoke_visual)
+        visual_controller=VisualWindowController(dispatch_visual,create_visual,server.revoke_visual,
+            refresh=lambda child:child.load_url(server.visual_bootstrap_url()))
         runtime.visual_window=visual_controller
         def prepare_window():
             nonlocal tray

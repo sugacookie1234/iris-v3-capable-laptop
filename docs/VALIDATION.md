@@ -643,3 +643,11 @@ Final corrected regression: 994 run, 990 passed, four skipped (101.607s), .local
 
 ## Native Visual Workspace initial checks
 Focused initial orchestration/bootstrap/native-app/visual checks: 21 passed. Integrated workspace/bootstrap/orchestration: 19 passed after public-context synchronization. Six workspace tests cover replay, invalid/stale/expired updates, concurrent edits, closed-form contributions and native lifecycle mocks. Actual local WebView2 synthetic smoke rendered SVG, updated one child, submitted UI principal changes, closed/reopened while retaining main, with zero provider calls. Initial smoke exit failed only on delayed WebView2 cache cleanup; the verified synthetic folder was later removed. No microphone/audio/OMEN/multi-monitor acceptance claimed. Final full regression and evaluation results follow.
+
+Native workspace first full run: 1002 run, 998 passed, four skipped (180.014s).
+All twelve desktop JS checks passed. CAP-34: 106/106 per arm, zero regressions.
+Follow-up focus and lease-renewal changes: 22 focused native/state/bootstrap tests
+passed. Second real WebView2 smoke passed SVG, keyboard-activation flag, same-window
+update, UI principal submission, main continuity and reopen, with zero provider calls;
+only synthetic profile cleanup was deferred by WebView2. Physical keyboard, audio and
+multi-monitor acceptance remain outstanding. Final post-refinement regression follows.

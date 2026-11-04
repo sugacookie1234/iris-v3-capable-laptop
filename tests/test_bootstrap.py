@@ -92,3 +92,18 @@ class BootstrapTests(unittest.TestCase):
         with patch('iris.desktop.server.time.monotonic',return_value=911):
             self.assertFalse(self.server.visual_authorized(lease))
         self.server.runtime.visual_state.assert_called_once()
+
+    def test_visual_writes_reject_foreign_origin_and_revoked_lease(self):
+        from unittest.mock import Mock
+        self.server.runtime.update_visual=Mock(return_value={'revision':2})
+        lease=self.server.redeem_visual(self.server.visual_bootstrap_url().split('#pair=')[1])
+        origin=f'http://127.0.0.1:{self.server.server_address[1]}'
+        for supplied,revoked,expected in [('https://example.invalid',False,403),(origin,False,200),(origin,True,403)]:
+            if revoked:self.server.revoke_visual()
+            c=http.client.HTTPConnection(*self.server.server_address,timeout=3)
+            try:
+                c.request('POST','/api/visual/update',json.dumps({'id':'public','revision':1,'changes':{'rate':8}}),
+                    {'Cookie':'iris_session='+self.server.session,'X-IRIS-Request':'1','X-IRIS-Visual':lease,'Origin':supplied,'Content-Type':'application/json'})
+                response=c.getresponse();self.assertEqual(response.status,expected);response.read()
+            finally:c.close()
+        self.server.runtime.update_visual.assert_called_once()

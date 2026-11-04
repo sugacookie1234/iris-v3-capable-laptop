@@ -1,4 +1,4 @@
-"""Opt-in real WebView2 smoke. Opens only synthetic windows; never run in unittest discovery.
+r"""Opt-in real WebView2 smoke. Opens only synthetic windows; never run in unittest discovery.
 Run from repo root: .venv\Scripts\python.exe tests/native_visual_workspace_smoke.py
 WebView2 may briefly retain its synthetic temp profile after window shutdown.
 """
@@ -31,6 +31,7 @@ with tempfile.TemporaryDirectory(prefix='iris-visual-smoke-',ignore_cleanup_erro
             child=wait_for(lambda:runtime.visual_window.window)
             wait_for(lambda:child.evaluate_js("document.querySelector('svg')!==null"))
             result['native_svg']=True
+            result['keyboard_activation_enabled']=child.focus is True
             runtime.chat('Change the rate to eight percent')
             wait_for(lambda:'2,219.64' in str(child.evaluate_js("document.getElementById('totals').textContent")))
             result['same_window_updates']=runtime.visual_window.window is child

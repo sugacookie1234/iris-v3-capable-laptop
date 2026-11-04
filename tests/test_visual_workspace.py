@@ -25,6 +25,16 @@ class WindowTests(unittest.TestCase):
         control.request('one',2);self.assertEqual(queue,[])
         control.shutdown_on_ui();windows[1].destroy.assert_called_once()
         control.request('two',1);self.assertEqual(queue,[])
+    def test_explicit_open_renews_auth_without_duplicate_window(self):
+        queue=[];window=SimpleNamespace(events=SimpleNamespace(closed=Event()),destroy=Mock())
+        create=Mock(return_value=window);refresh=Mock()
+        control=VisualWindowController(queue.append,create,Mock(),refresh=refresh)
+        control.request('one',1);queue.pop(0)()
+        control.request('one',1,action='open');queue.pop(0)()
+        create.assert_called_once();refresh.assert_called_once_with(window)
+        control.request('two',1);queue.pop(0)()
+        self.assertEqual(refresh.call_count,2)
+
     def test_close_before_queued_open_and_creation_failure(self):
         queue=[];create=Mock(side_effect=RuntimeError('synthetic'))
         control=VisualWindowController(queue.append,create,Mock())

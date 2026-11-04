@@ -2,8 +2,9 @@
 import threading
 
 class VisualWindowController:
-    def __init__(self,dispatch,create,revoke):
+    def __init__(self,dispatch,create,revoke,refresh=None):
         self.dispatch,self.create,self.revoke=dispatch,create,revoke
+        self.refresh=refresh;self.refresh_requested=False
         self.lock=threading.RLock();self.window=None;self.desired=False
         self.scheduled=False;self.disposed=False;self.manually_closed=False
         self.state='closed';self.visual_id=None;self.revision=0
@@ -14,6 +15,7 @@ class VisualWindowController:
             if visual_id is not None:
                 if not changed and revision<self.revision:return
                 self.visual_id,self.revision=visual_id,revision
+            if action=='open' or changed:self.refresh_requested=True
             if action=='close':self.desired=False;self.manually_closed=True
             elif action=='open' or changed:self.desired=True;self.manually_closed=False
             elif not self.manually_closed:self.desired=True
@@ -31,11 +33,16 @@ class VisualWindowController:
                     self.state='closing';window=self.window;self.window=None
                     self.revoke();window.destroy()
                 self.state='closed';return
-            if self.window is not None:self.state='open';return
+            if self.window is not None:
+                if self.refresh_requested and self.refresh:
+                    self.refresh_requested=False
+                    try:self.refresh(self.window)
+                    except Exception:self.revoke()
+                self.state='open';return
             self.state='opening'
             try:
                 window=self.create()
-                self.window=window
+                self.window=window;self.refresh_requested=False
                 window.events.closed += lambda: self.closed(window)
                 self.state='open'
             except Exception:

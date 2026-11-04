@@ -62,6 +62,15 @@ class FakeWebview:
 
 
 class DesktopAppTests(unittest.TestCase):
+    def test_secondary_can_activate_after_nonactivating_initial_show(self):
+        native=SimpleNamespace(Handle=SimpleNamespace(ToInt64=lambda:123))
+        child=SimpleNamespace(native=native,focus=False)
+        api=SimpleNamespace(GetWindowLongW=Mock(return_value=0x08000080),SetWindowLongW=Mock())
+        with patch.object(app.ctypes,'WinDLL',return_value=api):
+            app.allow_visual_activation(child)
+        self.assertTrue(child.focus)
+        api.SetWindowLongW.assert_called_once_with(123,-20,0x80)
+
     def test_exhausted_ports_close_native_runtime(self):
         runtime = SimpleNamespace(close=Mock())
         with patch.object(app, 'DesktopServer', side_effect=OSError('Synthetic occupied port')):

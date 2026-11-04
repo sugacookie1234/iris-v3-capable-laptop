@@ -31,7 +31,7 @@ are required for /api/visual/state and /api/visual/update; the visual ID is not 
 credential. Close/shutdown revokes bootstrap and lease. A reopen mints fresh values.
 No external page is authorised and no visual endpoint executes a computer tool.
 Same-user malware can inspect memory/browser storage; this is not an OS sandbox.
-The lease does not silently renew: after expiry, close and reopen through IRIS.
+The lease does not renew on polling. An explicit open request or a new visual workflow renews pairing in the same window; old leases are revoked.
 Only one native workspace is supported. Secondary auth shares the main session's
 lifetime, with the additional shorter lease. Main-session expiry policy is unchanged.
 
@@ -96,3 +96,8 @@ bounded conversation history, so ordinary explanatory follow-ups see current val
 No raw UI text, window token, private result or local path is promoted. 'Explain the
 difference' is accepted in addition to 'Why…'. HTTP revision conflicts refresh current
 values before another explicit edit; they do not silently retry the old mutation.
+
+Focus correction: pywebview's Windows focus=False sets WS_EX_NOACTIVATE. After the
+non-activating initial Show, the host clears that flag on the owned child and enables
+normal activation. Subsequent updates do not Show/Activate the window. A mock verifies
+the style mask; actual physical keyboard/mouse acceptance remains separate.
