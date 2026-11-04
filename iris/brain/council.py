@@ -195,9 +195,9 @@ class CouncilExecutor:
         llm_registry: LLMRegistry,
         max_workers: int = 8,
     ) -> None:
-        if max_workers < 1:
+        if type(max_workers) is not int or not 1 <= max_workers <= 8:
             raise ValueError(
-                "Council max_workers must be at least 1."
+                "Council max_workers must be between 1 and 8."
             )
 
         self._llm_registry = llm_registry
@@ -209,6 +209,8 @@ class CouncilExecutor:
         plan: CouncilPlan,
         system_context: str = "",
     ) -> CouncilResult:
+        if not 2 <= len(plan.seats) <= 8:
+            raise CouncilExecutionError('Council requires between two and eight seats; no requests were sent.')
         question = question.strip()
 
         if not question:

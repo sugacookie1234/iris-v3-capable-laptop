@@ -32,6 +32,7 @@ class OpenAICompatibleConfig:
     base_url: str
     api_key: str | None = field(default=None, repr=False)
     timeout_seconds: float = 60.0
+    usage: object | None = field(default=None, repr=False, compare=False)
 
 
 class OpenAICompatibleProvider:
@@ -64,6 +65,7 @@ class OpenAICompatibleProvider:
         self._base_url = base_url
         self._api_key = config.api_key
         self._timeout = config.timeout_seconds
+        self._usage = config.usage
 
     @property
     def name(self) -> str:
@@ -127,6 +129,16 @@ class OpenAICompatibleProvider:
             return False
 
     def generate(self, request: LLMRequest) -> LLMResponse:
+        if self._usage is None:
+            return self._generate(request)
+        from iris.usage import ProviderLimitError
+        try:
+            with self._usage.reserve('research' if request.web_search else 'model'):
+                return self._generate(request)
+        except ProviderLimitError as exc:
+            raise self._error(str(exc)) from None
+
+    def _generate(self, request: LLMRequest) -> LLMResponse:
         payload = {
             "model": request.model,
             "messages": [self._serialize_message(message) for message in request.messages],

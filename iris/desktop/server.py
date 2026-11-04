@@ -15,7 +15,8 @@ from urllib.parse import urlsplit
 
 from iris.desktop.runtime import DesktopRuntime, BusyError, ROOT
 from iris.desktop.limits import UsageLimits, UsageLimitError
-from contextlib import ExitStack
+from contextlib import ExitStack, nullcontext
+from iris.usage import ProviderLimitError
 from iris.brain.providers.openai_compatible import OpenAICompatibleError
 from iris.brain.council import CouncilExecutionError
 from iris.desktop.recognition import transcribe, speech_status, MAX_AUDIO_BYTES
@@ -307,9 +308,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _stream_voice(self, text):
         try:
-            with self.server.limits.reserve('voice'):
+            with self.server.limits.reserve('voice'), (self.server.runtime.provider_usage.reserve('fish_tts') if hasattr(self.server.runtime, 'provider_usage') else nullcontext()):
                 self._stream_voice_reserved(text)
-        except UsageLimitError as exc:
+        except (UsageLimitError, ProviderLimitError) as exc:
             self._json(429, {'error': str(exc)})
 
     def _stream_voice_reserved(self, text):
@@ -354,7 +355,7 @@ class Handler(BaseHTTPRequestHandler):
                 if group:
                     stack.enter_context(self.server.limits.reserve(group))
                 self._post_dispatch()
-        except UsageLimitError as exc:
+        except (UsageLimitError, ProviderLimitError) as exc:
             self._json(429, {'error': str(exc)})
 
     def _post_dispatch(self):
@@ -389,7 +390,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._body_read = True
                 if len(audio) != size:
                     raise ValueError('Recording upload was incomplete.')
-                text = transcribe(app.settings, audio, self.headers.get('Content-Type', ''))
+                with app.provider_usage.reserve('fish_asr') if hasattr(app, 'provider_usage') else nullcontext():
+                    text = transcribe(app.settings, audio, self.headers.get('Content-Type', ''))
                 self._json(200, {'text': text, 'speech': speech_status(app.settings)})
                 return
             value = self._body()
@@ -452,6 +454,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {'url': '/api/audio/' + token if token else None, 'fallback_text': text})
             else:
                 self._json(404, {'error': 'Not found.'})
+        except ProviderLimitError as exc:
+            self._json(429, {'error': str(exc)})
         except BusyError as exc:
             self._json(409, {'error': str(exc)})
         except (ValueError, TypeError, UnicodeError) as exc:

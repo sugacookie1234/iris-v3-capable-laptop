@@ -100,3 +100,13 @@ Native/Chrome restart acceptance and session-expiry improvements remain pending.
 Rollback source commits with IRIS stopped; no database migration or owner-data
 operation occurred. Do not delete .local. Portable encrypted backups remain absent;
 cryptography is not installed in this environment, and no custom cipher was added.
+
+
+## Durable desktop provider accounting
+See docs/PROVIDER-USAGE.md. Desktop-created provider adapters now enforce shared
+hour/day/session/concurrency admission, including Council fan-out and research.
+The new content-free SQLite ledger survives restart; unfinished reservations fail
+closed until explicit owner-reviewed recovery. Council has a hard eight-seat cap.
+Standalone phone/terminal/Fish entry points remain an OPEN high-priority coverage
+gap. No billing amounts or confirmed usage units are inferred. This supersedes the
+earlier statement that desktop Council calls lack provider-level accounting.

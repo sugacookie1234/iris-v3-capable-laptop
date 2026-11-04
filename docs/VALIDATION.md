@@ -606,3 +606,5 @@ Full Python suite: 959 run, 955 passed, four skipped (101.842 seconds). All ten 
 32 focused clock, desktop, bootstrap, HTTP-security and usage-limit tests passed. Initial restricted run had one Windows DPAPI environment error; rerun with Windows account protection available passed. No provider calls or hardware acceptance. Structured clock speech is tested through the actual TTS request payload; arbitrary prose date/currency conversion remains conservative.
 
 Visual-security continuation: all eleven desktop JavaScript checks passed, including exact-field rejection and hostile text/numeric fixtures in the new simulated DOM test. Full Python suite: 969 run, 965 passed, four skipped (112.820s). No hardware or live-provider tests.
+
+Durable provider slice: 19 provider-ledger/Council tests passed, including cross-instance concurrency, restart counts, failed calls, cancellation, unavailable storage, abandoned-reservation recovery and fan-out bounds. Full regression rerun in progress; no paid calls.

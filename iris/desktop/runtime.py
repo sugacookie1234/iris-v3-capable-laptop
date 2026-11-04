@@ -53,6 +53,11 @@ class DesktopRuntime:
                'IRIS_GOALS_PATH': str(self.data_dir / 'goals.sqlite3'),
                'IRIS_TIMEZONE': self.settings.get('IRIS_TIMEZONE', 'America/New_York')}
         self.config = load_config(cfg)
+        from iris.usage import ProviderUsage
+        self.provider_usage = ProviderUsage(self.data_dir / 'provider_usage.sqlite3', self.settings)
+        self.config = replace(self.config,
+            provider=replace(self.config.provider, usage=self.provider_usage),
+            providers=tuple(replace(item, usage=self.provider_usage) for item in self.config.providers))
         self.action_history = ActionHistory(self.data_dir / 'action_history.sqlite3')
         self.vault_commands = VaultCommands(self.config, self.action_history)
         self._notes_briefing = None
