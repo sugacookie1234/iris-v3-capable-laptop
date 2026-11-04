@@ -158,3 +158,16 @@ are private unless explicitly host-marked public; compound examples use canonica
 public queries, not raw owner asides. Synthetic regression verifies private markers
 never reach FakeBrain/history. No historic cloud transmission was investigated or
 claimed. Existing saved conversations were not modified.
+
+## Native Visual Workspace boundary
+The secondary native window uses an independent 60-second single-use bootstrap and
+a 15-minute in-memory lease, in addition to the existing session cookie and origin
+checks. Public IDs and revisions are not authorization. Closing revokes the lease;
+explicit reopen renews it. Replay, concurrent redemption, cross-origin updates,
+missing credentials and revoked leases have synthetic HTTP regression coverage.
+The window renders bounded host-validated chart data using the existing safe SVG
+renderer. It has no privileged JavaScript bridge and cannot approve computer actions.
+Only public hypothetical scenario data is supported. This is not protection against
+malware executing as the same Windows user or trusted-origin code compromise.
+Rollback: revert the native-workspace sprint commits on the development branch;
+there is no owner-data migration to reverse. Do not remove local databases/profiles.

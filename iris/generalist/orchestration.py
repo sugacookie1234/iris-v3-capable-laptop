@@ -102,6 +102,10 @@ class Orchestrator:
     def classify(self,text):
         if not isinstance(text,str) or not 1<=len(text.strip())<=12000:raise ValueError('Invalid owner turn.')
         self._expire();query=normalize(text)
+        # Explicit personal commitments belong to the normal conversation and
+        # organizer path, even when they mention a visual's parameter names.
+        if re.match(r"(?:remind me\b|remember that\b|make a (?:note|task|reminder)\b|i (?:will|need to|have to|plan to|intend to|have committed to)\b|i'm going to\b|i’ll\b|i'll\b)",query):
+            return Decision(Intent.CONVERSATION,'ordinary')
         if re.fullmatch(r'(?:explain|show(?: me)?|teach me(?: about)?|demonstrate) (?:how )?compound interest(?: works)?',query):
             return Decision(Intent.VISUAL,'compound')
         if query.startswith(('/search ', 'search the web for ')):return Decision(Intent.RESEARCH,'explicit_search')

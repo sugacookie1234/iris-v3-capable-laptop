@@ -68,6 +68,22 @@ class WorkspaceTests(unittest.TestCase):
             self.app.chat('Close the graph');self.app.visual_window.request.assert_called_with(action='close')
             self.app.chat('Open the graph again');self.assertEqual(self.app.visual_window.request.call_args.kwargs['action'],'open')
             self.assertEqual(self.brain.calls,[]);organize.assert_not_called()
+    def test_personal_commitments_reach_normal_organizer_path(self):
+        for text in ('I will contribute 200 units monthly',
+                     'Remind me to review the graph tomorrow',
+                     'I plan to save for five years'):
+            with self.subTest(text=text):
+                self.app.chat('Explain compound interest')
+                skill=self.app.orchestrator.context.skill
+                before=skill.parameters()
+                with patch.object(self.app.autonomy,'submit') as organize:
+                    reply=self.app.chat(text)
+                    organize.assert_called_once()
+                    self.assertEqual(organize.call_args.args[0],text)
+                self.assertNotIn('visual',reply)
+                self.assertEqual(skill.parameters(),before)
+                self.assertIsNone(self.app.orchestrator.context)
+
     def test_invalid_duplicate_and_expired_updates_preserve_state(self):
         self.app.chat('Explain compound interest');state=self.app.visual_state()
         for changes in ({'principal':-1},{'years':1.5},{'rate':True},{'html':'<script>'}):

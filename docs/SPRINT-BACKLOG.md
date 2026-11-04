@@ -65,3 +65,11 @@ Security continuation: see SECURITY-CONTINUATION.md. Prioritise provider-level d
 Current security checkpoint: SECURITY-CONTINUATION.md (implementation through 41c0c91). Continue standalone provider budget injection and backup inclusion/recovery acceptance before the next feature sprint. Desktop/phone launcher budgets and encrypted database recovery are now implemented; earlier entries describing them as entirely absent are superseded.
 
 Unified foundation continuation: user authorised and implemented the local compound-interest orchestration slice after default provider enforcement. See ORCHESTRATION-SPRINT.md and the updated SECURITY-CONTINUATION.md. Next: native acceptance and carefully scoped verified-result context; retain existing approvals and private-data boundaries. Separate native Visual Workspace remains deferred.
+
+Native workspace checkpoint (supersedes the deferred status above): CAP-37 now has
+an authenticated secondary native window, shared revisioned parameters, conversational
+controls and UI-to-host updates. See VISUAL-WORKSPACE-SPRINT.md for actual local
+WebView2 smoke evidence. Remaining acceptance: physical keyboard, microphone/audio
+continuity, target OMEN, multi-monitor and prolonged session expiry/reopen. Broader
+business, private-data and decision integrations remain outside this sprint. Do not
+infer that the historical organizer warning was reproduced or resolved.

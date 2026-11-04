@@ -101,3 +101,20 @@ Focus correction: pywebview's Windows focus=False sets WS_EX_NOACTIVATE. After t
 non-activating initial Show, the host clears that flag on the owned child and enables
 normal activation. Subsequent updates do not Show/Activate the window. A mock verifies
 the style mask; actual physical keyboard/mouse acceptance remains separate.
+
+Explicit personal commitments and reminders bypass educational parameter matching.
+Synthetic runtime regression verifies that three such turns reach the existing
+organizer submission path, leave the old scenario values unchanged and release the
+educational context. This does not establish the cause of the owner's earlier
+unsupported-action warning; genuine organizer validation failures remain visible.
+
+## Owner acceptance sequence (remaining hardware check)
+Start the native app using the existing launcher. Say "Explain compound interest",
+then "Use eight percent", "Compare that with five percent", and "Explain the
+difference". Confirm one child window updates while main conversation remains usable.
+Edit principal to 2000 and press Update; ask for the current example explanation.
+Try "Contribute 200 monthly", "Use 20 years", and "Restore the original example".
+Close the graph, continue talking, then say "Open the graph again". Check keyboard
+navigation, minimise/maximise and movement between monitors. Say "That's all. Stand
+by" and verify actual clap-wake standby/audio continuity separately. Close main and
+confirm its child exits. No live provider test was performed in this sprint.
