@@ -608,3 +608,5 @@ Full Python suite: 959 run, 955 passed, four skipped (101.842 seconds). All ten 
 Visual-security continuation: all eleven desktop JavaScript checks passed, including exact-field rejection and hostile text/numeric fixtures in the new simulated DOM test. Full Python suite: 969 run, 965 passed, four skipped (112.820s). No hardware or live-provider tests.
 
 Durable provider slice: 19 provider-ledger/Council tests passed, including cross-instance concurrency, restart counts, failed calls, cancellation, unavailable storage, abandoned-reservation recovery and fan-out bounds. Full regression rerun in progress; no paid calls.
+
+Provider regression: 975 run, 971 passed, four skipped (104.582s), before the final owner-recovery test and backup addition. Subsequent focused provider/Council run: 19 passed. Encrypted backup: five tests passed using temporary stores and synthetic DPAPI payloads. No real owner backup/restoration performed.

@@ -7,3 +7,6 @@ ctranslate2==4.8.3
 av==16.1.0
 pywebview==6.2.1; sys_platform == "win32"
 pythonnet==3.2.1; sys_platform == "win32"
+
+# Authenticated portable backup encryption.
+cryptography==50.0.2

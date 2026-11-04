@@ -110,3 +110,12 @@ closed until explicit owner-reviewed recovery. Council has a hard eight-seat cap
 Standalone phone/terminal/Fish entry points remain an OPEN high-priority coverage
 gap. No billing amounts or confirmed usage units are inferred. This supersedes the
 earlier statement that desktop Council calls lack provider-level accounting.
+
+## Encrypted backup foundation
+Owner-run portable database archives and new-folder restoration now exist; see
+ docs/ENCRYPTED-BACKUP.md for exact inclusion/exclusion and recovery steps.
+The earlier absent-backup/dependency statements are superseded: cryptography
+50.0.2 was installed and pinned. Five synthetic backup tests pass. Live databases
+remain plaintext; vault/managed files and portable settings are NOT included.
+Same-user malware, plaintext recovery staging after abrupt termination and
+cross-machine path rebinding remain limitations. No owner data was migrated.
