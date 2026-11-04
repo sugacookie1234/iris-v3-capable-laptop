@@ -1,6 +1,7 @@
 """Dedicated loopback-only receiver; expose this port, never the desktop server."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import threading
+import time
 from urllib.parse import parse_qsl
 
 from iris.phone.security import validate_callback
@@ -38,10 +39,29 @@ class Handler(BaseHTTPRequestHandler):
     def setup(self):
         super().setup()
         self.connection.settimeout(5)
+        self._body_read = False
 
     def log_message(self, *_): pass
 
     def send(self, status, body, kind='text/plain; charset=utf-8'):
+        if status >= 400 and self.command == 'POST' and not self._body_read:
+            # Avoid a Windows TCP reset from unread bytes, without allowing a
+            # rejected sender to hold a slot for the normal five-second timeout.
+            try:
+                lengths = self.headers.get_all('Content-Length', [])
+                size = int(lengths[0]) if len(lengths) == 1 else 0
+                if 0 < size <= 16384:
+                    deadline = time.monotonic() + .05
+                    while size > 0:
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:break
+                        self.connection.settimeout(remaining)
+                        chunk = self.rfile.read1(min(size,8192))
+                        if not chunk:break
+                        size -= len(chunk)
+            except (ValueError,OSError):
+                pass
+            self._body_read = True
         self.send_response(status)
         self.send_header('Content-Type', kind)
         self.send_header('Content-Length', str(len(body)))
@@ -64,6 +84,7 @@ class Handler(BaseHTTPRequestHandler):
             size = int(lengths[0])
             if not 0 < size <= 16384: raise ValueError
             raw = self.rfile.read(size)
+            self._body_read = True
             if len(raw) != size: raise ValueError
             pairs = parse_qsl(raw.decode('utf-8'), keep_blank_values=True, strict_parsing=True,
                               encoding='utf-8', errors='strict', max_num_fields=128)

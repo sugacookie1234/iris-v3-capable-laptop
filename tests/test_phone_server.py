@@ -92,6 +92,15 @@ class PhoneServerTests(unittest.TestCase):
         self.assert_rejected(self.post(extra_headers=[('Content-Type','text/plain')]),400)
         self.assert_rejected(self.post(extra_headers=[('Transfer-Encoding','')]),400)
 
+    def test_rejected_framing_does_not_wait_for_advertised_body(self):
+        import time
+        started=time.monotonic()
+        response=self.request('POST','/phone/sms',headers=[
+            ('Content-Type','application/x-www-form-urlencoded'),
+            ('Content-Type','text/plain'),('Content-Length','10000')])
+        self.assert_rejected(response,400)
+        self.assertLess(time.monotonic()-started,2)
+
     def test_listener_binds_only_to_loopback(self):
         self.assertEqual(self.server.server_address[0], "127.0.0.1")
 
