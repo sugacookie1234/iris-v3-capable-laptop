@@ -5,6 +5,16 @@ available private GitHub channel. Do not publish credentials, vault excerpts,
 databases or exploit details containing personal data. This project has no
 independent security certification or guaranteed response SLA.
 
+## Current assessment checkpoint
+
+See docs/SECURITY-PENTEST-REPORT.md for the 2026-11-04 source-assisted local
+adversarial assessment. Confirmed HIGH visual bootstrap privilege escalation was
+reproduced over HTTP and repaired with separate window origins/cookies. A live OSV
+lookup flagged the installed pip; its narrow update is blocked by Windows file
+permissions. Setup now applies a hash-pinned tooling update before dependencies.
+Earlier chronological entries below are historical, not the current release gate.
+No external independent penetration test or security certification is claimed.
+
 ## Security checkpoint and risk register
 
 Baseline inspected: 593cddf, development branch, clean working tree. This is a

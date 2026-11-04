@@ -23,17 +23,18 @@ conversation never claims the page finished rendering merely from that object.
 
 ## Authentication
 The main bootstrap slot is unchanged. A separate 60-second single-use visual launch
-token cannot invalidate a pending main launch. Both redeem via existing same-origin
-/api/pair and the same HttpOnly session cookie. Visual pairing additionally returns
+token cannot invalidate a pending main launch. Security assessment supersedes the original shared-cookie architecture: visual
+uses localhost, main uses 127.0.0.1 on the same listener. Each redeems /api/pair
+only at its assigned origin, with independent HttpOnly cookies. Visual pairing additionally returns
 an unpredictable 15-minute window lease. The page removes the launch fragment,
-keeps the lease in sessionStorage, and supplies X-IRIS-Visual. Both session and lease
+keeps the lease in sessionStorage, and supplies X-IRIS-Visual. Both the visual-scoped cookie and lease
 are required for /api/visual/state and /api/visual/update; the visual ID is not a
 credential. Close/shutdown revokes bootstrap and lease. A reopen mints fresh values.
 No external page is authorised and no visual endpoint executes a computer tool.
 Same-user malware can inspect memory/browser storage; this is not an OS sandbox.
 The lease does not renew on polling. An explicit open request or a new visual workflow renews pairing in the same window; old leases are revoked.
-Only one native workspace is supported. Secondary auth shares the main session's
-lifetime, with the additional shorter lease. Main-session expiry policy is unchanged.
+Only one native workspace is supported. Secondary authentication is independent from the main cookie and expires with its
+shorter lease. Main-session expiry policy is unchanged.
 
 ## One calculation owner
 CompoundSkill now owns principal, rate, years, monthly contribution and comparison

@@ -32,6 +32,13 @@ with tempfile.TemporaryDirectory(prefix='iris-visual-smoke-',ignore_cleanup_erro
             wait_for(lambda:child.evaluate_js("document.querySelector('svg')!==null"))
             result['native_svg']=True
             result['keyboard_activation_enabled']=child.focus is True
+            # Attempt a real cross-origin fetch from the restricted child. The
+            # synthetic runtime has no private owner records and no live providers.
+            main_origin=wait_for(lambda:child.evaluate_js('location.origin')).replace('://localhost:', '://127.0.0.1:')
+            child.evaluate_js("window.__irisProbe='pending';fetch("+json.dumps(main_origin+'/api/memories')+",{credentials:'include'}).then(r=>window.__irisProbe='http:'+r.status).catch(()=>window.__irisProbe='blocked');")
+            blocked=wait_for(lambda:child.evaluate_js("window.__irisProbe !== 'pending' && window.__irisProbe"))
+            if blocked != 'blocked':raise RuntimeError('Visual-to-main fetch was not blocked: '+str(blocked))
+            result['visual_to_main_fetch_blocked']=True
             runtime.chat('Change the rate to eight percent')
             wait_for(lambda:'2,219.64' in str(child.evaluate_js("document.getElementById('totals').textContent")))
             result['same_window_updates']=runtime.visual_window.window is child
@@ -40,11 +47,19 @@ with tempfile.TemporaryDirectory(prefix='iris-visual-smoke-',ignore_cleanup_erro
             result['ui_to_host']=True
             runtime.chat('Close the graph');wait_for(lambda:runtime.visual_window.window is None)
             result['main_continues']=main in webview.windows
+            result['phase']='reopen-create'
             runtime.chat('Open the graph again');second=wait_for(lambda:runtime.visual_window.window)
+            result['phase']='reopen-render'
             wait_for(lambda:second.evaluate_js("document.querySelector('svg')!==null"))
             result['reopen']=second is not child
             result['provider_calls']=len(runtime.brain.calls)
-        except Exception as error:result['error']=type(error).__name__+': '+str(error)[:120]
+        except Exception as error:
+            result['error']=type(error).__name__+': '+str(error)[:120]
+            result['controller_state']=runtime.visual_window.state
+            child=runtime.visual_window.window
+            if child:
+                try:result['synthetic_page_status']=child.evaluate_js("({path:location.pathname,status:document.getElementById('status')?.textContent,pair:document.getElementById('pairStatus')?.textContent,resources:performance.getEntriesByType('resource').map(r=>({path:new URL(r.name).pathname,status:r.responseStatus,bytes:r.decodedBodySize}))})")
+                except Exception:result['synthetic_page_status']='unavailable'
         finally:
             Path('.local/visual-native-smoke-result.json').write_text(json.dumps(result),encoding='utf-8')
             try:webview.windows[0].destroy()

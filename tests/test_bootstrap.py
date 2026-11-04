@@ -83,10 +83,10 @@ class BootstrapTests(unittest.TestCase):
         with patch('iris.desktop.server.time.monotonic',return_value=10):
             token=self.server.visual_bootstrap_url().split('#pair=')[1]
             lease=self.server.redeem_visual(token)
-            for cookie,key,expected in [('',lease,403),('iris_session='+self.server.session,'public-visual-id',403),('iris_session='+self.server.session,lease,200)]:
+            for cookie,key,expected in [('',lease,403),('iris_visual='+self.server._visual_cookie,'public-visual-id',403),('iris_visual='+self.server._visual_cookie,lease,200)]:
                 c=http.client.HTTPConnection(*self.server.server_address,timeout=3)
                 try:
-                    c.request('GET','/api/visual/state',headers={'Cookie':cookie,'X-IRIS-Visual':key})
+                    c.request('GET','/api/visual/state',headers={'Host':f'localhost:{self.server.server_address[1]}','Cookie':cookie,'X-IRIS-Visual':key})
                     response=c.getresponse();self.assertEqual(response.status,expected);response.read()
                 finally:c.close()
         with patch('iris.desktop.server.time.monotonic',return_value=911):
@@ -97,13 +97,14 @@ class BootstrapTests(unittest.TestCase):
         from unittest.mock import Mock
         self.server.runtime.update_visual=Mock(return_value={'revision':2})
         lease=self.server.redeem_visual(self.server.visual_bootstrap_url().split('#pair=')[1])
-        origin=f'http://127.0.0.1:{self.server.server_address[1]}'
+        origin=f'http://localhost:{self.server.server_address[1]}'
+        cookie=self.server._visual_cookie
         for supplied,revoked,expected in [('https://example.invalid',False,403),(origin,False,200),(origin,True,403)]:
             if revoked:self.server.revoke_visual()
             c=http.client.HTTPConnection(*self.server.server_address,timeout=3)
             try:
                 c.request('POST','/api/visual/update',json.dumps({'id':'public','revision':1,'changes':{'rate':8}}),
-                    {'Cookie':'iris_session='+self.server.session,'X-IRIS-Request':'1','X-IRIS-Visual':lease,'Origin':supplied,'Content-Type':'application/json'})
+                    {'Host':f'localhost:{self.server.server_address[1]}','Cookie':'iris_visual='+cookie,'X-IRIS-Request':'1','X-IRIS-Visual':lease,'Origin':supplied,'Content-Type':'application/json'})
                 response=c.getresponse();self.assertEqual(response.status,expected);response.read()
             finally:c.close()
         self.server.runtime.update_visual.assert_called_once()

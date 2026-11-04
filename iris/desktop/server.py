@@ -60,6 +60,7 @@ class DesktopServer(ThreadingHTTPServer):
         self._bootstrap = None
         self._visual_bootstrap = None
         self._visual_session = None
+        self._visual_cookie = None
         self._auth_failures = []
         self.clap_listener = NativeClapListener()
         super().__init__(address, Handler)
@@ -84,15 +85,17 @@ class DesktopServer(ThreadingHTTPServer):
         return f'http://127.0.0.1:{self.server_address[1]}/#pair={token}'
 
     def visual_bootstrap_url(self):
+        # Different host origins isolate WebView2 DOM/storage/cookies while using
+        # the same loopback listener and runtime. Host/Origin checks enforce scope.
         with self._bootstrap_lock:
             token=secrets.token_urlsafe(32)
             self._visual_bootstrap=(token,time.monotonic()+60)
             self._visual_session=None
-        return f'http://127.0.0.1:{self.server_address[1]}/visual#pair={token}'
+        return f'http://localhost:{self.server_address[1]}/visual#pair={token}'
 
     def revoke_visual(self):
         with self._bootstrap_lock:
-            self._visual_bootstrap=None;self._visual_session=None
+            self._visual_bootstrap=None;self._visual_session=None;self._visual_cookie=None
 
     def redeem_visual(self,token):
         with self._bootstrap_lock:
@@ -104,12 +107,19 @@ class DesktopServer(ThreadingHTTPServer):
             self._visual_bootstrap=None
             lease=secrets.token_urlsafe(32)
             self._visual_session=(lease,time.monotonic()+900)
+            self._visual_cookie=secrets.token_urlsafe(32)
             return lease
 
     def visual_authorized(self,token):
         with self._bootstrap_lock:
             active=self._visual_session
             return bool(type(token) is str and token.isascii() and active and time.monotonic()<active[1] and secrets.compare_digest(token,active[0]))
+
+    def visual_cookie_authorized(self, cookie):
+        with self._bootstrap_lock:
+            return bool(type(cookie) is str and cookie.isascii() and self._visual_cookie
+                and self._visual_session and time.monotonic() < self._visual_session[1]
+                and secrets.compare_digest(cookie,self._visual_cookie))
 
     def redeem_bootstrap(self, token):
         with self._bootstrap_lock:
@@ -162,20 +172,26 @@ class Handler(BaseHTTPRequestHandler):
             return False
         if not self._trusted_host():
             return False
+        visual = urlsplit(self.path).path in ('/visual','/api/visual/state','/api/visual/update')
+        expected_host = f'{"localhost" if visual else "127.0.0.1"}:{self.server.server_address[1]}'
+        if self.headers.get('Host') != expected_host:
+            return False
         origin = self.headers.get('Origin')
-        allowed = {f'http://127.0.0.1:{self.server.server_address[1]}',
-                   f'http://localhost:{self.server.server_address[1]}'}
-        if origin and origin not in allowed:
+        if origin and origin != 'http://' + expected_host:
             return False
         if self.headers.get('Sec-Fetch-Site') == 'cross-site':
             return False
         cookie = SimpleCookie()
         try:
             cookie.load(self.headers.get('Cookie', ''))
-            value = cookie['iris_session'].value
+            value = cookie['iris_visual' if visual else 'iris_session'].value
         except (KeyError, ValueError):
             return False
-        return secrets.compare_digest(value, self.server.session) and (
+        valid_cookie = self.server.visual_cookie_authorized(value) if visual else (
+            value.isascii() and secrets.compare_digest(value,self.server.session))
+        if visual and not self.server.visual_authorized(self.headers.get('X-IRIS-Visual')) and urlsplit(self.path).path != '/visual':
+            return False
+        return valid_cookie and (
             not write or self.headers.get('X-IRIS-Request') == '1')
 
     def _headers(self, code, content_type, length=None, cookie=False):
@@ -192,7 +208,8 @@ class Handler(BaseHTTPRequestHandler):
         if length is not None:
             self.send_header('Content-Length', str(length))
         if cookie:
-            self.send_header('Set-Cookie', 'iris_session=' + self.server.session +
+            name, token = ('iris_visual', self.server._visual_cookie) if cookie == 'visual' else ('iris_session', self.server.session)
+            self.send_header('Set-Cookie', name + '=' + token +
                              '; HttpOnly; SameSite=Strict; Path=/')
         self.end_headers()
 
@@ -402,7 +419,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {'error': 'Invalid request framing.'})
             return
         if urlsplit(self.path).path == '/api/pair':
-            origin = f'http://127.0.0.1:{self.server.server_address[1]}'
+            visual = self.headers.get('Host') == f'localhost:{self.server.server_address[1]}'
+            origin = f'http://{"localhost" if visual else "127.0.0.1"}:{self.server.server_address[1]}'
             if (not self._trusted_host() or self.headers.get_all('Origin', []) != [origin]
                     or self.headers.get_all('X-IRIS-Request', []) != ['1']
                     or self.headers.get('Sec-Fetch-Site') == 'cross-site'):
@@ -410,12 +428,13 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 value = self._body()
-                lease = self.server.redeem_visual(value.get('token')) if set(value)=={'token'} else None
-                valid = bool(lease) or (set(value) == {'token'} and self.server.redeem_bootstrap(value['token']))
+                lease = self.server.redeem_visual(value.get('token')) if visual and set(value)=={'token'} else None
+                valid = bool(lease) if visual else (set(value) == {'token'} and self.server.redeem_bootstrap(value['token']))
+                if visual and not valid:self.server.redeem_bootstrap(None)  # Shared failed-attempt accounting only.
             except (ValueError, UnicodeError):
                 valid = False;lease=None
             body={'ok':True,**({'visual_token':lease} if lease else {})} if valid else {'error':'Pairing rejected. Relaunch IRIS.'}
-            self._send(200 if valid else 403, json.dumps(body).encode(), cookie=valid)
+            self._send(200 if valid else 403, json.dumps(body).encode(), cookie=('visual' if lease else True) if valid else False)
             return
         if not self._authorized(write=True):
             self._json(403, {'error': 'Request not authorized from this interface.'})

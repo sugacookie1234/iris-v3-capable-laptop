@@ -36,7 +36,7 @@ def local_navigation(url, origin):
     try:
         parsed, expected = urlsplit(url), urlsplit(origin)
         return (parsed.scheme == expected.scheme == 'http' and
-                parsed.hostname == expected.hostname == '127.0.0.1' and
+                parsed.hostname == expected.hostname and expected.hostname in ('127.0.0.1','localhost') and
                 parsed.port == expected.port and not parsed.username and not parsed.password)
     except (ValueError, TypeError):
         return False
@@ -117,7 +117,7 @@ def run_window(webview, runtime, port=8766):
                 background_color='#050d15',text_select=True)
             if child is None:raise RuntimeError('Visual window was not created.')
             try:
-                guard_navigation(child,url)
+                guard_navigation(child,f'http://localhost:{server.server_address[1]}/visual')
                 allow_visual_activation(child)
             except Exception:
                 child.destroy()
