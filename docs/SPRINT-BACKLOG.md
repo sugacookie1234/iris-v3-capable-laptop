@@ -61,3 +61,5 @@ Security priority checkpoint: see SECURITY.md. HTTP framing, duplicate headers/J
 Conversation sprint checkpoint: see CONVERSATION-SPRINT.md for implemented natural app aliases, safe educational follow-up context, backend clock answers, conservative speech formatting and irrelevant-note suppression. Separate native Visual Workspace, automatic research budgets and broader context correction remain unfinished. Do not touch microphone-device matching during this sprint.
 
 Security continuation: see SECURITY-CONTINUATION.md. Prioritise provider-level durable budgets, portable authenticated-encryption backups, native pairing acceptance and supply-chain/phone review before full Visual Workspace. Current request limits do not cap Council fan-out or survive restart.
+
+Current security checkpoint: SECURITY-CONTINUATION.md (implementation through 41c0c91). Continue standalone provider budget injection and backup inclusion/recovery acceptance before the next feature sprint. Desktop/phone launcher budgets and encrypted database recovery are now implemented; earlier entries describing them as entirely absent are superseded.

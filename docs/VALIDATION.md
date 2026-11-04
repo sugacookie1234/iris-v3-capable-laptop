@@ -622,3 +622,5 @@ mock intercepted adapter tests. Kept the guard intact and moved those unchanged
 adapter assertions to test_provider_adapter.py, retained in full unittest discovery.
 The offline corpus covers ledger contracts and clock payloads; it does not exercise
 actual provider generation. Final rerun results are in SECURITY-CONTINUATION.md.
+
+Final expanded CAP-34 gate: PASS, 92/92 per arm, zero regressions. Detailed exact checkpoint and residual risks: SECURITY-CONTINUATION.md.
