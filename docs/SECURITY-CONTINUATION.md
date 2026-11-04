@@ -228,3 +228,7 @@ SQLite/backup-staging/ACL and model-semantic limitations explicit. Unified
 Intelligence 2.0 is the next major feature, not part of this assessment. Do not
 expand permissions or merge main. Reproduce with tests.test_security_redteam and
 tests.test_redteam_authority; native smoke must run separately from the full suite.
+
+Final CAP-34: 112/112 each arm, zero regressions; .local/security-pentest-evaluation.
+Implementation/report commits: 2d8fc7f, d319da4, 8eb8eaf. Final changes after
+full validation are documentation only. No owner runtime restart was performed.

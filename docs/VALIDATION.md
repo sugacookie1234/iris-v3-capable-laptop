@@ -705,3 +705,7 @@ review test, which passed unchanged. All twelve desktop JS checks passed. Native
 synthetic cross-origin fetch blocked; normal SVG/update/UI-to-host/close/reopen
 passed with zero provider calls. The native renderer timeout root cause remains
 unresolved despite a later pass. No security assertion or timeout was weakened.
+
+Final CAP-34: 112/112 each arm, zero regressions; .local/security-pentest-evaluation.
+Implementation/report commits: 2d8fc7f, d319da4, 8eb8eaf. Final changes after
+full validation are documentation only. No owner runtime restart was performed.
