@@ -309,10 +309,16 @@ class DesktopRuntime:
 
     def _awareness_command(self, text):
         command = normalize(text)
-        from iris.desktop.local_time import answer as clock_answer
+        from iris.desktop.local_time import response as clock_answer
         current_time = clock_answer(command, getattr(getattr(self, 'config', None), 'timezone', None))
         if current_time:
-            return DesktopCommands.answer(current_time)
+            self._last_clock_query = command
+            return DesktopCommands.answer(current_time['reply'], current_time.get('spoken_reply'))
+        if getattr(self, '_last_clock_query', None) and re.fullmatch(r"(?:no[, ]+)?(?:it(?:'s| is) )?\d{1,2}:?\d{2}", command):
+            checked = clock_answer(self._last_clock_query, self.config.timezone)
+            return DesktopCommands.answer('I rechecked the host clock. ' + checked['reply'],
+                'I rechecked the host clock. ' + checked.get('spoken_reply', checked['reply']))
+        self._last_clock_query = None
         if re.fullmatch(r'(?:hello|hi|hey)(?:,? iris)?(?: again)?', command):
             addressed = getattr(self, '_greeted_owner', False)
             self._greeted_owner = True

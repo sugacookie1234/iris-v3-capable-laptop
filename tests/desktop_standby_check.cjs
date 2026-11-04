@@ -79,6 +79,7 @@ function fixture({permission,resume}={}) {
   assert.equal(failed.monitor.wanted,false);
 
   const cases={
+    'Good, stand by.':'standby','Stand by.':'standby','You can stand by now.':'standby',
     'Mute.':'mute','Hey IRIS, please turn the audio off.':'mute','Stop speaking!':'mute',
     'Unmute':'unmute','iris, audio on please.':'unmute','Start a new conversation.':'newchat',
     'show me my memories':'memories','Show tasks':'tasks','View the council review':'council',
