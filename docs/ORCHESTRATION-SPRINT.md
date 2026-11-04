@@ -77,3 +77,33 @@ private task-context policy, richer deterministic numerical controls and lifecyc
 acceptance. Separate native Visual Workspace is NOT built. Backup omissions/live
 plaintext databases, current dependency advisory audit, native pairing acceptance,
 secondary-window authentication and cross-machine recovery remain in SECURITY.md.
+
+## Exact implementation files changed since 875bbed
+- SECURITY.md
+- docs/IRIS_CAPABILITY_TRACKER.md
+- docs/IRIS_DECISIONS.md
+- docs/ORCHESTRATION-SPRINT.md
+- docs/PROVIDER-USAGE.md
+- docs/VALIDATION.md
+- iris/brain/providers/openai_compatible.py
+- iris/desktop/recognition.py
+- iris/desktop/runtime.py
+- iris/desktop/server.py
+- iris/generalist/evaluation.py
+- iris/generalist/orchestration.py
+- iris/phone/server.py
+- iris/usage.py
+- iris/voice/fish_audio.py
+- tests/test_desktop_commands.py
+- tests/test_desktop_recognition.py
+- tests/test_desktop_web_search.py
+- tests/test_fish_audio.py
+- tests/test_openai_compatible.py
+- tests/test_orchestration.py
+- tests/test_orchestration_authority.py
+- tests/test_phone_server.py
+- tests/test_provider_adapter.py
+- tests/test_readiness.py
+- tests/test_speech_delivery.py
+
+Final corrected regression: 994 run, 990 passed, four skipped (101.607s), .local/orchestration-verified.log. All eleven desktop checks passed. CAP-34: 100/100 per arm, zero regressions. Seventeen phone-server tests include bounded rejected-body timing. Sprint-range configured-secret scan: zero matches. No hardware acceptance, real provider calls or owner-data migration.

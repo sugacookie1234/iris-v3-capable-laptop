@@ -1,3 +1,55 @@
+# Updated closeout — Unified Intelligence foundation
+
+This section supersedes the older checkpoint below. User authorised the first
+local-only orchestration slice after critical provider/authority work; separate
+native Visual Workspace and unrestricted tool execution remain out of scope.
+
+Commits after 875bbed:
+- aafc173: default durable accounting for standalone/model/diagnostic/Fish paths.
+- c686f6c: bounded compound-interest orchestration, public-only context and private
+  local command-result history isolation; existing authority remains in force.
+- 171558d: 50ms bounded drain for rejected phone requests, preventing Windows reset
+  without waiting on an attacker-advertised body. Seventeen phone-server tests pass.
+
+Read ORCHESTRATION-SPRINT.md for interfaces and exact five-turn replay. First expanded
+CAP-34 passes 100/100 per arm, zero regressions; all eleven desktop JS checks pass.
+Configured-secret scan of all files changed since 875bbed: zero matches. This is not
+repository-history scanning. Full corrected regression: 994 run, 990 passed, four skipped (101.607s); see VALIDATION.md.
+
+Remaining: live SQLite plaintext; incomplete file/settings/phone backup inclusion;
+transitive locking/current advisories; native pairing/session-expiry acceptance;
+secondary-window ownership; cross-machine recovery. None is represented as closed.
+Host Python can deliberately inject a different provider policy; this is not an OS
+sandbox. Default ASR uses the standard config ledger even with a custom desktop
+folder. Request counters do not prove billing or cancel an already received request.
+
+Privacy fix: the final local answer now determines history inclusion. Private tool
+results never become cloud context merely because they were dispatched after the
+awareness handler. Public educational context stores only a canonical topic and
+verified local output, not arbitrary user asides. Historical transmission was not
+investigated; no owner data or pending reviews were edited.
+
+Exact continuation: perform native acceptance of the five-turn replay, then extend
+bounded shared context with typed verified-result references and explicit privacy
+rules. Pending approvals remain in the old authoritative runtime, not in skills.
+Do not implement a privileged visual bridge or broaden tool execution implicitly.
+For security maintenance, prioritise native/session acceptance and backup recovery
+coverage; see ENCRYPTED-BACKUP.md and PROVIDER-USAGE.md. No paid test is authorised.
+
+Reproduce:
+```
+.venv\Scripts\python.exe -m unittest discover -s tests
+.venv\Scripts\python.exe -m unittest tests.test_orchestration tests.test_orchestration_authority tests.test_provider_adapter tests.test_phone_server
+.venv\Scripts\python.exe -m iris.generalist.evaluation --output .local/orchestration-evaluation
+Get-ChildItem tests/desktop_*_check.cjs | ForEach-Object { node $_.FullName; if ($LASTEXITCODE) { exit $LASTEXITCODE } }
+```
+Rollback only source commits with IRIS stopped; retain all owner databases and the
+usage ledger. No database migration is required for the session-only skill. No app
+restart, real microphone test, paid call or live owner backup/restore was performed.
+Main remains b4e5c9636d02657cb3cd89d368583ee6c8ebd006.
+
+## Earlier checkpoint (historical)
+
 # Security continuation checkpoint — 2026-11-03
 
 Development branch: sprint/evaluation-business-os. Implementation checkpoint:

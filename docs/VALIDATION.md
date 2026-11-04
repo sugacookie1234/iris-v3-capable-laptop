@@ -638,3 +638,5 @@ response evidence and empty cloud history. The other exposed Windows TCP reset o
 rejected phone framing; fixed with a bounded 50ms wall-clock drain, preserving rejection.
 After fixes, 33 focused tests pass. Final full rerun is recorded below when complete.
 No real owner-data operations, external providers or hardware acceptance performed.
+
+Final corrected regression: 994 run, 990 passed, four skipped (101.607s), .local/orchestration-verified.log. All eleven desktop checks passed. CAP-34: 100/100 per arm, zero regressions. Seventeen phone-server tests include bounded rejected-body timing. Sprint-range configured-secret scan: zero matches. No hardware acceptance, real provider calls or owner-data migration.
