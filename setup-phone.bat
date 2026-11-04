@@ -7,6 +7,8 @@ if not exist ".venv\Scripts\python.exe" (
   pause
   exit /b 1
 )
+.venv\Scripts\python.exe -m pip install --disable-pip-version-check --no-deps --only-binary=:all: --require-hashes --index-url https://pypi.org/simple -r requirements-tooling.txt
+if errorlevel 1 goto failed
 .venv\Scripts\python.exe -m pip install -r requirements-phone.txt
 if errorlevel 1 goto failed
 .venv\Scripts\python.exe -m iris.phone.setup
