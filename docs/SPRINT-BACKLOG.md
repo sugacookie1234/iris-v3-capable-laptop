@@ -73,3 +73,8 @@ WebView2 smoke evidence. Remaining acceptance: physical keyboard, microphone/aud
 continuity, target OMEN, multi-monitor and prolonged session expiry/reopen. Broader
 business, private-data and decision integrations remain outside this sprint. Do not
 infer that the historical organizer warning was reproduced or resolved.
+
+Owner's 1:44 PM continuation order: finish Native Visual Workspace acceptance and
+closeout, then dedicated security penetration-testing/red-team assessment in a
+disposable environment, then Unified Intelligence 2.0. No later milestone is part of
+this native-workspace sprint. Ordinary automated tests are not red-team completion.

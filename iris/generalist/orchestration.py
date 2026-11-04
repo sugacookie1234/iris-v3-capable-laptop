@@ -114,7 +114,7 @@ class Orchestrator:
         if re.fullmatch(r'open (?:calculator|notepad|chrome|obsidian|file explorer)',query):return Decision(Intent.TOOL,'allowlisted')
         if query in ('open it again','bring it back','open it in the workspace','open that in the workspace'):
             return Decision(Intent.SKILL if self.context else Intent.CLARIFY,'followup' if self.context else 'unresolved')
-        reference=bool(re.search(r'\b(?:compare|difference|gap|original|initial|interest rate|principal|contribute|contribution|monthly|years|balance|graph|workspace|percent|resume|pause|cancel|finish)\b|%',query))
+        reference=bool(re.search(r'\b(?:compare|difference|gap|original|initial|interest rate|principal|starting amount|contribute|contribution|monthly|years|balance|graph|workspace|percent|resume|pause|cancel|finish)\b|%',query))
         if reference:return Decision(Intent.SKILL if self.context else Intent.CLARIFY,'followup' if self.context else 'unresolved')
         return Decision(Intent.CONVERSATION,'ordinary')
     @staticmethod
@@ -128,7 +128,7 @@ class Orchestrator:
             self.context=ActiveContext(expires=self.clock()+self.ttl)
         elif decision.intent is Intent.SKILL:
             context=self.context;skill=context.skill;context.turns+=1
-            if query in ('open it again','bring it back','open it in the workspace','open that in the workspace') or re.fullmatch(r'(?:show(?: me)?|open|bring)(?: (?:me|it|that|the))?(?: graph| back| again| in the workspace| workspace)(?: again| back)?',query):
+            if query in ('open it again','bring it back','open it in the workspace','open that in the workspace','show that in the visual workspace','show it in the visual workspace','open the visual workspace') or re.fullmatch(r'(?:show(?: me)?|open|bring)(?: (?:me|it|that|the))?(?: graph| back| again| in the workspace| workspace)(?: again| back)?',query):
                 return self.presentation(window_action='open')
             if query in ('close the graph','close graph','close the workspace'):
                 return self._reply('The graph window has been asked to close. The example remains available.',window_action='close')
@@ -149,10 +149,10 @@ class Orchestrator:
                 visual=skill.visual();last=visual['points'][-1]
                 if skill.rate == skill.compared_rate:return self._reply('The rates and assumptions are identical, so the balances are equal. This is a hypothetical example, before fees and taxes.',visual=visual)
                 return self._reply(f'At {skill.rate:g}% the balance is {last[1]:,.2f} units; at {skill.compared_rate:g}% it is {last[2]:,.2f}. The difference is {abs(last[1]-last[2]):,.2f} units after {skill.years} years. Each month, the higher rate applies to an increasingly larger balance, including earlier interest. These are hypothetical constant rates, before fees and taxes.',visual=visual)
-            elif re.search(r'\b(?:contribute|contribution|principal|years)\b',query):
+            elif re.search(r'\b(?:contribute|contribution|principal|starting amount|years)\b',query):
                 numbers=re.findall(r'(?<![\w.])-?\d+(?:\.\d+)?',query)
                 if len(numbers)!=1:return self._reply('Give one numeric principal, duration or monthly contribution.')
-                key='contribution' if re.search(r'contribut',query) else 'principal' if 'principal' in query else 'years'
+                key='contribution' if re.search(r'contribut',query) else 'principal' if ('principal' in query or 'starting amount' in query) else 'years'
                 value=float(numbers[0])
                 if key=='years' and value.is_integer():value=int(value)
                 try:skill.change({key:value})

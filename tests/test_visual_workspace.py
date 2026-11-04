@@ -68,6 +68,19 @@ class WorkspaceTests(unittest.TestCase):
             self.app.chat('Close the graph');self.app.visual_window.request.assert_called_with(action='close')
             self.app.chat('Open the graph again');self.assertEqual(self.app.visual_window.request.call_args.kwargs['action'],'open')
             self.assertEqual(self.brain.calls,[]);organize.assert_not_called()
+    def test_natural_workspace_aliases_and_missing_amounts(self):
+        self.app.chat('Explain compound interest')
+        reply=self.app.chat('Show that in the Visual Workspace')
+        self.assertEqual(reply['window_action'],'open')
+        for text in ('Change the starting amount','Add a monthly contribution'):
+            before=self.app.orchestrator.context.skill.parameters()
+            reply=self.app.chat(text)
+            self.assertNotIn('visual',reply)
+            self.assertEqual(self.app.orchestrator.context.skill.parameters(),before)
+        self.app.chat('Change the starting amount to 2000')
+        self.assertEqual(self.app.visual_state()['parameters']['principal'],2000)
+        self.assertEqual(self.brain.calls,[])
+
     def test_personal_commitments_reach_normal_organizer_path(self):
         for text in ('I will contribute 200 units monthly',
                      'Remind me to review the graph tomorrow',

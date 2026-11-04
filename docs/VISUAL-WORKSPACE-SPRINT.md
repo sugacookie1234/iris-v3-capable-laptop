@@ -118,3 +118,16 @@ Close the graph, continue talking, then say "Open the graph again". Check keyboa
 navigation, minimise/maximise and movement between monitors. Say "That's all. Stand
 by" and verify actual clap-wake standby/audio continuity separately. Close main and
 confirm its child exits. No live provider test was performed in this sprint.
+
+The exact owner phrases "Show that in the Visual Workspace" and "Change the
+starting amount" are handled deterministically. Missing principal or contribution
+values request clarification without mutation. Numeric starting amounts update the
+same principal used by UI controls. Thirty focused orchestration, workspace,
+bootstrap and native-app tests pass after this refinement.
+
+## Scope and continuation
+Next milestone is the dedicated disposable-environment security/red-team assessment,
+covering authentication, cross-window access, injection, approvals, data exposure,
+dependencies and provider quotas. Current unit tests and synthetic native smoke are
+not a penetration test. Unified Intelligence 2.0 follows that assessment. Screen
+awareness, computer control, communications and Business OS expansion were not added.
