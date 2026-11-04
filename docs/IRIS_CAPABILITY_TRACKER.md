@@ -125,7 +125,7 @@ These capabilities are separate from the existing model router and tool registry
 | CAP-34 | Offline improvement evaluation | IN-PROGRESS | Paired offline contract suite, guidance ablation and failure/regression gate implemented; frozen holdout and measured candidate improvement remain pending |
 | CAP-35 | Scoped specialist workers | DESIGNED | Typed input/output, bounded delegation and no inherited blanket authority |
 | CAP-36 | Supervised routing/skill improvement | DESIGNED | Evidence, owner-reviewed promotion and rollback |
-| CAP-37 | Visual explanation engine | IN-PROGRESS | First static line-chart/compound-interest chat slice; interaction, animation, other chart types and visual acceptance pending |
+| CAP-37 | Visual explanation engine | IN-PROGRESS | Authenticated native compound workspace, shared conversational/UI controls and local WebView2 smoke verified; target-device audio/multi-monitor acceptance, other chart types and richer animation pending |
 | CAP-38 | Interactive decision cards | DESIGNED | Stable scoped decisions, selection persistence, stale-response rejection and approval isolation pending |
 
 ### 2026-10-28 adoption and desktop slice

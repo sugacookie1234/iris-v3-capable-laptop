@@ -651,3 +651,32 @@ passed. Second real WebView2 smoke passed SVG, keyboard-activation flag, same-wi
 update, UI principal submission, main continuity and reopen, with zero provider calls;
 only synthetic profile cleanup was deferred by WebView2. Physical keyboard, audio and
 multi-monitor acceptance remain outstanding. Final post-refinement regression follows.
+
+## Native workspace closeout evidence
+Post-renewal run: 1005 run, 1001 passed, four skipped (261.988s). Commitment routing
+run: 1006 run, 1002 passed, four skipped (225.921s). Latest focused native/bootstrap/
+orchestration/workspace suite: 30 passed. All twelve desktop JS checks pass, including
+an asynchronous simulated DOM test of dirty-form versus voice-update conflicts.
+Expanded CAP-34: 109/109 per arm, zero regressions (no paid providers).
+
+The first restricted closeout evaluation failed 18 temporary-vault setup cases;
+isolated reproduction raised the existing-directory guard before any tool executed.
+Normal Windows execution with synthetic directories passed all 108 then 109 cases.
+No path/authority assertion was weakened.
+
+One full 1007-test run had 1002 passes, four skips and one HTTP response-read timeout
+in test_http_reviews_require_session_origin_and_current_revision (237.187s). That
+test passed alone unchanged. A concurrent native smoke timed out on reopen after
+passing SVG, same-window updates, UI-to-host and main continuity. Repeating native
+smoke alone passed all checks, reopen included, with zero provider calls. Temporary
+WebView2 profile cleanup remained deferred. These transient failures are recorded;
+their underlying cause is not established. A full isolated rerun follows below.
+
+Final isolated regression: **1007 run, 1003 passed, four skipped, zero failures or
+errors (183.254s)**; .local/visual-workspace-isolated-regression.log. All twelve
+desktop JS checks passed after the dirty-form fix. CAP-34: **109/109 per arm, zero
+regressions**; .local/visual-workspace-final-verified-evaluation. Final isolated
+native WebView2 smoke exited zero with SVG, keyboard-activation flag, same-window
+updates, UI-to-host submission, main continuity and reopen verified; zero provider
+calls. These are synthetic tests, not physical audio/keyboard, multi-monitor or
+target-OMEN acceptance. No production runtime restart or penetration test claimed.

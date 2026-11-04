@@ -165,3 +165,42 @@ replace failing encryption with plaintext to make restricted test runs pass.
 - web/visuals.js
 
 Native workspace continuation: independent single-use visual bootstrap leaves main pairing intact; visual reads/edits require the existing cookie plus a short-lived revocable window lease. Revisions reject stale/duplicate mutations. Real local WebView2 synthetic smoke passed the functional window path, with separately resolved temporary-profile cleanup. Same-user malware, main-session expiry and target-hardware acceptance remain limitations. See VISUAL-WORKSPACE-SPRINT.md.
+
+## Native workspace continuation checkpoint — 2026-11-04
+Implementation commits on sprint/evaluation-business-os:
+- 64bff37: authenticated native child and shared interactive scenario.
+- d9bbaf7: keyboard activation and same-window lease renewal.
+- 430c2c9: personal commitments retain the normal organizer path.
+- 5d3994e: natural workspace/starting-amount aliases.
+- 82dab9d: dirty-form revision isolation and simulated DOM race regression.
+
+No live data migration, paid calls, voice changes or main-branch merge. The original
+main commit remains b4e5c9636d02657cb3cd89d368583ee6c8ebd006. Exact changed-file list
+and remaining native acceptance sequence: VISUAL-WORKSPACE-SPRINT.md. Exact results
+and unsuccessful attempts: VALIDATION.md. Native smoke uses only temporary synthetic
+data; profile cleanup may be deferred while WebView2 retains files. Do not delete
+owner profiles to clean up a synthetic test.
+
+Next: complete physical keyboard/audio, OMEN, multi-monitor and long-expiry checks.
+Then begin the separately scoped disposable-environment security/red-team sprint.
+Review cross-window auth, injection, approvals, data exposure, dependency advisories
+and quotas. Do not mark that sprint complete from these unit tests. Unified
+Intelligence 2.0 and broader integrations follow it, not this sprint.
+
+Recovery commands from the repository root (no reset or clean):
+1. git status --short; git log -6 --oneline
+2. .\.venv\Scripts\python.exe -m unittest tests.test_visual_workspace tests.test_bootstrap tests.test_orchestration tests.test_desktop_app
+3. node tests/desktop_workspace_check.cjs
+4. .\.venv\Scripts\python.exe tests/native_visual_workspace_smoke.py
+5. .\.venv\Scripts\python.exe -m unittest discover -s tests
+6. .\.venv\Scripts\python.exe -m iris.generalist.evaluation --output .local/visual-workspace-recheck
+Run native smoke and the full regression sequentially. The smoke opens synthetic
+windows; no owner runtime restart or hardware audio acceptance is implied.
+
+Final verified checkpoint: 1003 Python passes/four skips (1007 run), twelve desktop
+JS checks passed, CAP-34 109/109 each arm with zero regressions, and isolated real
+native smoke passed with zero provider calls. Implementation HEAD: 82dab9d; the
+following documentation-only commit records this checkpoint. Working-tree changes
+at this point are only these closeout docs; no unfinished implementation remains.
+Transient test failures and limits are preserved in VALIDATION.md. Push this
+development branch; do not merge main. Owner hardware acceptance remains pending.
