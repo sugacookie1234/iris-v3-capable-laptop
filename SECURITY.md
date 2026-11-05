@@ -186,3 +186,14 @@ there is no owner-data migration to reverse. Do not remove local databases/profi
 ## Stabilization closeout continuation
 
 Stabilization supersedes the installer blocker: local pip 26.2 verified after a hash-verified offline installation under the existing file-owning account; pip check passes. No ACL or administrator-right changes. See docs/STABILIZATION-CLOSEOUT.md. Native asset/readiness failures remain an explicit release gate; deterministic startup checks and recovery were added without weakening IRIS-SEC-001.
+
+## Experimental semantic interpretation
+
+Default-off M1/M2 adds no tool permissions. Host-owned turn IDs, bounded typed JSON,
+context revisions and current owner intent gate compound changes; all calculations
+and action receipts remain host-generated. Root listing goes through existing
+ToolExecutor permission checks and stays outside cloud history/synthesis. Provider
+admission is unchanged and tested with fake transport. Generated text is not an
+approval. This is not a prompt-injection guarantee or a general reasoning sandbox.
+See docs/UNIFIED-INTELLIGENCE-2-DESIGN.md for narrow eligibility and remaining limits.
+Native authentication and the unresolved WebView2 reliability gate are unchanged.

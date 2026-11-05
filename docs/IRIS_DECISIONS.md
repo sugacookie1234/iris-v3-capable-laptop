@@ -118,3 +118,13 @@ Use validated host decisions and one bounded public educational skill. Reuse exi
 
 ## ADR-036 — One runtime, scoped native visual lease, authoritative skill inputs
 Reuse pywebview and the existing loopback session. Marshal native changes through WinForms BeginInvoke; maintain one coalesced secondary window. An independent expiring single-use bootstrap issues a revocable visual lease in addition to the main cookie. Visual IDs never authenticate. All inputs live in CompoundSkill; compare-and-update revisions and a global sequence reject stale writes/responses. Browser fallback remains in-chat. No privileged JS API or tool approval is introduced.
+
+## ADR-037 — Experimental semantic proposals are not authority
+
+One opt-in FAST request returns typed interpretation for a bounded public example
+or root listing. Host-owned turn/reference checks and existing ToolExecutor decide
+effects. Numeric changes must match the current owner text. No model receipt is
+trusted, no private tool result is sent for synthesis, and no failed call triggers
+an extra provider fallback. Ordinary FAST/DEEP/Council and memory paths remain.
+OpenJarvis is an architectural reference, not a new runtime dependency. Full
+provenance context, planning and learning are later dependency-ordered milestones.

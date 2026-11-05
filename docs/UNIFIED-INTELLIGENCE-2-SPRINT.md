@@ -9,8 +9,9 @@ Stabilization implementation and owner data were not restarted or modified.
 M1: strict wire contract and adversarial tests implemented. M2: default-off FAST
 integration with compound and root workspace listing implemented. Focused checkpoint:
 41 tests passed (interpretation, orchestration, orchestration authority, brain engine).
-Full regression and CAP-34 expansion are pending at this incremental checkpoint.
-Do not treat this focused result as a completed rollout or real-model benchmark.
+The incremental implementation checkpoint is 80b898b (pushed). Final validation
+below supersedes the original pending-full-regression note. This is not an enabled
+rollout or a real-model benchmark.
 
 Corrections during recovery: invalid test arrays were being replaced with empty
 objects by the fixture helper; a synthetic filename used a correctly blocked secret
@@ -20,5 +21,47 @@ were retained. File enumeration needs normal Windows process/file access in test
 
 No real provider calls, native hardware acceptance or paid usage occurred. Native
 stress remains FAILED from stabilization. Keep default off and in-chat fallback.
-Next: finish separate held-out fixtures, quota tests, CAP-34/full regression, record
-results, commit/push. Then M3 provenance-aware shared context; no autonomy expansion.
+## Final offline validation and continuation
+
+- Full suite: 1041 run, 1037 passed, four skipped, zero failures/errors (118.233s).
+  Evidence: `.local/unified-intelligence-2-full.log`.
+- Desktop JS: 12/12 checks passed.
+- CAP-34: 133/133 per arm, zero regressions; local evidence in
+  `.local/unified-intelligence-2-evaluation/summary.md`.
+- Quota/cancellation + interpretation focused suite: 23 passed.
+- Existing authentication/bootstrap/approval tests included in the full suite;
+  IRIS-SEC-001 checks retained. No new native smoke or physical acceptance claimed.
+
+Reserved ten-case holdout is separate from development responses and unscored.
+See UNIFIED-INTELLIGENCE-2-EVALUATION.md. No broad language-understanding score,
+live latency or provider-billing measurement is implied by the contract passes.
+
+Recovery commands: `git status -sb`, `git log -3 --oneline`, then read this file
+and UNIFIED-INTELLIGENCE-2-DESIGN.md. For code changes run
+`.\.venv\Scripts\python.exe -m unittest tests.test_interpretation tests.test_interpretation_provider`
+before broader regression. No need to rerun stabilization for documentation-only work.
+
+Next authorized design dependency: M3 provenance-aware shared context with bounded
+export policy/expiry, then host-governed plan preview. Keep the feature default-off
+until approved model-quality evaluation. Do not broaden consent cues to force a
+holdout pass or automatically activate new permissions. This M1/M2 checkpoint is
+complete as a bounded offline-tested vertical slice, not the whole intelligence roadmap.
+
+## Changed-file manifest (relative to repository root)
+
+- `iris/brain/engine.py`: one FAST interpretation adapter call.
+- `iris/desktop/runtime.py`: default-off admission and host application.
+- `iris/generalist/interpretation.py`: wire schema, references, eligibility and effects.
+- `iris/generalist/evaluation.py`: CAP-34 registration.
+- `tests/test_interpretation.py`: 21 synthetic contract/integration tests.
+- `tests/test_interpretation_provider.py`: two quota/cancellation tests.
+- `tests/fixtures/interpretation_holdout.json`: ten unscored reserved prompts.
+- `docs/OPENJARVIS-ARCHITECTURE-STUDY.md`: reference mapping and exclusions.
+- `docs/UNIFIED-INTELLIGENCE-2-DESIGN.md`: implementation and limits.
+- `docs/UNIFIED-INTELLIGENCE-2-EVALUATION.md`: evidence interpretation and holdout.
+- `docs/UNIFIED-INTELLIGENCE-2-SPRINT.md`: recovered state and continuation.
+- `docs/IRIS_CAPABILITY_TRACKER.md`: existing capability statuses.
+- `docs/IRIS_DECISIONS.md`: ADR-037.
+- `docs/SPRINT-BACKLOG.md`: dependency-ordered next work.
+- `docs/VALIDATION.md`: exact final regression results.
+- `SECURITY.md`: experimental authority/privacy boundaries.

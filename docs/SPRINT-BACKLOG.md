@@ -91,3 +91,18 @@ these release risks are reviewed; no broader controls/connectors were enabled.
 ## Stabilization closeout continuation
 
 Stabilization checkpoint: pip blocker resolved locally (26.2), no ACL changes. Native missing-script readiness guarded; engine/asset-load and reauthentication intermittency remains open. Finish this gate and OMEN acceptance before expanding visual dependence. Follow UNIFIED-INTELLIGENCE-2-HANDOFF.md for the next major sprint; do not implement it in this stabilization session.
+
+## Unified Intelligence 2.0 — current authorized continuation
+
+Stabilization closed at 0f75f6a. M1/M2's bounded experimental interpretation slice
+is implemented in 80b898b; see UNIFIED-INTELLIGENCE-2-SPRINT.md for final validation
+and checkpoint. Keep default off pending model-quality evaluation; preserve native
+fallback. Do not resume stabilization work as part of this intelligence slice.
+
+Next dependency is M3: bounded provenance-aware shared conversational context,
+with expiry, topic changes and privacy/export policy, extending existing memory.
+Broader paraphrase coverage should be measured before rollout. Then bounded plans,
+verified receipts and recovery; no new permissions or autonomous execution here.
+Held-out model benchmarking needs owner-approved providers/call budget. Adaptive
+learning, private transcript training, local benchmarking and skill installation
+remain deferred. Native acceptance remains a separate unresolved gate.

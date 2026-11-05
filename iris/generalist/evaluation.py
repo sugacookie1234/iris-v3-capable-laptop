@@ -29,6 +29,7 @@ CORPUS = (
     ('orchestration_authority', 'tests.test_orchestration_authority'),
     ('visual_workspace','tests.test_visual_workspace'),
     ('adversarial_authority','tests.test_redteam_authority'),
+    ('semantic_interpretation','tests.test_interpretation'),
 )
 
 

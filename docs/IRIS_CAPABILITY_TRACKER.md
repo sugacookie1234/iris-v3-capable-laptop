@@ -226,3 +226,13 @@ CAP-37: separate native Visual Workspace, bounded interactive compound controls 
 ## Stabilization closeout continuation
 
 Stabilization: CAP-29 local pip upgrade verified; CAP-37 deterministic pairing/renderer readiness and recoverable asset handling implemented. Native repeated lifecycle/reauthentication acceptance remains a release gate, not completed by DOM tests. CAP-34/security assertions retained. Unified Intelligence 2.0 remains a handoff document only.
+
+## Unified Intelligence 2.0 first slice — 2026-11-05
+
+Supersedes the earlier handoff-only status: CAP-01/02/32 now include a default-off,
+host-validated InterpretationV1 path using existing FAST inference, compound skills
+and permission-checked workspace listing. CAP-34 has synthetic semantic contract
+coverage. Existing IDs are retained; general intelligence/planning remains IN-PROGRESS.
+See UNIFIED-INTELLIGENCE-2-DESIGN.md and UNIFIED-INTELLIGENCE-2-EVALUATION.md.
+Offline verification is not real-model acceptance. CAP-37 native reliability remains
+blocked; no new visual dependency or privilege was introduced.

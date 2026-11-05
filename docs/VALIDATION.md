@@ -742,3 +742,26 @@ Full native stress remains FAILED as documented above; software regression is no
 native/hardware acceptance. Current pip 26.2 and pip check are verified.
 
 Closeout verification 2026-11-05: saved stabilization full-suite log confirms 1014 pass / four skip; saved stabilization CAP-34 summary confirms 112/112 each arm, zero regressions. Prior twelve JS checks retained, not rerun. Fresh pip version/check: 26.2, no broken requirements. Documentation-only changes require no full regression rerun. Native stress remains FAILED; no hardware acceptance claimed.
+
+## Unified Intelligence 2.0 M1/M2 — 2026-11-05
+
+Implementation checkpoint 80b898b, followed by additional quota/cancellation tests,
+reserved holdout and CAP-34 registration. Full discovery: **1041 run, 1037 passed,
+four skipped, zero failures/errors**, 118.233s. Log:
+`.local/unified-intelligence-2-full.log`. All **12 desktop JavaScript checks passed**.
+Expanded CAP-34: **133/133 baseline and candidate, zero regressions, PASS**, evidence
+`.local/unified-intelligence-2-evaluation/summary.md`. Focused suites: 41 existing/new
+contract tests passed; 23 interpretation/provider tests passed. These sets overlap.
+
+Synthetic tests cover default-off routing, social dialogue without effects, grounded
+compound changes and original comparisons, UI-shared revisions, stale/forged proposals,
+unknown fields/capabilities/authority, read-only permission denial, private result
+isolation and no retry/fallback. Real admission wrapper with fake transport confirms
+failed requests consume durable quota across restart. Cancellation releases turn lock.
+Existing bootstrap/security tests, including visual-to-main isolation, remain passing
+in full discovery. Tests used temporary data; no billable provider calls performed.
+
+The ten reserved holdout prompts are NOT a scored model evaluation. No actual model
+intent accuracy, conversational intelligence, live latency or provider billing claim.
+No native smoke rerun: historical WebView2 stress remains FAILED and HP OMEN acceptance
+unverified. No voice change, owner-data migration, permission expansion or main merge.
