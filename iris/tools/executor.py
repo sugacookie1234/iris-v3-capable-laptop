@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import math
 import multiprocessing
+from dataclasses import replace
 from collections.abc import Callable
 from typing import Any
 from time import monotonic
@@ -81,20 +82,25 @@ class ToolExecutor:
 
     def execute(self, call: ToolCall, *, authority: AuthorityContext | None = None,
                 approve: Callable[[ExecutionPlan], Approval] | None = None,
-                dry_run: bool = False, cancelled: Callable[[], bool] | None = None) -> ToolResult:
+                dry_run: bool = False, cancelled: Callable[[], bool] | None = None,
+                expected: ExecutionPlan | None = None, require_audit: bool = False) -> ToolResult:
         identifier = None
         if not dry_run and isinstance(call, ToolCall):
             identifier = self._observe('begin', call.name, call.origin)
         result = None
         try:
+            if require_audit and not dry_run and identifier is None:
+                result = ToolResult(ResultStatus.FAILED, failure=ToolFailure(
+                    FailureCode.EXECUTION_FAILED, 'Audit receipt unavailable; no tool executed.'))
+                return result
             result = self._execute(call, authority=authority, approve=approve,
-                                   dry_run=dry_run, audit_id=identifier, cancelled=cancelled)
-            return result
+                                   dry_run=dry_run, audit_id=identifier, cancelled=cancelled, expected=expected)
+            return replace(result, receipt_id=identifier)
         finally:
             if identifier is not None:
                 self._observe('finish', identifier, result)
 
-    def _execute(self, call, *, authority, approve, dry_run, audit_id, cancelled):
+    def _execute(self, call, *, authority, approve, dry_run, audit_id, cancelled, expected=None):
         def failed(code: FailureCode, message: str, plan: ExecutionPlan | None = None,
                    cause: str | None = None) -> ToolResult:
             return ToolResult(ResultStatus.FAILED, plan, failure=ToolFailure(code, message, cause))
@@ -136,6 +142,9 @@ class ToolExecutor:
                    f"Required permissions: {json.dumps(spec.required_permissions)}\n"
                    f"Timeout: {spec.timeout} seconds. Approval applies only to this execution.")
         plan = ExecutionPlan(spec, arguments, call.origin, summary)
+        if expected is not None and (not isinstance(expected, ExecutionPlan)
+                or expected.spec != spec or expected.arguments != arguments or expected.origin != call.origin):
+            return failed(FailureCode.INVALID_ARGUMENTS, 'Prepared execution no longer matches the confirmed snapshot.', plan)
         decision = evaluate(plan, authority or AuthorityContext())
         if not decision.allowed:
             return failed(FailureCode.AUTHORITY_DENIED, decision.reason, plan)

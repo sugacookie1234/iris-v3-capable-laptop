@@ -115,6 +115,7 @@ class DesktopRuntime:
         self.working_context = WorkingContextV1()
         self._plan_session = secrets.token_hex(16)
         self._pending_host_plan = None
+        self._plan_run = None
         self.turn_lock = threading.Lock()
         self.approval_lock = threading.Lock()
         self.pending = None
@@ -139,6 +140,8 @@ class DesktopRuntime:
                 self.autonomy.start()
 
     def close(self):
+        if self._plan_run is not None:
+            self._plan_run.cancel(self._plan_run.plan.id)
         with self._autonomy_lock:
             self._closed = True
             self.autonomy.close()
@@ -160,7 +163,7 @@ class DesktopRuntime:
             self.autonomy.start()
             return self.autonomy.status()
 
-    def approve(self, summary, identifier=None, timeout=90):
+    def approve(self, summary, identifier=None, timeout=90, cancelled=None):
         event = threading.Event()
         record = {'id': identifier or secrets.token_urlsafe(20), 'summary': summary,
                   'event': event, 'approved': False, 'resolved': False}
@@ -169,13 +172,21 @@ class DesktopRuntime:
                 return False
             self.pending = record
         try:
-            return event.wait(timeout) and record['approved']
+            if cancelled is None:
+                return event.wait(timeout) and record['approved']
+            deadline = time.monotonic() + timeout
+            while time.monotonic() < deadline:
+                if cancelled():
+                    return False
+                if event.wait(min(0.05,max(0,deadline-time.monotonic()))):
+                    return record['approved'] and not cancelled()
+            return False
         finally:
             with self.approval_lock:
                 if self.pending is record:
                     self.pending = None
 
-    def _tool_approval(self, plan):
+    def _tool_approval(self, plan, cancelled=None):
         # Standing permission covers only these reversible local organizer tools.
         # Memory, files outside the notebook, and external actions keep their own boundaries.
         if (automatic_enabled(self.settings) and plan.spec.local_only and plan.spec.reversible
@@ -195,7 +206,7 @@ class DesktopRuntime:
                 if 'muted' in arguments:
                     changes.append('Mute system audio' if arguments['muted'] else 'Unmute system audio')
                 summary = '. '.join(changes) + '. Then check the device reading.'
-        return Approval(plan.id, self.approve(summary, plan.id))
+        return Approval(plan.id, self.approve(summary, plan.id, **({'cancelled':cancelled} if cancelled is not None else {})))
 
     def pending_approval(self):
         with self.approval_lock:
@@ -281,6 +292,11 @@ class DesktopRuntime:
             raise BusyError('Wait for the current response before clearing the conversation.')
         try:
             self.history.clear()
+            if self._plan_run is not None:
+                self._plan_run.cancel(self._plan_run.plan.id)
+            self._plan_run = None
+            self._pending_host_plan = None
+            self._plan_session = secrets.token_hex(16)
             self.working_context.clear()
             self.orchestrator.clear()
             if self.visual_window:self.visual_window.request(action="close")
@@ -482,9 +498,23 @@ class DesktopRuntime:
             return {'reply':value,'spoken_reply':value,'route':'LOCAL','public_context':False}
         if not self._context_enabled():
             return answer('Experimental planning is disabled. No action was taken.')
-        from iris.generalist.controlled_plan import ALLOWED, validate_proposal, preview_text
+        from iris.generalist.controlled_plan import ALLOWED, PlanRun, validate_proposal, preview_text
+        if text.startswith('/confirm-plan '):
+            match = re.fullmatch(r'/confirm-plan ([a-f0-9]{32}) ([1-9][0-9]{0,6}) ([a-f0-9]{64})',text)
+            run = self._plan_run
+            if not match or run is None:
+                return answer('No matching pending plan. Nothing executed.')
+            try:
+                report = run.execute(match[1],int(match[2]),match[3],session=self._plan_session,
+                    approve=lambda operation:self._tool_approval(operation,cancelled=run.cancel_event.is_set))
+                from dataclasses import asdict
+                result = answer(report)
+                result['plan_receipts'] = [asdict(receipt) for receipt in run.receipts]
+                return result
+            except ValueError:
+                return answer('Confirmation was stale, already used or did not match this plan. Nothing executed.')
         if not text.startswith('/plan workspace '):
-            return answer('This checkpoint supports previews only. No action was taken.')
+            return answer('Use /plan workspace followed by a bounded inspection request. No action was taken.')
         try:
             executor = getattr(self.brain,'_tool_executor',None)
             if executor is None:
@@ -500,9 +530,19 @@ class DesktopRuntime:
                 executor=executor,permissions=self.brain._tool_permissions,
                 working=self.working_context,orchestrator=self.orchestrator)
             self._pending_host_plan = plan
-            return answer(preview_text(plan))
+            if self._plan_run is not None:
+                self._plan_run.cancel(self._plan_run.plan.id)
+            self._plan_run = PlanRun(plan,executor=executor,permissions=lambda:self.brain._tool_permissions,
+                working=self.working_context,orchestrator=self.orchestrator)
+            result = answer(preview_text(plan,executable=True))
+            result['spoken_reply'] = (f'I prepared a read-only plan with {len(plan.plan.nodes)} steps. '
+                'Nothing has run. Review the displayed details and exact confirmation command; each step also needs approval.')
+            return result
         except Exception:
             self._pending_host_plan = None
+            if self._plan_run is not None:
+                self._plan_run.cancel(self._plan_run.plan.id)
+            self._plan_run = None
             return answer('I could not validate a bounded workspace plan. No tools executed. '
                           'Check workspace configuration and permissions, and name concrete text files if needed.')
 
@@ -573,6 +613,15 @@ class DesktopRuntime:
             raise ValueError('Enter a message of 1–12000 characters.')
         if mode not in ('auto', 'council'):
             raise ValueError('Unknown reasoning mode.')
+        # Cancellation only sets a host-owned flag and can interrupt an executing
+        # chat turn. All normal execution still requires the existing turn lock.
+        cancel = re.fullmatch(r'/cancel-plan ([a-f0-9]{32})',text.strip())
+        if cancel and self._context_enabled():
+            run = self._plan_run
+            changed = run.cancel(cancel[1]) if run else False
+            message = ('Cancellation requested. Completed reads are not undone.' if changed
+                       else 'No active matching plan was cancelled.')
+            return {'reply':message,'spoken_reply':message,'route':'LOCAL','public_context':False}
         if not self.turn_lock.acquire(blocking=False):
             raise BusyError('IRIS is finishing another request.')
         started = time.monotonic()

@@ -4,12 +4,14 @@ import hashlib
 import json
 import re
 import time
+import threading
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from iris.generalist.plan import PlanLimits, validate_plan
 from iris.generalist.interpretation import ContextRef, _pairs
 from iris.memory.working import Source
-from iris.tools import AuthorityContext, RequestOrigin, ResultStatus, ToolCall
+from iris.tools import Approval, AuthorityContext, RequestOrigin, ResultStatus, ToolCall
 from iris.tools.workspace import _safe_parts, _is_hidden_or_credential, TEXT_SUFFIXES, TEXT_FILENAMES
 from pathlib import PurePosixPath
 
@@ -158,3 +160,169 @@ No output interpolation, code, permissions, approvals, provenance or result clai
 completion only, never arbitrary tool output. If relevant files are unknown, plan listing only.
 The host will validate and preview; nothing executes until explicit owner confirmation and approval.
 '''
+
+
+def verify_result(node, value):
+    """Verify returned snapshots, not file correctness or an arbitrary objective."""
+    args = dict(node.arguments)
+    expected_path = '/'.join(_safe_parts(args.get('path','.'))) or '.'
+    if type(value) is not dict or value.get('path') != expected_path or type(value.get('truncated')) is not bool:
+        raise ValueError('Invalid returned snapshot.')
+    if node.tool == 'workspace_list':
+        if set(value) != {'path','entries','truncated'} or type(value['entries']) is not list or len(value['entries']) > 200:
+            raise ValueError('Invalid directory result.')
+        seen = set()
+        for entry in value['entries']:
+            if (type(entry) is not dict or set(entry) != {'name','type','size'}
+                    or type(entry['name']) is not str or not 1 <= len(entry['name']) <= 255
+                    or any(c in entry['name'] for c in ('/','\\','\x00','\n','\r'))
+                    or entry['name'] in seen or _is_hidden_or_credential(entry['name'])
+                    or entry['type'] not in ('file','directory','other')
+                    or (entry['size'] is not None and (type(entry['size']) is not int or entry['size'] < 0))):
+                raise ValueError('Invalid directory entry.')
+            seen.add(entry['name'])
+        return f"Validated {len(value['entries'])} returned directory entries; file contents were not inspected." + (' Listing was truncated.' if value['truncated'] else '')
+    if node.tool == 'workspace_read':
+        if set(value) != {'path','text','truncated'} or type(value['text']) is not str or len(value['text']) > args.get('max_chars',16000):
+            raise ValueError('Invalid text result.')
+        return f"Validated a returned text snapshot of {len(value['text'])} characters; document correctness was not assessed." + (' Text was truncated.' if value['truncated'] else '')
+    raise ValueError('No verifier for this capability.')
+
+
+@dataclass(frozen=True)
+class ExecutionReceipt:
+    version: int
+    plan_id: str
+    revision: int
+    step_id: str
+    capability: str
+    argument_digest: str
+    origin: str
+    approval: str
+    started: str
+    finished: str
+    status: str
+    verification: str
+    evidence_ref: str | None
+    failure: str | None
+    cancelled: bool
+    uncertain: bool
+    summary: str
+
+
+class PlanRun:
+    """One session-owned read-only run. Restart invalidates all pending authority.
+
+    Lifecycle: awaiting_confirmation -> running/awaiting_approval/verifying ->
+    completed/failed/cancelled/uncertain. Terminal runs are never replayed.
+    Existing ActionHistory persists invocation evidence; private outputs stay transient.
+    """
+    def __init__(self, plan, *, executor, permissions, working, orchestrator, clock=time.monotonic):
+        self.plan = plan
+        self.bound_digest = plan.digest
+        self.executor = executor
+        self.permissions = permissions
+        self.working = working
+        self.orchestrator = orchestrator
+        self.clock = clock
+        self.cancel_event = threading.Event()
+        self.lock = threading.Lock()
+        self.state = 'awaiting_confirmation'
+        self.receipts = []
+
+    def cancel(self, identifier):
+        with self.lock:
+            if identifier != self.plan.id or self.state in ('completed','failed','cancelled','uncertain'):
+                return False
+            self.cancel_event.set()
+            if self.state == 'awaiting_confirmation':
+                self.state = 'cancelled'
+            return True
+
+    def _validate(self):
+        if self.cancel_event.is_set() or self.clock() >= self.plan.expires or self.plan.digest != self.bound_digest:
+            raise ValueError('Cancelled, expired or changed plan.')
+        self.working.validate_snapshot(json.loads(self.plan.context_json),self.orchestrator)
+        specs = {spec.name:spec for spec in self.executor.specifications()}
+        permissions = frozenset(self.permissions())
+        for node, prepared in zip(self.plan.plan.nodes,self.plan.prepared):
+            if (node.tool not in ALLOWED or specs.get(node.tool) != prepared.spec
+                    or not set(node.required_permissions).issubset(permissions)):
+                raise ValueError('Capability or permission changed.')
+        return permissions
+
+    def execute(self, identifier, revision, confirmed_digest, *, session, approve):
+        with self.lock:
+            if (self.state != 'awaiting_confirmation' or identifier != self.plan.id
+                    or type(revision) is not int or revision != self.plan.revision
+                    or confirmed_digest != self.bound_digest or session != self.plan.session):
+                raise ValueError('Confirmation does not match the current pending plan.')
+            self.state = 'running'  # Consume confirmation before any effect.
+        completed = set()
+        for node, prepared in zip(self.plan.plan.nodes,self.plan.prepared):
+            started = datetime.now(timezone.utc).isoformat()
+            approval_state = 'not_requested'
+            result = None
+            status, verification, failure, uncertain = 'failed','not_executed','validation_failed',False
+            summary = 'Not executed: authority, context or validity changed.'
+            try:
+                permissions = self._validate()
+                if not set(node.depends_on).issubset(completed):
+                    raise ValueError('Dependency was not verified.')
+                def approval_callback(operation):
+                    nonlocal approval_state
+                    self.state = 'awaiting_approval'
+                    approval_state = 'required'
+                    self._validate()
+                    decision = approve(operation)
+                    self._validate()
+                    approval_state = ('approved' if isinstance(decision,Approval)
+                        and decision.plan_id == operation.id and decision.approved is True else 'rejected')
+                    self.state = 'running'
+                    return decision
+                result = self.executor.execute(ToolCall(node.tool,dict(prepared.arguments),RequestOrigin.MODEL),
+                    authority=AuthorityContext(permissions=permissions),approve=approval_callback,
+                    cancelled=self.cancel_event.is_set,expected=prepared,require_audit=True)
+                if result.status == ResultStatus.SUCCESS:
+                    self.state = 'verifying'
+                    status, verification, failure, uncertain = 'uncertain','unverified','verification_failed',True
+                    summary = 'Tool returned, but its data was not verified. No later step executed.'
+                    summary = verify_result(node,result.value)
+                    if self.executor.observer_failed or not result.receipt_id:
+                        raise ValueError('Durable invocation evidence unavailable.')
+                    status, verification, failure, uncertain = 'completed','validated_returned_data',None,False
+                    completed.add(node.id)
+                else:
+                    failure = str(result.failure.code) if result.failure else 'execution_failed'
+                    status = 'cancelled' if self.cancel_event.is_set() or failure=='cancelled' else 'failed'
+                    uncertain = failure in ('timeout','execution_failed','cancelled')
+                    verification = 'unknown' if uncertain else 'not_executed'
+                    summary = 'Read did not complete with verified data. No later step executed.'
+            except Exception:
+                if self.cancel_event.is_set():
+                    status = 'cancelled'
+            except BaseException:
+                self.state = 'uncertain'
+                self.cancel_event.set()
+                raise  # The invocation observer records interruption; never auto-replay.
+            receipt = ExecutionReceipt(1,self.plan.id,self.plan.revision,node.id,node.tool,
+                digest({'capability':node.tool,'arguments':dict(prepared.arguments)}),RequestOrigin.MODEL.value,
+                approval_state,started,datetime.now(timezone.utc).isoformat(),status,verification,
+                result.receipt_id if result else None,failure,self.cancel_event.is_set(),uncertain,summary)
+            self.receipts.append(receipt)
+            if status != 'completed':
+                self.state = status
+                break
+        else:
+            self.state = 'completed'
+        return self.report()
+
+    def report(self):
+        verified = sum(r.status == 'completed' for r in self.receipts)
+        remaining = len(self.plan.plan.nodes)-len(self.receipts)
+        lines = [f'Plan {self.state}: {verified} of {len(self.plan.plan.nodes)} steps returned verified data; '
+                 f'{remaining} later steps were not executed.']
+        lines.extend(f'{r.step_id}: {r.status}. {r.summary}' for r in self.receipts)
+        lines.append('These receipts verify bounded returned data, not the correctness of your project. '
+                     'No file was modified and no result was sent for cloud synthesis. Completed reads are not undone by cancellation.')
+        return '\n'.join(lines)

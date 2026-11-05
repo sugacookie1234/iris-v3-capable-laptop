@@ -134,3 +134,25 @@ Execution, confirmation, cancellation and receipts are NOT implemented at checkp
 Next: existing approval integration and exact prepared-execution checks, then bounded
 read-only execution/verification, followed by full acceptance. No new provider calls,
 owner file reads, permanent memory changes or native reliability claim.
+
+## M4 checkpoint B — controlled execution
+
+Checkpoint A is c62d38d (pushed). Execution now binds the explicit in-chat
+`/confirm-plan <id> <revision> <digest>` command to the current runtime session,
+owner request digest, exact prepared steps, expiry and working-context snapshot.
+Every step separately uses the existing approval callback; no standing consent.
+ToolExecutor checks its actual prepared snapshot against the confirmed snapshot,
+requires an ActionHistory attempt record and retains its existing timeout/cancel
+worker behavior. No alternative executor or permission system was introduced.
+
+Real registered workspace_list/workspace_read handlers completed two- and three-step
+workflows over temporary synthetic files. Verifiers validate returned bounded data,
+not project correctness. Host-generated receipts reference existing invocation
+history, exclude raw file data and summarize locally. Terminal runs cannot replay;
+reset/restart invalidates pending authority. Per-plan detail is session-only, while
+existing ActionHistory retains content-free invocation/interruption evidence.
+
+Focused result: 74 passed across controlled plans, generalist plans, ToolExecutor,
+desktop, working context and provider admission. Full regression/JS/CAP-34 are the
+next acceptance gate. Do not claim full M4 acceptance yet. No live/paid provider,
+owner file inspection or native hardware test was performed.

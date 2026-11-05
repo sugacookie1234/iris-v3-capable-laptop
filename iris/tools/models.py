@@ -97,3 +97,4 @@ class ToolResult:
     plan: ExecutionPlan | None = None
     value: Any = None
     failure: ToolFailure | None = None
+    receipt_id: str | None = None
