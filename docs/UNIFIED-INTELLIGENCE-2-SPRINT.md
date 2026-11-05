@@ -115,3 +115,22 @@ project from ambiguous wording, train on conversations or run paid benchmarks.
 For changes, begin with `python -m unittest tests.test_working_context
 tests.test_interpretation tests.test_interpretation_provider`; rerun full acceptance
 only after material changes. No stabilization restart or holdout tuning is needed.
+
+## M4 checkpoint A — preview only
+
+Recovered c3a2c7e with no tracked changes initially; preserved `tatus -sb`.
+Added ProposedPlanV1, canonical host snapshots, three-node/90-second limits and
+non-executing `/plan workspace <request>` previews behind the existing default-off
+flag. Reuses validate_plan, registered workspace_list/workspace_read and ToolExecutor
+dry-run preparation. No filesystem inspection occurs during preview. Fixed paths
+only; output interpolation and dynamic selection are unsupported. Permissions are
+checked and prepared arguments are included in the exact digest and preview.
+
+Fourteen focused planning/preview tests passed after the automatic approval service's
+usage reset. The first test attempt was not executed because review quota was exhausted.
+The resubmitted older M1/M2 request did not require restarting those completed milestones.
+
+Execution, confirmation, cancellation and receipts are NOT implemented at checkpoint A.
+Next: existing approval integration and exact prepared-execution checks, then bounded
+read-only execution/verification, followed by full acceptance. No new provider calls,
+owner file reads, permanent memory changes or native reliability claim.

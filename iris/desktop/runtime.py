@@ -113,6 +113,8 @@ class DesktopRuntime:
         self.history = []
         from iris.memory.working import WorkingContextV1
         self.working_context = WorkingContextV1()
+        self._plan_session = secrets.token_hex(16)
+        self._pending_host_plan = None
         self.turn_lock = threading.Lock()
         self.approval_lock = threading.Lock()
         self.pending = None
@@ -473,6 +475,37 @@ class DesktopRuntime:
             return DesktopCommands.answer('I kept your action history.')
         return self.vault_commands.handle(command)
 
+    def _plan_command(self, text):
+        if not text.startswith(('/plan ', '/confirm-plan ', '/cancel-plan ')):
+            return None
+        def answer(value):
+            return {'reply':value,'spoken_reply':value,'route':'LOCAL','public_context':False}
+        if not self._context_enabled():
+            return answer('Experimental planning is disabled. No action was taken.')
+        from iris.generalist.controlled_plan import ALLOWED, validate_proposal, preview_text
+        if not text.startswith('/plan workspace '):
+            return answer('This checkpoint supports previews only. No action was taken.')
+        try:
+            executor = getattr(self.brain,'_tool_executor',None)
+            if executor is None:
+                raise ValueError('No workspace executor.')
+            specs = tuple(spec for spec in executor.specifications() if spec.name in ALLOWED)
+            if not specs:
+                raise ValueError('No registered workspace tools.')
+            turn = secrets.token_hex(16)
+            state = self.working_context.snapshot(self.orchestrator)
+            proposal = self.brain.propose_plan(text,turn=turn,specifications=specs,working_context=state)
+            self.working_context.validate_snapshot(state,self.orchestrator)
+            plan = validate_proposal(proposal,request=text,turn=turn,session=self._plan_session,
+                executor=executor,permissions=self.brain._tool_permissions,
+                working=self.working_context,orchestrator=self.orchestrator)
+            self._pending_host_plan = plan
+            return answer(preview_text(plan))
+        except Exception:
+            self._pending_host_plan = None
+            return answer('I could not validate a bounded workspace plan. No tools executed. '
+                          'Check workspace configuration and permissions, and name concrete text files if needed.')
+
     def _context_enabled(self):
         return self.settings.get('IRIS_EXPERIMENTAL_INTERPRETATION', '').lower() == 'true'
 
@@ -547,6 +580,9 @@ class DesktopRuntime:
         capture_history = () if self._context_enabled() else tuple(self.history[-8:])
         try:
             text = text.strip()
+            planned = self._plan_command(text) if mode == 'auto' else None
+            if planned is not None:
+                return planned
             enabled = self._context_enabled()
             if enabled:
                 from iris.memory.working import topic_transition

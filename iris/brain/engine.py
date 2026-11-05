@@ -106,6 +106,19 @@ class IRISBrain:
             else CouncilExecutor(llm_registry)
         )
 
+    def propose_plan(self, text, *, turn, specifications, working_context):
+        from dataclasses import asdict
+        from iris.generalist.controlled_plan import PLAN_PROMPT, parse_proposal
+        from iris.memory.working import prompt
+        response = self._llm_registry.generate(target=self._model_policy.fast,
+            messages=[LLMMessage(MessageRole.SYSTEM, PLAN_PROMPT + prompt(working_context)),
+                LLMMessage(MessageRole.USER,json.dumps({'turn':turn,'request':text,
+                    'capabilities':[asdict(self._tool_definition(spec)) for spec in specifications]}))],
+            options=self._options_for(ReasoningLevel.FAST))
+        if response.tool_calls:
+            raise ValueError('A planning response cannot call tools.')
+        return parse_proposal(response.text,turn)
+
     def interpret(self, text, *, turn, context, working_context=None):
         """One FAST adapter attempt; no tools, memory retrieval, fallback or retry.
 
