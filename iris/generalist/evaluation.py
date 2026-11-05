@@ -31,6 +31,7 @@ CORPUS = (
     ('adversarial_authority','tests.test_redteam_authority'),
     ('semantic_interpretation','tests.test_interpretation'),
     ('working_context','tests.test_working_context'),
+    ('controlled_plans','tests.test_controlled_plan'),
 )
 
 

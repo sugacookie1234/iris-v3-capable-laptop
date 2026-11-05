@@ -789,3 +789,30 @@ visual lifecycle. Existing full-suite authentication, approvals, quota and priva
 tests pass, including retained IRIS-SEC-001 coverage. No new security assessment or
 hardware verification is claimed. Native WebView2 stress remains FAILED historically;
 the in-chat fallback remains available. Both holdouts are reserved and unscored.
+
+## Unified Intelligence 2.0 M4 — final acceptance 2026-11-05
+
+Checkpoints c62d38d (proposals/previews) and fd4a0a3 (controlled execution/receipts).
+Full Python suite run once after implementation stabilized: **1082 run, 1078 passed,
+four skipped, zero failures/errors**, 134.979s; `.local/controlled-plan-full.log`.
+All **12 desktop JavaScript checks passed**. CAP-34 with controlled_plans category:
+**174/174 baseline and candidate, zero regressions, PASS**;
+`.local/controlled-plan-evaluation/summary.md`.
+
+Focused checkpoint A: 14 passed. Focused checkpoint B: 74 passed (overlapping suites).
+Twenty-one controlled-plan test methods include real registered workspace_list and
+workspace_read executions on temporary synthetic files, exact confirmation and
+per-operation approval, dependency failures, cancellation during an actual approval
+wait, concurrent replay denial, prepared-argument drift, verifier failures, audit
+failure, permission revocation, restart invalidation and private-output exclusion.
+Model proposals/approvals are synthetic; timeout injection tests complement existing
+ToolExecutor timeout tests. No live provider, billable call, owner file read or
+hardware acceptance occurred. Existing authentication/IRIS-SEC-001 assertions passed
+in full discovery. Native WebView2 reliability remains unresolved; in-chat fallback
+is sufficient for every M4 interaction.
+
+New planning holdout SHA256:
+`B5D709E5704FB3019B3E8F3712B4FA6B6E277019DDBA64EA8CED999ACBE46C19`.
+Its five cases are reserved/unscored; M1/M2 and M3 holdout hashes remain unchanged.
+These passes establish host contracts and actual synthetic-file handler behavior,
+not a real-model planning-success rate or generally autonomous task completion.

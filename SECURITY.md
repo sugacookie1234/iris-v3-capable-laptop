@@ -209,3 +209,18 @@ before. Working context grants no authority and is revalidated before applying a
 proposal. Owner-authored free text is not perfectly secret-classifiable; existing
 provider sharing and same-user malware limitations remain. No database migration,
 new remote endpoint or native privilege change occurred.
+
+### M4 controlled read-only plans
+
+The same default-off experiment supports at most three fixed-path workspace reads
+or listings. Model proposals cannot supply authority, provenance or approval fields.
+Prepared arguments, host session/request, context, expiry and revision are bound to
+an exact confirmation; separate existing operation approvals remain mandatory.
+ToolExecutor verifies the prepared snapshot again and requires an invocation audit
+record for this workflow. Changed permissions/context, replay and restart fail closed.
+Cancellation can interrupt approval waits and existing worker execution. Private
+results stay local; returned-data verification is narrower than project correctness.
+The workflow adds no endpoints, network tools, writes, shell or permission grants.
+Detailed plan receipts are session-only; the existing action history retains content-free
+invocation evidence. Durable effectful recovery and stronger data-at-rest protection
+remain separate work. This is not a general autonomous agent or sandbox certification.

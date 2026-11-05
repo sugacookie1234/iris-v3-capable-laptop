@@ -156,3 +156,41 @@ Focused result: 74 passed across controlled plans, generalist plans, ToolExecuto
 desktop, working context and provider admission. Full regression/JS/CAP-34 are the
 next acceptance gate. Do not claim full M4 acceptance yet. No live/paid provider,
 owner file inspection or native hardware test was performed.
+
+## M4 final checkpoint C and continuation
+
+M4 is complete as a bounded offline-tested read-only engineering milestone.
+Final evidence: **1082 Python tests run / 1078 passed / four skipped**, zero errors
+or failures (134.979s); **12 desktop JS checks passed**; **CAP-34 174/174 per arm,
+zero regressions**. Full suite was run once after checkpoint B stabilized. Evidence:
+`.local/controlled-plan-full.log` and `.local/controlled-plan-evaluation/summary.md`.
+The preview and execution checkpoints are c62d38d and fd4a0a3; this closeout commit
+adds evaluation registration, frozen held-out planning cases and documentation.
+
+Demo: `/plan workspace List the workspace, then read README.md and notes.md` uses
+one fake FAST proposal in tests; preview performs no reads. The exact displayed
+confirmation command plus separate existing operation approvals runs real registered
+listing/reading handlers against temporary fixtures. Receipts prove validated bounded
+returned snapshots and link to invocation history. They do not certify project
+correctness, infer relevant files or authorize future actions. No results are sent
+for cloud synthesis or promoted to permanent/working memory.
+
+Changed implementation: iris/generalist/controlled_plan.py, iris/brain/engine.py,
+iris/desktop/runtime.py, iris/tools/executor.py, iris/tools/models.py and
+iris/generalist/evaluation.py. Tests: tests/test_controlled_plan.py and
+tests/fixtures/controlled_plan_holdout.json. Updated design, evaluation, sprint,
+capability tracker, backlog, validation and SECURITY.md document exact limits.
+
+The experiment remains default-off. No owner files/settings/credentials were changed,
+and `tatus -sb` retains its recorded hash. Main remains unchanged. Native startup/
+reauthentication reliability and hardware acceptance remain unresolved. All detailed
+plan state is session-only; restart invalidates authority. Existing content-free
+ActionHistory retains invocation/interruption evidence but is not a durable plan journal.
+
+Exact next milestone: M5 bounded recovery and persistent project continuity. Begin
+with current Git status/log and this checkpoint, then inspect existing job/history
+recovery before designing any persisted workflow journal. Keep exact operation
+approvals, no blind replay of uncertain effects and explicit resource selection.
+Do not add effectful tools or enable the interpreter automatically. An owner-approved
+synthetic live-model benchmark remains a separate rollout gate. Focused command:
+`python -m unittest tests.test_controlled_plan tests.test_generalist_plan tests.test_tools`.

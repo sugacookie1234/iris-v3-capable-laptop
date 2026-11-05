@@ -247,3 +247,14 @@ synthetic context tests. Scope remains default-off and IN-PROGRESS for the broad
 intelligence roadmap; see final VALIDATION.md entry for automated evidence.
 Project selection, generalized implicit topic detection and actual model quality are
 not accepted capabilities. CAP-37 native reliability remains unresolved.
+
+## M4 bounded plans — 2026-11-05
+
+CAP-32 adds default-off three-step workspace proposals, non-executing previews,
+exact host confirmation, existing per-operation approvals and sequential read-only
+execution. CAP-30 receipts now have a session plan view referencing existing action
+history; verification is limited to bounded returned data, not arbitrary objectives.
+CAP-34 includes adversarial controlled-plan fixtures. Broader autonomous planning,
+dynamic output mapping and durable effectful recovery remain IN-PROGRESS/deferred.
+See Unified Intelligence design/evaluation and final VALIDATION.md results. No
+live-model or native acceptance status is advanced by these synthetic tests.

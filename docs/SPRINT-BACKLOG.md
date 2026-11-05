@@ -121,3 +121,17 @@ the interpreter, obtain an approved synthetic model benchmark and review abstent
 do not tune against reserved holdouts. Generalized topic inference and project
 continuity can build on WorkingContext references but require their own validated
 source/authority mapping. Native reliability/hardware acceptance remain separate.
+
+## M4 handoff
+
+Bounded workspace planning and controlled execution implemented via existing TaskPlan,
+ToolExecutor, approvals, WorkingContext and ActionHistory. Current limits: three steps,
+fixed concrete paths, no output interpolation, per-operation confirmation, no cloud
+result synthesis. Check UNIFIED-INTELLIGENCE-2-SPRINT.md for final acceptance evidence.
+
+Next handoff dependency is M5: stronger recovery and persistent project continuity,
+with explicit owner-selected resources and a durable, bounded workflow journal where
+justified. Current read-only plans invalidate on restart and never resume automatically.
+Do not extend to effectful operations until their verifiers, cancellation/uncertainty,
+exact approvals and recovery semantics are separately demonstrated. Live model rollout
+still needs an approved synthetic benchmark/call budget; native reliability remains open.

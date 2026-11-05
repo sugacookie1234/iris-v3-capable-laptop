@@ -79,3 +79,25 @@ the test suite does not substantiate a general conversational-intelligence claim
 Final M3 acceptance: 1061 Python tests run / 1057 passed / four skipped; 12 desktop
 JS checks passed; CAP-34 153/153 each arm, zero regressions. See VALIDATION.md for
 exact log paths and which earlier runs were superseded by the final hardening fixes.
+
+## M4 bounded planning evaluation
+
+`tests/test_controlled_plan.py` exercises strict proposals, registered schemas,
+three-step limits, dependency cycles, unknown fields/capabilities, authority forgery,
+prepared argument snapshots, exact confirmation, permissions, stale context/expiry,
+replay and concurrent consumption, cancellation, failed dependencies, malformed
+success data, timeout, audit failure, restart invalidation and private-output isolation.
+The two-/three-step demonstrations run actual workspace_list/workspace_read handlers
+against temporary synthetic files, with mocked owner approval and model proposals.
+These are genuine handler executions but not a real-model planning benchmark.
+
+Checkpoint A: 14 focused tests passed. Checkpoint B: 74 focused tests passed across
+controlled/generalist plans, ToolExecutor, desktop, working context and provider
+admission. Sets overlap. Full acceptance counts appear in VALIDATION.md.
+Five new reserved cases in `tests/fixtures/controlled_plan_holdout.json` are unscored,
+not runtime examples; previous holdouts remain frozen. No live model/provider call,
+owner file access, paid request or hardware acceptance occurred.
+
+Final M4 results: 1082 Python tests run, 1078 passed, four skipped; 12 desktop JS
+checks passed; CAP-34 174/174 each arm, zero regressions. Twenty-one planning test
+methods were added. The reserved planning holdout hash is recorded in VALIDATION.md.

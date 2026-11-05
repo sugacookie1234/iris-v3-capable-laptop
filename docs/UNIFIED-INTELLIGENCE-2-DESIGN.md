@@ -132,3 +132,65 @@ No additional network calls, durable trace store, background learning, project
 selection, permission expansion or model change was added. Native reliability remains
 unresolved and in-chat visual fallback remains available. Actual model coherence,
 unseen paraphrases, implicit topic shifts and hardware behavior remain unverified.
+
+## M4 — bounded workspace planning and execution
+
+Use the existing default-off experiment flag, then enter an explicit request such as
+`/plan workspace List the workspace, then read README.md and notes.md`.
+One configured FAST request proposes JSON. Ordinary chat, DEEP and Council are not
+rerouted; Council never authorizes execution. This explicit prefix is an initial
+ingress boundary, not a claim of general autonomous request understanding.
+
+ProposedPlanV1 contains only version=1, host turn reference, unverified objective,
+nodes and candidate context_refs. TaskPlan/validate_plan enforce at most three
+steps, a 90-second total registered-tool timeout budget and bounded scalar arguments.
+Only actually registered workspace_list/workspace_read are exposed. Both are local,
+reversible GREEN tools without declared effects, requiring existing workspace.read.
+No output interpolation or dynamic search-to-file selection is supported. Unknown
+files must be listed or explicitly named; their existence is not asserted in preview.
+
+ToolExecutor dry-run applies trusted argument preparers without running handlers.
+The host validates the prepared representation again and binds a new plan ID,
+revision, five-minute expiry, runtime session, owner request digest and full permitted
+working-context snapshot into a canonical SHA-256 digest. The preview shows prepared
+paths/arguments, order/dependencies, permission and separate approval requirements,
+outputs and limitations. No filesystem observations or tools execute during preview.
+
+The owner must submit the displayed `/confirm-plan <id> <revision> <digest>` through
+authenticated main chat. IDs/digests alone are not permission; an unrelated origin,
+model output or “looks good” statement cannot execute. The current runtime consumes
+the pending confirmation once. Before every sequential step and again after approval,
+it checks context, expiry, unchanged specifications and current permissions.
+Each step uses the existing exact-operation approval dialog, even though the plan
+is already confirmed. Prepared arguments must still exactly match the approved
+snapshot when ToolExecutor invokes the registered handler. No blanket approval exists.
+
+`/cancel-plan <id>` sets a host-owned cancellation event even while a chat execution
+waits for approval. Existing executor cancellation stops its worker; pending approval
+waits now support this optional cancellation signal. Normal legacy approvals retain
+their existing behavior. Terminal workflows cannot replay. Reset or process restart
+invalidates all plan authority; there is no auto-resume or replacement tool selection.
+
+ExecutionReceipt records are generated locally: plan/revision, step, capability,
+canonical argument digest, MODEL provenance, approval status, timestamps, outcome,
+verification, failure/cancellation/uncertainty and an ActionHistory invocation ID.
+The existing observer records attempts and interrupted reads, without a database
+migration. A missing initial audit record blocks execution. Detailed workflow receipts
+are session-only; existing content-free invocation history survives restart. Durable
+effectful recovery and persisted cross-step journals are a later milestone.
+
+Verification means a bounded returned directory/text snapshot matches the expected
+path/schema and has retained invocation evidence. It does not prove project correctness,
+file relevance, complete inspection when truncated, or any arbitrary model objective.
+Malformed results or unavailable verification stop later steps and report unverified
+or uncertain outcomes. A failed run can retain earlier completed-step receipts; its
+summary reports completed and unexecuted counts rather than inventing total success.
+Uncertainty concerns read completion/evidence, not a claim that this read-only slice
+modified files. Existing ActionHistory's generic result remains conservatively unverified;
+M4's more specific returned-data verification is recorded in its session receipt.
+
+Raw tool outputs remain local and are not passed to another step as instructions,
+sent for model synthesis, saved as personal memories or included in working/chat history.
+Only deterministic local summaries are returned. No native window is required.
+This is a synthetic-tested engineering slice, not live planning accuracy or hardware
+acceptance. The existing native reliability gate remains unresolved.
