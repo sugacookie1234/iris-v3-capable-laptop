@@ -58,13 +58,17 @@ def respond_with_memory(
     memory_store: MemoryStore | None = None,
     history: Sequence[LLMMessage] = (),
     obsidian: ObsidianKnowledgeAdapter | None = None,
+    working_context: dict | None = None,
+    include_knowledge: bool = True,
 ):
     """Invoke the brain with canonical persistent context and separate history."""
     started = time.monotonic()
     candidate = obsidian if obsidian is not None else getattr(brain, "_obsidian_knowledge", None)
-    knowledge = candidate if isinstance(candidate, ObsidianKnowledgeAdapter) else None
+    knowledge = candidate if include_knowledge and isinstance(candidate, ObsidianKnowledgeAdapter) else None
     context = assemble_reasoning_context(memory_store, latest_message, obsidian=knowledge)
     kwargs = {"history": tuple(history)}
+    if working_context is not None:
+        kwargs['working_context'] = working_context
     if context is not None:
         kwargs["memory_context"] = context
     emit_timing(

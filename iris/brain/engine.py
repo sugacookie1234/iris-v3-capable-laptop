@@ -106,18 +106,20 @@ class IRISBrain:
             else CouncilExecutor(llm_registry)
         )
 
-    def interpret(self, text, *, turn, context):
+    def interpret(self, text, *, turn, context, working_context=None):
         """One FAST adapter attempt; no tools, memory retrieval, fallback or retry.
 
         The desktop owns opt-in/eligibility and validates the returned proposal.
         The existing provider transport retains durable usage admission.
         """
         from iris.generalist.interpretation import PROMPT, parse
+        from iris.memory.working import prompt
         route = route_message(text)
         response = self._llm_registry.generate(
             target=self._model_policy.fast,
             messages=[LLMMessage(MessageRole.SYSTEM,
-                compile_identity_prompt(self._identity, route.mode) + '\n\n' + PROMPT),
+                compile_identity_prompt(self._identity, route.mode) + '\n\n' + PROMPT
+                + (prompt(working_context) if working_context is not None else '')),
                 LLMMessage(MessageRole.USER, json.dumps({
                     'turn': turn, 'request': text, 'public_example': context}))],
             options=self._options_for(ReasoningLevel.FAST))
@@ -130,6 +132,7 @@ class IRISBrain:
         text: str,
         history: Sequence[LLMMessage] = (),
         memory_context: MemoryContext | None = None,
+        working_context: dict | None = None,
     ) -> BrainResult:
         """Respond with separate caller-owned session and persistent context."""
         if any(message.role not in (MessageRole.USER, MessageRole.ASSISTANT)
@@ -168,6 +171,9 @@ class IRISBrain:
         )
         if self._runtime_context:
             system_prompt += "\n\n# Runtime capabilities\n" + self._runtime_context
+        if working_context is not None:
+            from iris.memory.working import prompt
+            system_prompt += prompt(working_context)
         if memory_context is not None and memory_context.text:
             system_prompt += (
                 "\n\n# Persistent memory context and Obsidian knowledge\n"

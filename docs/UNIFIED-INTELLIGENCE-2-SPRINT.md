@@ -65,3 +65,23 @@ complete as a bounded offline-tested vertical slice, not the whole intelligence 
 - `docs/SPRINT-BACKLOG.md`: dependency-ordered next work.
 - `docs/VALIDATION.md`: exact final regression results.
 - `SECURITY.md`: experimental authority/privacy boundaries.
+
+## M3 incremental checkpoint — 2026-11-05
+
+Recovered 92d65a7 on the development branch; tracked tree was clean and only the
+preserved `tatus -sb` was untracked. No earlier work was replaced. Added bounded
+WorkingContextV1 in the existing memory package, engine/memory integration, runtime
+lifecycle/export filtering and safe broader public-example interpretation.
+Compound state, tools, Council, ledgers and owner databases remain in their existing homes.
+
+Focused validation: **62 tests passed** across working context, interpretation,
+provider admission, brain engine, orchestration and orchestration authority.
+The new working-context module has 19 synthetic test methods. Five separate held-out
+multi-turn cases are reserved and unscored; the original M1/M2 holdout is unchanged.
+Full regression/CAP-34 are pending at this incremental checkpoint. Do not interpret
+focused tests as real-model or hardware acceptance. Native stress remains FAILED.
+
+Next closeout commands: full unittest discovery, twelve desktop checks, CAP-34 with
+the added working_context category; then record exact counts, commit and push.
+After M3 closeout, the next handoff dependency is bounded host-owned plan preview
+and verified receipts, not autonomous execution or new tool permissions.

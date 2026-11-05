@@ -111,6 +111,8 @@ class DesktopRuntime:
             'Current local date: ' + time.strftime('%Y-%m-%d')
         )
         self.history = []
+        from iris.memory.working import WorkingContextV1
+        self.working_context = WorkingContextV1()
         self.turn_lock = threading.Lock()
         self.approval_lock = threading.Lock()
         self.pending = None
@@ -277,6 +279,7 @@ class DesktopRuntime:
             raise BusyError('Wait for the current response before clearing the conversation.')
         try:
             self.history.clear()
+            self.working_context.clear()
             self.orchestrator.clear()
             if self.visual_window:self.visual_window.request(action="close")
             self.vault_commands.current = None
@@ -470,14 +473,37 @@ class DesktopRuntime:
             return DesktopCommands.answer('I kept your action history.')
         return self.vault_commands.handle(command)
 
+    def _context_enabled(self):
+        return self.settings.get('IRIS_EXPERIMENTAL_INTERPRETATION', '').lower() == 'true'
+
+    def _working_snapshot(self):
+        try:
+            return self.working_context.snapshot(self.orchestrator)
+        except Exception:
+            # Context outages must not export unchecked legacy history.
+            return None
+
+    def _remember_conversation(self, text, answer):
+        from iris.memory.working import Source, Privacy, Export
+        try:
+            for content, source in ((text, Source.OWNER), (answer, Source.MODEL)):
+                self.working_context.remember(content, source=source,
+                    privacy=Privacy.CONVERSATION, export=Export.REASONING)
+        except Exception:
+            pass  # Context is optional; a response is not undone by a cache failure.
+
     def _semantic_answer(self, text):
         # Explicit opt-in only. Does not modify persisted owner settings.
-        if self.settings.get('IRIS_EXPERIMENTAL_INTERPRETATION', '').lower() != 'true':
+        if not self._context_enabled():
             return None
         from iris.generalist.interpretation import snapshot, scope, apply, reply, CLARIFICATION
         from iris.brain.router import route_message, ReasoningLevel
         context = snapshot(self.orchestrator)
         eligible = scope(text, context)
+        # Understanding can be broader than execution eligibility. Current public
+        # context permits interpreting a follow-up, never permits a tool by itself.
+        if eligible is None and context and not text.startswith('/'):
+            eligible = 'contextual'
         reasoning = route_message(text).reasoning
         # A bounded public example comparison does not need general DEEP reasoning.
         # Explicit Council requests still retain the existing advisory pipeline.
@@ -485,10 +511,16 @@ class DesktopRuntime:
                 (reasoning != ReasoningLevel.FAST and eligible != 'compound_active')):
             return None
         turn = secrets.token_hex(16)
+        working = self._working_snapshot()
+        if eligible == 'contextual' and working is None:
+            return None
         try:
-            proposal = self.brain.interpret(text, turn=turn, context=context)
+            proposal = self.brain.interpret(text, turn=turn, context=context, working_context=working)
+            if working is not None:
+                self.working_context.validate_snapshot(working, self.orchestrator)
             return apply(proposal, turn=turn, owner_text=text,
-                         orchestrator=self.orchestrator, brain=self.brain)
+                         orchestrator=self.orchestrator, brain=self.brain,
+                         working=self.working_context if working is not None else None)
         except Exception:
             # Fail closed, no model retry/paid fallback, no private error details.
             return reply(CLARIFICATION)
@@ -502,19 +534,35 @@ class DesktopRuntime:
             raise BusyError('IRIS is finishing another request.')
         started = time.monotonic()
         capture = False
-        capture_history = tuple(self.history[-8:])
+        capture_history = () if self._context_enabled() else tuple(self.history[-8:])
         try:
             text = text.strip()
-            local_answer = self._semantic_answer(text) if mode == 'auto' else None
+            enabled = self._context_enabled()
+            if enabled:
+                from iris.memory.working import topic_transition
+                if topic_transition(text):
+                    try:
+                        self.working_context.clear()
+                    except Exception:
+                        pass
+                    self.orchestrator.clear()
+            # Authoritative local commands retain priority over broad interpretation.
+            local_answer = self._awareness_command(text) if enabled and mode == 'auto' else None
+            if local_answer is None and enabled and mode == 'auto':
+                local_answer = self.desktop_commands.handle(text)
+            if local_answer is None:
+                local_answer = self._semantic_answer(text) if mode == 'auto' else None
             if local_answer is None:
                 local_answer = self.orchestrator.handle(text) if mode == 'auto' else None
-            if local_answer is None:
+            if local_answer is None and not enabled:
                 local_answer = self._awareness_command(text) if mode == 'auto' else None
-            if local_answer is None and mode == 'auto':
+            if local_answer is None and mode == 'auto' and not enabled:
                 local_answer = self.desktop_commands.handle(text)
             private_local_answer = local_answer is not None and not local_answer.get('public_context', False)
             if local_answer is not None:
                 self._publish_visual(local_answer)
+                if enabled and local_answer.get('conversation_context'):
+                    self._remember_conversation(text, local_answer['reply'])
                 # Receipts and local configuration must not ride along in a later
                 # model prompt. The UI still displays the complete local answer.
                 if not private_local_answer:
@@ -544,7 +592,7 @@ class DesktopRuntime:
                     'The notebook creates organized Markdown notes and can add/update IRIS sections in '
                     'existing notes or move them when the user supplies exact paths. Local task and goal '
                     'tool writes have standing permission. Email and general screen automation remain unavailable.\n'
-                ) + self.autonomy.context(text)
+                ) + ('' if enabled else self.autonomy.context(text))
             else:
                 self.brain._runtime_context = self._base_context + ' Local task and goal writes ask for confirmation. Automatic organization is paused.'
             query = search_query(text) if mode == 'auto' else None
@@ -588,7 +636,8 @@ class DesktopRuntime:
                     return {'reply': 'I kept that memory.', 'route': 'LOCAL'}
                 message = ('Ask the council: ' + text) if mode == 'council' else text
                 result = respond_with_memory(self.brain, message, memory_store=store,
-                                             history=tuple(self.history))
+                    history=() if enabled else tuple(self.history),
+                    **({'working_context': self._working_snapshot(), 'include_knowledge': False} if enabled else {}))
                 tool_result = getattr(result, "tool_result", None)
                 if (tool_result is not None and tool_result.status == ResultStatus.SUCCESS
                         and getattr(getattr(getattr(tool_result, 'plan', None), 'spec', None), 'name', '')
@@ -600,8 +649,11 @@ class DesktopRuntime:
                         + " Check the saved records before retrying.")
                 if not result.text.strip():
                     raise RuntimeError('The model returned an empty answer. Try another configured model.')
-                self.history.extend([LLMMessage(MessageRole.USER, text),
-                                     LLMMessage(MessageRole.ASSISTANT, result.text)])
+                if enabled and tool_result is None:
+                    self._remember_conversation(text, result.text)
+                if not enabled or tool_result is None:
+                    self.history.extend([LLMMessage(MessageRole.USER, text),
+                                         LLMMessage(MessageRole.ASSISTANT, result.text)])
                 limit = self.config.max_history_turns * 2
                 self.history = self.history[-limit:] if limit else []
                 self.last_route = result.route.reasoning.value

@@ -30,6 +30,7 @@ CORPUS = (
     ('visual_workspace','tests.test_visual_workspace'),
     ('adversarial_authority','tests.test_redteam_authority'),
     ('semantic_interpretation','tests.test_interpretation'),
+    ('working_context','tests.test_working_context'),
 )
 
 
