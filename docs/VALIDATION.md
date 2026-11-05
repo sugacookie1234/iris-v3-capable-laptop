@@ -731,3 +731,14 @@ completion and exact static-resource status/body-size evidence plus JS error nam
 excluding bootstrap fragments/cookies. Observe the pairing promise outcome and
 frontend readiness state. Compare native-created, authenticated-page and rendered
 states; do not increase deadlines or drop the main-origin isolation assertion.
+
+
+Final stabilization Python regression: 1018 run, 1014 passed, four skipped,
+zero failures/errors (181.754s), .local/stabilization-full.log. All twelve desktop
+JavaScript checks passed after the renderer execution-signal addition. Expanded
+IRIS-SEC-001 tests retain private memory/task/goal/chat/approval denial for visual
+credentials. No leftover synthetic native Python processes were found after testing.
+Full native stress remains FAILED as documented above; software regression is not
+native/hardware acceptance. Current pip 26.2 and pip check are verified.
+
+Closeout verification 2026-11-05: saved stabilization full-suite log confirms 1014 pass / four skip; saved stabilization CAP-34 summary confirms 112/112 each arm, zero regressions. Prior twelve JS checks retained, not rerun. Fresh pip version/check: 26.2, no broken requirements. Documentation-only changes require no full regression rerun. Native stress remains FAILED; no hardware acceptance claimed.
