@@ -197,3 +197,15 @@ admission is unchanged and tested with fake transport. Generated text is not an
 approval. This is not a prompt-injection guarantee or a general reasoning sandbox.
 See docs/UNIFIED-INTELLIGENCE-2-DESIGN.md for narrow eligibility and remaining limits.
 Native authentication and the unresolved WebView2 reliability gate are unchanged.
+
+### M3 session context
+
+The default-off interpreter now shares a bounded, expiring, provenance-labelled
+session view with ordinary reasoning. Private/untrusted/local-only references are
+not exported; provider history is not backfilled from legacy chat. Experimental
+mode also disables implicit vault/organizer-record augmentation and organizer history
+replay. Approved persistent-memory policy and explicit tool permissions remain as
+before. Working context grants no authority and is revalidated before applying a
+proposal. Owner-authored free text is not perfectly secret-classifiable; existing
+provider sharing and same-user malware limitations remain. No database migration,
+new remote endpoint or native privilege change occurred.

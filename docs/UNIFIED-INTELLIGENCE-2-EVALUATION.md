@@ -49,3 +49,33 @@ Holdout SHA256: `0A12CD2FD985095C7C371498DD9F77DF915F9BC2291C67AC453CBD5A72BA2A3
 
 Native stress remains FAILED from stabilization; not rerun or repaired here.
 The HP OMEN, actual microphone and real model quality remain unverified in this sprint.
+
+## M3 context evaluation
+
+Twenty new deterministic test methods in `tests/test_working_context.py` exercise
+bounded topic retention, provenance, expiry/clear/restart, live scenario revisions,
+assignment continuity, topic transitions, multiple possible referents, forged IDs,
+UI-to-conversation state, private/retrieved-content exclusion, implicit-vault and
+organizer filtering, tool-result isolation, cancellation and unavailable-context
+fallback. FAST/DEEP/Council use the same filtered view without routing changes or
+an extra ordinary-turn inference. Conditional rate edits still require explicit
+rate units and an exact owner-provided numeric value; unrelated quantities are refused.
+
+Focused context + M1/M2 + routing/authority suite initially passed 62 tests. Final
+targeted context, interpretation and provider suite after rate-unit and deterministic
+lifecycle hardening: 43 passed. These overlap. Lifecycle coverage verifies open,
+close, reopen, pause, resume and cancel without invoking the model.
+The full suite and expanded CAP-34 results are recorded in VALIDATION.md.
+CAP-34 now includes the working_context category; its two arms remain contract
+regressions, not a model intelligence comparison. No paid/live provider was called.
+
+Five reserved multi-turn cases in `tests/fixtures/working_context_holdout.json` have
+NOT been scored or inserted into prompts. SHA256:
+`64752F121CC264CED84B1CEEAD204D59337F6455F0F7750EC1B9B2B0B784D874`.
+The M1/M2 holdout retains its recorded hash unchanged. Real-model coherence, novel
+paraphrases, topic-change detection and latency distributions remain unverified;
+the test suite does not substantiate a general conversational-intelligence claim.
+
+Final M3 acceptance: 1061 Python tests run / 1057 passed / four skipped; 12 desktop
+JS checks passed; CAP-34 153/153 each arm, zero regressions. See VALIDATION.md for
+exact log paths and which earlier runs were superseded by the final hardening fixes.

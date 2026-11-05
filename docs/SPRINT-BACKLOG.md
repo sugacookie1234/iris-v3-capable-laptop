@@ -106,3 +106,18 @@ verified receipts and recovery; no new permissions or autonomous execution here.
 Held-out model benchmarking needs owner-approved providers/call budget. Adaptive
 learning, private transcript training, local benchmarking and skill installation
 remain deferred. Native acceptance remains a separate unresolved gate.
+
+## M3 continuation superseding the prior next-step note
+
+Working context implemented in 9642383; f47870e additionally requires explicit rate
+units to ground contextual numeric edits. Both preserve the default-off flag and
+existing authority. See UNIFIED-INTELLIGENCE-2-SPRINT.md for full validation closeout.
+No task/project selection or private-data ingestion is implied by contextual fluency.
+
+Next milestone: bounded host-owned plan preview and verified execution receipts,
+following the handoff's dependency order. Keep private export policies, cancellation,
+exact-operation approvals and provider budgets as acceptance gates. Before enabling
+the interpreter, obtain an approved synthetic model benchmark and review abstentions;
+do not tune against reserved holdouts. Generalized topic inference and project
+continuity can build on WorkingContext references but require their own validated
+source/authority mapping. Native reliability/hardware acceptance remain separate.

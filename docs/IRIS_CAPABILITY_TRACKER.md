@@ -236,3 +236,14 @@ coverage. Existing IDs are retained; general intelligence/planning remains IN-PR
 See UNIFIED-INTELLIGENCE-2-DESIGN.md and UNIFIED-INTELLIGENCE-2-EVALUATION.md.
 Offline verification is not real-model acceptance. CAP-37 native reliability remains
 blocked; no new visual dependency or privilege was introduced.
+
+## M3 shared context — 2026-11-05
+
+CAP-01/02/32: host-owned bounded WorkingContextV1 now joins ordinary reasoning and
+the experimental interpreter, with provenance/export policy, expiry, live scenario
+revisions and explicit topic resets. Existing CAP-04 permanent memory is preserved;
+this adds no persistent store or autonomous memory promotion. CAP-34 adds twenty
+synthetic context tests. Scope remains default-off and IN-PROGRESS for the broader
+intelligence roadmap; see final VALIDATION.md entry for automated evidence.
+Project selection, generalized implicit topic detection and actual model quality are
+not accepted capabilities. CAP-37 native reliability remains unresolved.

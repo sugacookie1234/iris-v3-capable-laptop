@@ -85,3 +85,33 @@ Next closeout commands: full unittest discovery, twelve desktop checks, CAP-34 w
 the added working_context category; then record exact counts, commit and push.
 After M3 closeout, the next handoff dependency is bounded host-owned plan preview
 and verified receipts, not autonomous execution or new tool permissions.
+
+## M3 final acceptance and handoff
+
+Completed source checkpoints: 9642383, f47870e and 2ecaf40. Final acceptance:
+**1061 Python tests run, 1057 passed, four skipped, zero failures/errors** (144.206s);
+**12/12 desktop JS checks passed**; **CAP-34 153/153 per arm, zero regressions**.
+Logs: `.local/working-context-acceptance.log` and
+`.local/working-context-acceptance-evaluation/summary.md`. Focused final suite: 43 passed.
+The nineteen-test initial context checkpoint was expanded to twenty methods to retain
+deterministic graph/skill lifecycle behavior. Final full regression supersedes the
+earlier 1060-test runs; repeated runs were due to the two substantive final hardening fixes.
+
+M3 is complete as a bounded, offline-tested implementation, still default-off. No
+real-model score or hardware acceptance. No live owner configuration/data was changed.
+`tatus -sb` remains untouched with its recorded hash. Main remains
+`b4e5c9636d02657cb3cd89d368583ee6c8ebd006`. Native WebView2 reliability remains unresolved.
+
+Changed M3 code: `iris/memory/working.py`, `iris/memory/integration.py`,
+`iris/brain/engine.py`, `iris/desktop/runtime.py`, `iris/generalist/interpretation.py`,
+`iris/generalist/evaluation.py`. Tests: `tests/test_working_context.py` and
+`tests/fixtures/working_context_holdout.json`. Documentation: SECURITY.md, this sprint,
+design/evaluation documents, capability tracker, validation and sprint backlog.
+
+Continuation: inspect Git status/log and read this final section and the M3 design.
+Next dependency is a bounded host-owned plan preview with verified receipts, keeping
+existing approvals and permissions. Do not enable general execution, infer a private
+project from ambiguous wording, train on conversations or run paid benchmarks.
+For changes, begin with `python -m unittest tests.test_working_context
+tests.test_interpretation tests.test_interpretation_provider`; rerun full acceptance
+only after material changes. No stabilization restart or holdout tuning is needed.

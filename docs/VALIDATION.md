@@ -765,3 +765,27 @@ The ten reserved holdout prompts are NOT a scored model evaluation. No actual mo
 intent accuracy, conversational intelligence, live latency or provider billing claim.
 No native smoke rerun: historical WebView2 stress remains FAILED and HP OMEN acceptance
 unverified. No voice change, owner-data migration, permission expansion or main merge.
+
+## Unified Intelligence 2.0 M3 — final acceptance 2026-11-05
+
+Implementation: 9642383 (working context), f47870e (rate-unit grounding), 2ecaf40
+(deterministic lifecycle preserved). Final full Python discovery: **1061 run,
+1057 passed, four skipped, zero failures/errors**, 144.206s. Evidence:
+`.local/working-context-acceptance.log`. All **12 desktop JavaScript checks passed**;
+no frontend source changed. Final expanded CAP-34: **153/153 per arm, zero regressions,
+PASS**, `.local/working-context-acceptance-evaluation/summary.md`.
+
+Focused final context/interpretation/provider tests: **43 passed**. An earlier broader
+focused set passed 62 before the additional lifecycle test. Earlier full runs passed
+1060/four skips (143.012s and 122.467s); they were superseded because final review
+added rate-unit and lifecycle hardening. Only the final acceptance log represents
+the complete implementation. All test fixtures used fake providers and temporary
+data; no paid/live provider tests were performed.
+
+Twenty new context test methods cover bounded source-labelled continuity, explicit
+topic changes, live UI revisions, stale/unknown references, privacy/export rules,
+implicit-note filtering, cancellation, context outage, legacy routing and deterministic
+visual lifecycle. Existing full-suite authentication, approvals, quota and private-context
+tests pass, including retained IRIS-SEC-001 coverage. No new security assessment or
+hardware verification is claimed. Native WebView2 stress remains FAILED historically;
+the in-chat fallback remains available. Both holdouts are reserved and unscored.
