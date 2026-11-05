@@ -66,6 +66,10 @@ class IsolatedRedTeamTests(unittest.TestCase):
             self.assertEqual(status,403)
             self.assertNotIn(b'PRIVATE_MARKER',payload);read.assert_not_called()
         self.assertEqual(self.request('POST','/api/chat',{'text':'hello'}, {'Cookie':cookie},host)[0],403)
+        for path in ('/api/tasks','/api/goals','/api/approval'):
+            self.assertEqual(self.request('GET',path,headers={'Cookie':cookie},host=host)[0],403)
+        self.assertEqual(self.request('POST','/api/approval',{'id':'forged','approved':True},{'Cookie':cookie},host)[0],403)
+        self.assertEqual(self.request('POST','/api/chat',{'text':'Open Calculator'},{'Cookie':cookie},host)[0],403)
         self.assertEqual(self.brain.calls,[])
 
     def test_unauthenticated_and_host_origin_confusion(self):

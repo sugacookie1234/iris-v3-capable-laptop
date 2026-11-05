@@ -10,21 +10,32 @@ function visualUpdatePayload(state,values){
   }
   return {id:state.id,revision:state.revision,changes};
 }
+function ensureVisualRenderer(doc,scope){
+  if(typeof scope.renderVisual==='function')return Promise.resolve(scope.renderVisual);
+  return new Promise((resolve,reject)=>{
+    const script=doc.createElement('script');
+    script.src='/visuals.js';script.async=false;
+    script.onload=()=>{if(typeof scope.renderVisual==='function')resolve(scope.renderVisual);else reject(Error('Chart renderer did not initialize.'));};
+    script.onerror=()=>reject(Error('Chart renderer could not load.'));
+    doc.head.append(script);
+  });
+}
 function newerVisual(current,next){return !!next&&Number.isInteger(next.sequence)&&(!current||next.sequence>=current.sequence)&&(!current||next.id!==current.id||next.revision>=current.revision);}
-if(typeof module!=='undefined')module.exports={visualUpdatePayload,newerVisual};
+if(typeof module!=='undefined')module.exports={visualUpdatePayload,newerVisual,ensureVisualRenderer};
 if(typeof window!=='undefined'&&document.getElementById('controls')){
-  let state=null,editState=null,stopped=false,busy=false,dirty=false,timer;
+  let state=null,editState=null,stopped=false,busy=false,dirty=false,timer,renderer;
+  const readiness=value=>{document.documentElement.dataset.visualState=value;};
   const abort=new AbortController(),get=id=>document.getElementById(id);
-  const lease=sessionStorage.getItem('iris.visual.lease');
+  let lease;
   async function request(path,value){
     const response=await fetch(path,{method:value?'POST':'GET',signal:abort.signal,headers:{'Content-Type':'application/json','X-IRIS-Request':'1','X-IRIS-Visual':lease||''},...(value?{body:JSON.stringify(value)}:{})});
     const body=await response.json();
-    if(!response.ok){if(response.status===403||response.status===400&&String(body.error).startsWith('No active visual')){stopped=response.status===403;get('chart').replaceChildren();get('totals').textContent='';get('explanation').textContent='';}const error=Error(body.error||'Visual update failed.');error.status=response.status;throw error;}
+    if(!response.ok){if(response.status===403||response.status===400&&String(body.error).startsWith('No active visual')){stopped=response.status===403;readiness(stopped?'expired':'no-example');get('chart').replaceChildren();get('totals').textContent='';get('explanation').textContent='';}const error=Error(body.error||'Visual update failed.');error.status=response.status;throw error;}
     return body;
   }
   function display(next){
     if(!newerVisual(state,next))return;
-    const box=document.createElement('div');renderVisual(box,next.visual);
+    const box=document.createElement('div');renderer(box,next.visual);readiness('rendered');
     get('chart').replaceChildren(...box.childNodes);state=next;
     get('explanation').textContent=next.summary;
     get('totals').textContent=`Final: ${next.totals.final.toLocaleString()} units · Contributed: ${next.totals.contributed.toLocaleString()} · Growth: ${next.totals.growth.toLocaleString()}`;
@@ -49,5 +60,20 @@ if(typeof window!=='undefined'&&document.getElementById('controls')){
   get('controls').addEventListener('submit',event=>{event.preventDefault();update();});
   get('reset').addEventListener('click',()=>update(true));
   window.addEventListener('pagehide',()=>{stopped=true;clearTimeout(timer);abort.abort();});
-  if(!location.hash)poll();
+  async function initialize(){
+    get('apply').disabled=true;get('reset').disabled=true;get('retry').hidden=true;
+    readiness('authenticating');
+    const paired=await (window.irisPairing||Promise.resolve('ready'));
+    if(stopped||paired!=='ready')return;
+    lease=sessionStorage.getItem('iris.visual.lease');
+    readiness('loading-renderer');
+    try{
+      renderer=await ensureVisualRenderer(document,window);
+      if(stopped)return;
+      readiness('ready');get('apply').disabled=false;get('reset').disabled=false;
+      await poll();
+    }catch(error){if(stopped)return;readiness('asset-error');get('status').textContent=error.message+' Retry loading the chart.';get('retry').hidden=false;}
+  }
+  get('retry').addEventListener('click',()=>initialize());
+  initialize();
 }

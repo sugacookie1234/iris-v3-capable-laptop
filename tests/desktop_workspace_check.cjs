@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {visualUpdatePayload,newerVisual}=require('../web/visual-workspace.js');
+const {visualUpdatePayload,newerVisual,ensureVisualRenderer}=require('../web/visual-workspace.js');
 const state={id:'public-id',revision:2,sequence:4};
 assert.deepEqual(visualUpdatePayload(state,{principal:'1000',rate:'7',years:'10',contribution:'200',compared_rate:''}),{id:'public-id',revision:2,changes:{principal:1000,rate:7,years:10,contribution:200,compared_rate:null}});
 assert.throws(()=>visualUpdatePayload(state,{principal:'<script>'}));
@@ -28,8 +28,8 @@ console.log('Workspace typed updates, stale revision/workflow rejection, field l
     {ok:true,status:200,body:fixture(2)},
     {ok:false,status:409,body:{error:'Stale visual revision'}},
     {ok:true,status:200,body:fixture(2)}];
-  const context={document:{getElementById:element,createElement:()=>({childNodes:[]})},
-    window:{addEventListener(){}},sessionStorage:{getItem:()=> 'synthetic-lease'},
+  const context={document:{documentElement:{dataset:{}},getElementById:element,createElement:()=>({childNodes:[]})},
+    window:{addEventListener(){},renderVisual(){}},sessionStorage:{getItem:()=> 'synthetic-lease'},
     location:{hash:''},AbortController,renderVisual(){},
     setTimeout(fn){timer=fn;},clearTimeout(){},
     async fetch(path,options){sent.push({path,options});const r=responses.shift();
@@ -46,4 +46,29 @@ console.log('Workspace typed updates, stale revision/workflow rejection, field l
   assert.equal(element('rate').value,'8'); // Conflict refreshes authoritative values.
   assert.equal(sent.filter(item=>item.path==='/api/visual/update').length,1);
   console.log('Simulated DOM dirty-form/voice-update conflict rejects stale edits without retry.');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+
+(async()=>{
+ let script;
+ const scope={},doc={createElement:()=>({}),head:{append(value){script=value;}}};
+ const pending=ensureVisualRenderer(doc,scope);let ready=false;pending.then(()=>ready=true);
+ await Promise.resolve();assert.equal(ready,false);assert.equal(script.src,'/visuals.js');
+ scope.renderVisual=()=>{};script.onload();assert.equal(await pending,scope.renderVisual);
+ const failure=ensureVisualRenderer(doc,{});script.onerror();await assert.rejects(failure,/could not load/);
+ const missing=ensureVisualRenderer(doc,{});script.onload();await assert.rejects(missing,/did not initialize/);
+ console.log('Renderer readiness waits for execution and rejects missing/failed assets.');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+
+(async()=>{
+ const vm=require('node:vm');let releasePair,script,requests=0,pagehide;
+ const elements={};const element=id=>elements[id] ||= {childNodes:[],events:{},addEventListener(n,f){this.events[n]=f;},replaceChildren(){}};
+ const context={document:{documentElement:{dataset:{}},head:{append(s){script=s;}},getElementById:element,createElement:()=>({})},
+   window:{irisPairing:new Promise(resolve=>releasePair=resolve),addEventListener(n,f){if(n==='pagehide')pagehide=f;}},
+   sessionStorage:{getItem:()=> 'synthetic'},AbortController,setTimeout(){},clearTimeout(){},fetch(){requests++;throw Error('Unexpected request');}};
+ vm.runInNewContext(source,context);
+ const flush=()=>new Promise(resolve=>setImmediate(resolve));await flush();
+ assert.equal(context.document.documentElement.dataset.visualState,'authenticating');assert.equal(requests,0);assert.equal(script,undefined);
+ releasePair('ready');await flush();assert.equal(context.document.documentElement.dataset.visualState,'loading-renderer');assert.equal(requests,0);
+ pagehide();context.window.renderVisual=()=>{};script.onload();await flush();assert.equal(requests,0);
+ console.log('Pairing completion and renderer readiness gate startup; closing during loading prevents requests.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
