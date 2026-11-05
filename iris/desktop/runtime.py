@@ -470,6 +470,29 @@ class DesktopRuntime:
             return DesktopCommands.answer('I kept your action history.')
         return self.vault_commands.handle(command)
 
+    def _semantic_answer(self, text):
+        # Explicit opt-in only. Does not modify persisted owner settings.
+        if self.settings.get('IRIS_EXPERIMENTAL_INTERPRETATION', '').lower() != 'true':
+            return None
+        from iris.generalist.interpretation import snapshot, scope, apply, reply, CLARIFICATION
+        from iris.brain.router import route_message, ReasoningLevel
+        context = snapshot(self.orchestrator)
+        eligible = scope(text, context)
+        reasoning = route_message(text).reasoning
+        # A bounded public example comparison does not need general DEEP reasoning.
+        # Explicit Council requests still retain the existing advisory pipeline.
+        if (eligible is None or reasoning == ReasoningLevel.COUNCIL or
+                (reasoning != ReasoningLevel.FAST and eligible != 'compound_active')):
+            return None
+        turn = secrets.token_hex(16)
+        try:
+            proposal = self.brain.interpret(text, turn=turn, context=context)
+            return apply(proposal, turn=turn, owner_text=text,
+                         orchestrator=self.orchestrator, brain=self.brain)
+        except Exception:
+            # Fail closed, no model retry/paid fallback, no private error details.
+            return reply(CLARIFICATION)
+
     def chat(self, text, mode='auto'):
         if not isinstance(text, str) or not text.strip() or len(text) > 12000:
             raise ValueError('Enter a message of 1–12000 characters.')
@@ -482,7 +505,9 @@ class DesktopRuntime:
         capture_history = tuple(self.history[-8:])
         try:
             text = text.strip()
-            local_answer = self.orchestrator.handle(text) if mode == 'auto' else None
+            local_answer = self._semantic_answer(text) if mode == 'auto' else None
+            if local_answer is None:
+                local_answer = self.orchestrator.handle(text) if mode == 'auto' else None
             if local_answer is None:
                 local_answer = self._awareness_command(text) if mode == 'auto' else None
             if local_answer is None and mode == 'auto':
@@ -497,7 +522,7 @@ class DesktopRuntime:
                                          LLMMessage(MessageRole.ASSISTANT, local_answer['reply'])])
                     limit = self.config.max_history_turns * 2
                     self.history = self.history[-limit:] if limit else []
-                self.last_route = 'LOCAL'
+                self.last_route = local_answer.get('route', 'LOCAL')
                 return local_answer
             if text.casefold().rstrip('.!') in ('pause automatic organization', 'pause automatic organisation'):
                 self.set_automatic_organization(False)

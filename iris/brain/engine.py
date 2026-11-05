@@ -106,6 +106,25 @@ class IRISBrain:
             else CouncilExecutor(llm_registry)
         )
 
+    def interpret(self, text, *, turn, context):
+        """One FAST adapter attempt; no tools, memory retrieval, fallback or retry.
+
+        The desktop owns opt-in/eligibility and validates the returned proposal.
+        The existing provider transport retains durable usage admission.
+        """
+        from iris.generalist.interpretation import PROMPT, parse
+        route = route_message(text)
+        response = self._llm_registry.generate(
+            target=self._model_policy.fast,
+            messages=[LLMMessage(MessageRole.SYSTEM,
+                compile_identity_prompt(self._identity, route.mode) + '\n\n' + PROMPT),
+                LLMMessage(MessageRole.USER, json.dumps({
+                    'turn': turn, 'request': text, 'public_example': context}))],
+            options=self._options_for(ReasoningLevel.FAST))
+        if response.tool_calls:
+            raise ValueError('Native tool calls are not interpretation data.')
+        return parse(response.text, turn)
+
     def respond(
         self,
         text: str,
