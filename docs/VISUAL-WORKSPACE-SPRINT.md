@@ -165,3 +165,7 @@ awareness, computer control, communications and Business OS expansion were not a
 - `web/visual-workspace.html`
 - `web/visual-workspace.js`
 - `web/visuals.js`
+
+## Stabilization closeout continuation
+
+Stabilization: pairing completion and renderer execution now gate state polling; frontend states distinguish authentication, loading, readiness, actual render, expired access and missing assets. Explicit same-origin retry/reload preserves authority. Stress fixture has two extra cycles, synthetic expiry/recovery and shutdown, bounded to 120 seconds. Native engine/asset failures remain under investigation; see STABILIZATION-CLOSEOUT.md for unsuccessful attempts and hardware checklist.

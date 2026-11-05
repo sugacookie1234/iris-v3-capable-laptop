@@ -85,3 +85,21 @@ See UNIFIED-INTELLIGENCE-2-HANDOFF.md for the implementation plan only. Resolve 
 explicitly accept the remaining native reliability gate before making visual UI
 essential. Keep IRIS-SEC-001 isolation, approval boundaries and private-context
 controls. No Unified Intelligence 2.0 implementation was introduced here.
+
+
+Final native evidence: .local/stabilization-native-final.log completed initial SVG,
+cross-origin denial, voice update, UI submission, main continuity and one reopen,
+then failed during the first additional cycle. Renderer was a function; initialization
+still stalled. Added an explicit iris-renderer-ready execution signal as well as
+resource-load verification, tested with the load callback deliberately absent.
+.local/stabilization-native-handshake.log then timed out before visual creation;
+shutdown passed. Thus final full native stress is FAILED, not accepted. Do not
+infer that renderer readiness resolves all WebView2 startup/reauthentication issues.
+The remaining failure is meaningfully isolated to page/asset/auth-navigation readiness,
+but its engine/transport cause is not proved. Do not expand visual dependence yet.
+
+Next diagnostic step: in a disposable profile capture bounded main/child navigation
+completion and exact static-resource status/body-size evidence plus JS error names,
+excluding bootstrap fragments/cookies. Observe the pairing promise outcome and
+frontend readiness state. Compare native-created, authenticated-page and rendered
+states; do not increase deadlines or drop the main-origin isolation assertion.

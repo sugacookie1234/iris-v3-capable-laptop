@@ -72,3 +72,11 @@ console.log('Workspace typed updates, stale revision/workflow rejection, field l
  pagehide();context.window.renderVisual=()=>{};script.onload();await flush();assert.equal(requests,0);
  console.log('Pairing completion and renderer readiness gate startup; closing during loading prevents requests.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+(async()=>{
+ let signal;
+ const scope={addEventListener(name,fn){signal=fn;},removeEventListener(){}},doc={createElement:()=>({}),head:{append(){}}};
+ const pending=ensureVisualRenderer(doc,scope);scope.renderVisual=()=>{};signal();
+ assert.equal(await pending,scope.renderVisual);
+ console.log('Renderer execution handshake completes even without a resource-load callback.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

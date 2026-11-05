@@ -15,8 +15,10 @@ function ensureVisualRenderer(doc,scope){
   return new Promise((resolve,reject)=>{
     const script=doc.createElement('script');
     script.src='/visuals.js';script.async=false;
-    script.onload=()=>{if(typeof scope.renderVisual==='function')resolve(scope.renderVisual);else reject(Error('Chart renderer did not initialize.'));};
-    script.onerror=()=>reject(Error('Chart renderer could not load.'));
+    const ready=()=>{if(typeof scope.renderVisual==='function'){scope.removeEventListener?.('iris-renderer-ready',ready);resolve(scope.renderVisual);}};
+    scope.addEventListener?.('iris-renderer-ready',ready);
+    script.onload=()=>{if(typeof scope.renderVisual==='function')ready();else {scope.removeEventListener?.('iris-renderer-ready',ready);reject(Error('Chart renderer did not initialize.'));}};
+    script.onerror=()=>{scope.removeEventListener?.('iris-renderer-ready',ready);reject(Error('Chart renderer could not load.'));};
     doc.head.append(script);
   });
 }

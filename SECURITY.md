@@ -10,8 +10,9 @@ independent security certification or guaranteed response SLA.
 See docs/SECURITY-PENTEST-REPORT.md for the 2026-11-04 source-assisted local
 adversarial assessment. Confirmed HIGH visual bootstrap privilege escalation was
 reproduced over HTTP and repaired with separate window origins/cookies. A live OSV
-lookup flagged the installed pip; its narrow update is blocked by Windows file
-permissions. Setup now applies a hash-pinned tooling update before dependencies.
+lookup flagged the old pip; stabilization repaired it offline under the file-owning
+account. Pip 26.2 and dependency consistency are verified. Native reliability remains
+an open gate. Setup applies a hash-pinned tooling update before dependencies.
 Earlier chronological entries below are historical, not the current release gate.
 No external independent penetration test or security certification is claimed.
 
@@ -181,3 +182,7 @@ Only public hypothetical scenario data is supported. This is not protection agai
 malware executing as the same Windows user or trusted-origin code compromise.
 Rollback: revert the native-workspace sprint commits on the development branch;
 there is no owner-data migration to reverse. Do not remove local databases/profiles.
+
+## Stabilization closeout continuation
+
+Stabilization supersedes the installer blocker: local pip 26.2 verified after a hash-verified offline installation under the existing file-owning account; pip check passes. No ACL or administrator-right changes. See docs/STABILIZATION-CLOSEOUT.md. Native asset/readiness failures remain an explicit release gate; deterministic startup checks and recovery were added without weakening IRIS-SEC-001.

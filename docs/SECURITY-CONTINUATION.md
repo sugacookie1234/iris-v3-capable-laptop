@@ -232,3 +232,7 @@ tests.test_redteam_authority; native smoke must run separately from the full sui
 Final CAP-34: 112/112 each arm, zero regressions; .local/security-pentest-evaluation.
 Implementation/report commits: 2d8fc7f, d319da4, 8eb8eaf. Final changes after
 full validation are documentation only. No owner runtime restart was performed.
+
+## Stabilization closeout continuation
+
+Stabilization continuation: baseline 17cbb9e preserved. d138700 adds pairing/renderer startup states, bounded explicit asset retry and no-JavaScript reload link, expanded native stress and security scope checks. Pip 26.2 repair verified without ACL changes or .venv replacement; stale metadata retained in .local/pip-recovery-20261104. Native asset loading/reauthentication failures remain open; do not claim full reliability from one success. Full evidence and owner checklist: STABILIZATION-CLOSEOUT.md. Next architecture plan only: UNIFIED-INTELLIGENCE-2-HANDOFF.md; no intelligence features implemented.

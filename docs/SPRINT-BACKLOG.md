@@ -87,3 +87,7 @@ native asset loading, long-session and OMEN acceptance, transitive hash locking,
 whole-source indirect injection coverage and plaintext-data lifecycle. No external
 security certification. Next major feature remains Unified Intelligence 2.0 after
 these release risks are reviewed; no broader controls/connectors were enabled.
+
+## Stabilization closeout continuation
+
+Stabilization checkpoint: pip blocker resolved locally (26.2), no ACL changes. Native missing-script readiness guarded; engine/asset-load and reauthentication intermittency remains open. Finish this gate and OMEN acceptance before expanding visual dependence. Follow UNIFIED-INTELLIGENCE-2-HANDOFF.md for the next major sprint; do not implement it in this stabilization session.

@@ -20,3 +20,5 @@ function renderVisual(parent,spec){
   for(const row of [['Year',...spec.labels],...spec.points]){const tr=document.createElement('tr');for(const value of row){const td=document.createElement('td');td.textContent=String(value);tr.append(td);}table.append(tr);}details.append(table);box.append(details);parent.append(box);
 }
 if(typeof module!=='undefined')module.exports={renderVisual};
+
+if(typeof window!=='undefined'&&typeof window.dispatchEvent==='function')window.dispatchEvent(new Event('iris-renderer-ready'));

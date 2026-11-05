@@ -222,3 +222,7 @@ CAP-29 continuation: durable desktop/phone-launcher provider admission, explicit
 CAP-01/CAP-32/CAP-37 foundation: bounded local orchestration and stateful compound-interest conversation implemented using the existing renderer; no new tool authority. CAP-29 default provider admission and private local-result history isolation improved. Still in progress; see ORCHESTRATION-SPRINT.md. No general autonomous execution or native Visual Workspace claim.
 
 CAP-37: separate native Visual Workspace, bounded interactive compound controls and two-way conversation state implemented; local real WebView2 smoke verified SVG/update/UI-to-host/close/reopen with synthetic data. Still requires target-device audio, multi-monitor and prolonged lifecycle acceptance. CAP-29 visual lease and revision tests preserve existing authority; no decision cards or private visual data added. See VISUAL-WORKSPACE-SPRINT.md.
+
+## Stabilization closeout continuation
+
+Stabilization: CAP-29 local pip upgrade verified; CAP-37 deterministic pairing/renderer readiness and recoverable asset handling implemented. Native repeated lifecycle/reauthentication acceptance remains a release gate, not completed by DOM tests. CAP-34/security assertions retained. Unified Intelligence 2.0 remains a handoff document only.

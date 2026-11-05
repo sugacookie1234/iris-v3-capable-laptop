@@ -709,3 +709,25 @@ unresolved despite a later pass. No security assertion or timeout was weakened.
 Final CAP-34: 112/112 each arm, zero regressions; .local/security-pentest-evaluation.
 Implementation/report commits: 2d8fc7f, d319da4, 8eb8eaf. Final changes after
 full validation are documentation only. No owner runtime restart was performed.
+
+## Stabilization closeout continuation
+
+Stabilization focus: 26 Python security/bootstrap/workspace/authority tests passed before final full regression; all twelve desktop JavaScript checks passed, including pairing-order, renderer-load success/failure, close-during-load and stale-form tests. Pip 26.2 and pip check verified with no broken requirements or stale-distribution warning. Physical keyboard/audio/monitor acceptance remains unverified. Native stress includes unsuccessful attempts described in STABILIZATION-CLOSEOUT.md; final exact results follow.
+
+
+Final native evidence: .local/stabilization-native-final.log completed initial SVG,
+cross-origin denial, voice update, UI submission, main continuity and one reopen,
+then failed during the first additional cycle. Renderer was a function; initialization
+still stalled. Added an explicit iris-renderer-ready execution signal as well as
+resource-load verification, tested with the load callback deliberately absent.
+.local/stabilization-native-handshake.log then timed out before visual creation;
+shutdown passed. Thus final full native stress is FAILED, not accepted. Do not
+infer that renderer readiness resolves all WebView2 startup/reauthentication issues.
+The remaining failure is meaningfully isolated to page/asset/auth-navigation readiness,
+but its engine/transport cause is not proved. Do not expand visual dependence yet.
+
+Next diagnostic step: in a disposable profile capture bounded main/child navigation
+completion and exact static-resource status/body-size evidence plus JS error names,
+excluding bootstrap fragments/cookies. Observe the pairing promise outcome and
+frontend readiness state. Compare native-created, authenticated-page and rendered
+states; do not increase deadlines or drop the main-origin isolation assertion.

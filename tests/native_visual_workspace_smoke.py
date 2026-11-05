@@ -60,6 +60,7 @@ with tempfile.TemporaryDirectory(prefix='iris-visual-smoke-',ignore_cleanup_erro
             result['reopen']=second is not child
             result['stress_cycles']=0
             for iteration in range(2):
+                result['phase']=f'stress-{iteration+1}'
                 runtime.chat('Close the graph');wait_for(lambda:runtime.visual_window.window is None)
                 runtime.chat('Open the graph again');current=wait_for(lambda:runtime.visual_window.window)
                 wait_for(lambda:current.evaluate_js("document.documentElement.dataset.visualState === 'rendered'"))
@@ -69,11 +70,13 @@ with tempfile.TemporaryDirectory(prefix='iris-visual-smoke-',ignore_cleanup_erro
                 current.evaluate_js("document.getElementById('principal').value='3000';document.getElementById('controls').dispatchEvent(new Event('submit',{cancelable:true}));")
                 wait_for(lambda:runtime.visual_state()['parameters']['principal']==3000)
                 result['stress_cycles']+=1
+            result['phase']='lease-expiry'
             server=servers[0]
             with server._bootstrap_lock:
                 server._visual_session=(server._visual_session[0],0)
             wait_for(lambda:current.evaluate_js("document.documentElement.dataset.visualState === 'expired'"))
             result['expiry']=True
+            result['phase']='reauthentication'
             runtime.chat('Open the graph again')
             wait_for(lambda:current.evaluate_js("document.documentElement.dataset.visualState === 'rendered'"))
             result['reauthentication']=runtime.visual_window.window is current
