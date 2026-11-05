@@ -158,6 +158,19 @@ class WorkingContextRuntimeTests(unittest.TestCase):
         _,request=self.interpreted('Could it be eight percent instead?','update',{'rate':8})
         self.assertEqual(json.loads(request.messages[-1].content)['public_example']['parameters']['principal'],2000)
 
+    def test_existing_window_and_skill_lifecycle_remains_deterministic(self):
+        self.start()
+        with patch.object(self.fast,'generate',side_effect=AssertionError('Lifecycle must stay local')):
+            self.assertEqual(self.app.chat('Open the graph')['window_action'],'open')
+            self.assertEqual(self.app.chat('Close the graph')['window_action'],'close')
+            self.assertEqual(self.app.chat('Open it again')['window_action'],'open')
+            self.app.chat('Pause the example')
+            self.assertEqual(self.app.orchestrator.context.skill.state.value,'paused')
+            self.app.chat('Resume the example')
+            self.assertEqual(self.app.orchestrator.context.skill.state.value,'active')
+            self.app.chat('Cancel the example')
+            self.assertIsNone(self.app.orchestrator.context)
+
     def test_hallucinated_and_expired_working_reference_refused(self):
         self.start()
         answer,_=self.interpreted('Interesting, what about that?',kind='question',capability=None,ref={'id':'f'*32,'revision':0})

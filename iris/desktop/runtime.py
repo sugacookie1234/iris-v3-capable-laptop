@@ -499,6 +499,16 @@ class DesktopRuntime:
         from iris.generalist.interpretation import snapshot, scope, apply, reply, CLARIFICATION
         from iris.brain.router import route_message, ReasoningLevel
         context = snapshot(self.orchestrator)
+        # Keep existing deterministic window/skill lifecycle commands out of the
+        # broader semantic path. They do not require a model or new permissions.
+        query = normalize(text)
+        if context and (query in ('open it again', 'bring it back', 'open it in the workspace',
+                'open that in the workspace', 'show that in the visual workspace',
+                'show it in the visual workspace', 'open the visual workspace',
+                'close the graph', 'close graph', 'close the workspace') or
+                re.fullmatch(r'(?:show(?: me)?|open|bring)(?: (?:me|it|that|the))?(?: graph| back| again| in the workspace| workspace)(?: again| back)?', query) or
+                re.fullmatch(r'(?:cancel|stop|finish|complete|pause|resume)(?: (?:this|the))?(?: example| explanation| skill)?', query)):
+            return None
         eligible = scope(text, context)
         # Understanding can be broader than execution eligibility. Current public
         # context permits interpreting a follow-up, never permits a tool by itself.
