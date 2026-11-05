@@ -149,6 +149,8 @@ def _validate_change_request(text, operation, changes):
            'contribution' if re.search(r'\b(?:contribution|monthly)\b', query) else
            'principal' if re.search(r'\b(?:principal|starting amount)\b', query) else
            'years' if re.search(r'\b(?:years|duration)\b', query) else 'rate')
+    if key in ('rate', 'compared_rate') and not re.search(r'\b(?:rate|percent|per cent)\b|%', query):
+        raise ValueError('A number alone does not identify an annual rate.')
     tokens = re.findall(r'(?<![\w.])-?\d+(?:\.\d+)?(?![\w.])|\b(?:' + '|'.join(_SMALL) + r')\b', query)
     if len(tokens) != 1 or set(changes) != {key}:
         raise ValueError('Specify one parameter and value.')

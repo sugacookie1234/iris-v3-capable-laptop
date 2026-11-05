@@ -133,6 +133,8 @@ class WorkingContextRuntimeTests(unittest.TestCase):
         answer,_=self.interpreted('Could it be nine percent instead?', 'update',{'rate':12})
         self.assertEqual(answer['reply'],CLARIFICATION)
         self.assertEqual(self.app.orchestrator.context.skill.rate,8)
+        answer,_=self.interpreted('Could there be eight projects?', 'update',{'rate':8})
+        self.assertEqual(answer['reply'],CLARIFICATION)
 
     def test_ambiguous_reference_has_no_tool_effect(self):
         self.start()
