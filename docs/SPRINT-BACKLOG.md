@@ -157,3 +157,17 @@ unknown-cost consent; then human review and any quality findings. Never infer qu
 from fake-provider passes. Multi-provider/multi-model comparisons and live confirmed
 workflow execution are future scoped expansions, not silently enabled capabilities.
 M5 remains the next development milestone; do not start it within this sprint.
+
+
+## M4.7 handoff
+
+Minimal canonical identity refinement and separate offline context-discriminating
+fixtures are implemented. Historical approved-pilot-001 evidence is preserved. No
+automatic live rerun or rollout is authorized. If the owner requests another pilot,
+first review exact cases, revised identity fingerprint, model, budget and monetary
+uncertainty; the conversation development set currently rejects real mode.
+
+Next substantial milestone is M5: Bounded Recovery & Persistent Project Continuity.
+Do not infer reliable conversational intelligence from scripted fixture success;
+retain the current privacy, authority and default-off boundaries. Native WebView2
+reliability and hardware acceptance remain separate unresolved gates.

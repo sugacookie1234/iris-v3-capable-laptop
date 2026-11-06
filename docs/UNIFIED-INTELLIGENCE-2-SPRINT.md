@@ -289,3 +289,34 @@ execution context; no production path-security assertion was weakened. One new m
 fixture was corrected to use the router's existing read-file OPERATIONS trigger.
 No inference calls were made. Cross-turn address avoidance remains a prompt preference:
 bounded context may be absent, trimmed or cleared. Historical pilot files are intact.
+
+
+## M4.7 checkpoint B — context and conversation evaluation
+
+9c6eda8 adds an offline-only, separate ten-case conversation development set and
+limited lexical oracles with negative examples. Existing WorkingContext now carries
+assistant replies in the benchmark as model-inferred text, matching production's
+bounded transient context. No second history store or persistent-memory change.
+Thirty focused personality/evaluation/route tests passed; sets overlap checkpoint A.
+Ten fake calls, ten expected outcomes and 40 lexical checks passed in the dedicated
+report. Human scores remain null. Full acceptance evidence belongs in VALIDATION.md.
+
+Production response paths use the same canonical identity, including Council's final
+synthesis. Cross-turn style is not deterministic: context can be missing, expired,
+trimmed or deliberately reset. The prior live pilot's absent honorific is not proof
+of a missing prompt, and these synthetic checks do not establish real-model adherence.
+No new live request was made; prior pilot files and frozen holdouts remain untouched.
+
+
+### M4.7 final handoff
+
+Offline refinement accepted: 1114 Python tests passed / four skipped (1118 run),
+12 JS checks passed, CAP-34 213/213 each arm with zero regressions. See VALIDATION.md
+for logs, checksums and limitations. d196c3a is the minimal canonical prompt checkpoint;
+9c6eda8 adds context-discriminating offline evaluation and benchmark context fidelity.
+The final closeout records acceptance only; no further live inference was authorized.
+
+Next: owner review of wording and optional separately scoped live validation; the
+next substantial development milestone is M5 Bounded Recovery & Persistent Project
+Continuity. Do not activate experiments or infer real-model understanding from these
+scripted tests. Preserve existing authorities and the unresolved native release gate.

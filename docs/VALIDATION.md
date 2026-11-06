@@ -894,3 +894,41 @@ remote-cancellation guarantee exists. A separately approved pilot and actual hum
 review remain necessary before judging quality or enabling experimental features.
 Native WebView2 reliability remains unresolved. No M5 implementation, owner-data
 migration, credentials/settings change or main merge occurred.
+
+
+## M4.7 conversational refinement acceptance — 2026-11-06
+
+- Checkpoint A: 29 identity/personality/brain tests passed; canonical identity
+  compilation and actual fake-provider NORMAL/OPERATIONS/COMPANION/URGENT,
+  FAST/DEEP/Council delivery checked. No literal honorific postprocessing added.
+- Checkpoint B: 30 focused conversation/personality/evaluation/route tests passed,
+  12.954 seconds; `.local/conversation-focused.log`. These sets overlap.
+- Full discovery, once after implementation stabilized: **1118 run, 1114 passed,
+  four skipped**, zero failures/errors, 274.720 seconds;
+  `.local/conversation-refinement-full.log`. This longer run completed normally;
+  no failing assertion was skipped or weakened and no second full run was needed.
+- All **12 desktop JavaScript checks passed**; automated, not hardware acceptance.
+- CAP-34: **213/213 baseline, 213/213 candidate**, zero regressions;
+  `.local/conversation-refinement-contracts/results.json` and `summary.md`.
+- Separate offline conversation set: **10 cases / 10 fake calls**, 10/10 fixture
+  expectations and prompt checks, 40/40 limited lexical checks. Negative examples
+  fail the checks, including repeated address, multiple generic questions, literal
+  stage directions, unsupported success and an irrelevant contextual response.
+  Artifacts: `.local/conversation-refinement-offline/{results.json,summary.md,review.json}`.
+  All ten human-review score records remain null/unreviewed. No real-model claims.
+
+Historical approved pilot JSON files remain byte-identical (results SHA256
+D28FCECF960C936CA18FB3D51BFDC345A3F735B9D505F35C20281F84C80CE6E3;
+review SHA256 63E231218084476013223C95C382926405A736442D8467BCB2A6E34973B57329).
+All three frozen holdouts retain their previously recorded hashes and are unscored.
+tatus -sb remains unchanged/untracked with hash
+F86ED9018F5473F692F3EAE494C4F62B988CD12FDAD06525AE61BA3C538CE37F.
+
+Accepted only as an offline-tested conversational refinement. Missing sir in three
+historical responses does not prove an assembly defect; prompt inclusion was intact.
+Actual adherence, naturalness and context comprehension still require separately
+approved live evaluation. Bounded assistant-context retention improves benchmark
+fidelity but cannot guarantee cross-turn address behavior, especially after clearing
+or expiry. No owner data, credentials, voice settings, tool authority, provider model
+policy, rollout flags or main changed. M5 was not started; native reliability remains
+unresolved. Main remains b4e5c9636d02657cb3cd89d368583ee6c8ebd006.

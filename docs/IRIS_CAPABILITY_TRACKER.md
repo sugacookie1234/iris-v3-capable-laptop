@@ -278,3 +278,13 @@ measurement, no-label export and local human review. Real-model competence remai
 UNVERIFIED; human quality remains UNREVIEWED. Live pilot scope is intentionally limited
 to synthetic response/interpretation/previews, with no owner-data access or rollout.
 Existing capability IDs and default-off settings are preserved. See final validation.
+
+
+## M4.7 conversational refinement
+
+Canonical identity now gives clearer natural address/acknowledgement preferences,
+short topic-transition guidance and proportionate analysis without duplicate prose
+and tables. No postprocessor forces sir and no routing, tool authority or voice
+provider setting changed. CAP-34 gains prompt-path and context-refinement regression
+checks. Real-model personality consistency and context comprehension remain UNVERIFIED;
+local human-review ratings remain UNREVIEWED. See final VALIDATION.md evidence.
