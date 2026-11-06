@@ -315,3 +315,16 @@ CAP-34 252/252 per arm, zero regressions. Real single-account DPAPI plus synthet
 cross-account keys, not physical cross-device acceptance. No provider inference or
 experiment activation. Physical transfer, power-loss behavior and native reliability
 remain unverified; see VALIDATION.md and ENCRYPTED-BACKUP.md for exact limits.
+
+## M6 offline evaluation preparation
+
+TESTED: separate 22-case context/interpretation/planning/security development corpus;
+pre-host plan field scoring; dependency metric; identical-task offline reasoning-route
+comparisons; private project exclusion; case+prompt-bound preflight; unchanged raw
+response review with optional model blinding. No new capability authority or IDs.
+
+Evidence: 34 focused tests; full Python 1,162 passed/four skipped; JS12; CAP-34 261/261
+per arm, zero regressions. 28 fake calls produced 24 unscored response records. These
+are measurement/contract results only. Real-model quality is PENDING, rollout is NOT
+AUTHORIZED. No owner data export, live inference, hybrid routing or model promotion.
+Exact proposed pilot and limitations: UNIFIED-INTELLIGENCE-2-EVALUATION.md.

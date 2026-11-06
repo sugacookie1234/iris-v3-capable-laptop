@@ -198,3 +198,18 @@ active directory is supported. Those are separate explicit owner-controlled task
 Next major intelligence milestone remains M6: real-model evaluation and measured
 rollout review with separate exact scope/budget approval. M5.1 does not authorize
 provider contact or global feature activation. Native reliability remains unrelated.
+
+## M6 pending live gate
+
+Offline M6 preparation adds independent proposal scores, same-task fake-route
+comparisons, protected project-context exclusion and owner-readable unscored review.
+No live model quality is accepted. The exact proposed five-attempt, 180-second,
+synthetic-only OpenRouter pilot is documented in UNIFIED-INTELLIGENCE-2-EVALUATION.md.
+Its case+prompt fingerprints and monetary/logging risks require fresh explicit owner
+approval before any inference. The historical three-attempt approval is exhausted.
+
+Do not enable the experiment, start a Council run, execute live benchmark tools,
+implement hybrid local/cloud routing, or advance beyond this evidence gate merely
+because offline contracts pass. Native WebView2 and physical hardware acceptance
+remain separate unresolved gates. Future limited rollout requires actual model
+results, genuine human review, adequate samples and separate owner authorization.

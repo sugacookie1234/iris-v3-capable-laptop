@@ -465,3 +465,16 @@ counts include intentional adverse fixtures and are not intelligence scores. Ful
 report/review artifacts: .local/m6-offline. Exact proposed pilot, preflight hashes,
 provisional thresholds, logging/billing risks and approval requirement are in
 UNIFIED-INTELLIGENCE-2-EVALUATION.md. No live inference or rollout occurred.
+
+## M6 checkpoint C — offline preparation accepted; live gate pending
+
+Full acceptance: 1,162 Python passed/four skipped; JS12 passed; CAP-34 261/261 per arm,
+zero regressions. Focused evaluation/admission suite 34 passed. Offline development
+22 cases/24 turns/28 fake calls, 24 unscored review records; see VALIDATION.md for
+counts and limitations. No source changes after validation, no real inference.
+
+The separate five-attempt proposal and exact non-contacting preflight are ready for
+owner review in EVALUATION.md. Do not execute Checkpoint D without new explicit
+provider/model/scope/prompt/budget and residual-cost approval. Do not infer rollout
+readiness from offline success. Human review and adequately sized real evidence
+remain pending. Preserve in-chat fallback and all current authority/privacy controls.

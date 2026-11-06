@@ -1019,3 +1019,56 @@ protection, abrupt power-loss recovery and physical cross-device acceptance are 
 claimed. Native WebView2 reliability remains unresolved. No complete laptop/vault/
 settings/credential backup or autonomous recovery is provided. See ENCRYPTED-BACKUP.md.
 M6, hybrid-model architecture changes, live pilots and rollout were not started.
+
+## M6 offline preparation acceptance — 2026-11-06
+
+Recovered 736f6e5, only tatus -sb untracked. Implementation checkpoints 649f6c1 and
+0e428b7 are pushed. No previous milestone was rebuilt, no live inference occurred,
+and the experimental interpreter remains off by default.
+
+Evidence on stabilized source:
+- 34 focused evaluation/admission tests passed, zero skips/failures/errors, 6.337s.
+  .local/m6-focused.log. Includes nine new M6 cases and existing transport/budget tests.
+- Full Python discovery: 1,166 run, 1,162 passed, four skipped, zero failures/errors,
+  194.010s. .local/m6-full-regression.log. One full run after source stabilization.
+- All 12 desktop JavaScript checks passed; observed result recorded in
+  .local/m6-desktop-checks-summary.txt. Automated checks, not hardware acceptance.
+- CAP-34: 261/261 baseline and 261/261 candidate, identical case sets, zero regressions,
+  gate PASS. .local/m6-contracts/{results.json,summary.md}. Not a model comparison.
+- Intelligence development: 22 synthetic cases/24 turns, 28 fake adapter calls,
+  zero external inference calls/cost; fixture expectations PASS. Prompt boundaries
+  28/28; limited lexical checks 45/45. .local/m6-offline/{results.json,summary.md,
+  review.json,review.md}. All 24 review records have null scores; no human ratings.
+- Semantic fixture counts (not model quality): intent 6/7, capability 8/9, arguments
+  8/9, context 6/7, abstention 1/1; host acceptance 21/24; plan validity 2/2;
+  dependencies 2/2; verified synthetic execution 1/1; explicit security expectations
+  3/3. Intentional adverse fixtures are not reclassified as model successes.
+- Same-task controlled offline FAST/DEEP/Council requests consumed 1/1/5 calls.
+  Exact live-mode CLI was exercised with fake transport/network blocked, consuming
+  five synthetic attempts and retaining usage/cost uncertainty correctly.
+
+Preflight proposed cases m6-specific-context, m6-eight, m6-preview made no provider
+contact. Scope 7d185a41c9112974c5649a2c3f81c6fced0447b8b706ce860eec3fa85902c68b;
+prompt configuration a936c18ebf2c27945efb1e70bc6302762e8bd102e748d02a91c31cd5cc649fcb.
+The proposed result directory remains unused. Exact approval procedure, source-linked
+public availability/pricing/logging findings and provisional thresholds appear in
+UNIFIED-INTELLIGENCE-2-EVALUATION.md. Public docs were read without credentials;
+no owner API account or quota was queried. No fresh live approval has been received.
+
+Holdouts unchanged/unscored: interpretation
+0A12CD2FD985095C7C371498DD9F77DF915F9BC2291C67AC453CBD5A72BA2A3C;
+working 64752F121CC264CED84B1CEEAD204D59337F6455F0F7750EC1B9B2B0B784D874;
+plan B5D709E5704FB3019B3E8F3712B4FA6B6E277019DDBA64EA8CED999ACBE46C19.
+Historical approved-pilot-001 results/review retain hashes
+D28FCECF960C936CA18FB3D51BFDC345A3F735B9D505F35C20281F84C80CE6E3 and
+63E231218084476013223C95C382926405A736442D8467BCB2A6E34973B57329.
+tatus -sb remains unchanged/untracked (F86ED9018F5473F692F3EAE494C4F62B988CD12FDAD06525AE61BA3C538CE37F).
+main/origin-main remain b4e5c9636d02657cb3cd89d368583ee6c8ebd006.
+
+Offline preparation PASS. Real-model quality PENDING. Experimental rollout NOT
+AUTHORIZED. Private project understanding cannot be measured by exporting private
+records against their policy; continuity results here are host contracts. No owner
+store/credential operations, provider/voice/default changes or new capabilities.
+Native WebView2 reliability, physical hardware and cross-account backup acceptance
+remain separate unresolved gates. No model ranking, general intelligence, perfect
+prompt-injection defense or security certification is claimed.

@@ -312,3 +312,23 @@ execution requires a new preview and all current confirmations/approvals. The
 /project recovery command reads no store and gives non-destructive recovery options,
 even with the experiment disabled. No cleanup, migration or provider call occurs.
 See ENCRYPTED-BACKUP.md for unchanged CLI commands, compatibility and recovery limits.
+
+## M6 evaluation boundaries
+
+M6 reuses the existing benchmark runner, not a new reasoning/execution system.
+Development-set m6 contains a separate synthetic corpus. Raw model plan fields are
+scored before host acceptance; dependency accuracy is reported separately. Rendered
+response review is local, preserves exact output hashes and leaves human scores blank.
+Model blinding removes provider/model metadata only; wording/route can reveal clues.
+
+Private project identity stays host-local. That corpus case creates a protected
+synthetic record and local WorkingContext reference but exports neither title nor ID.
+It cannot be admitted to a live benchmark. Controlled same-task route overrides and
+actual synthetic tool execution are also offline-only; production routing, Council,
+ToolExecutor and permissions remain unchanged. Live planning remains non-executing.
+
+M6 consent binds the selected-case fingerprint plus a fingerprint of canonical
+identity/prompt-producing source; this is not a byte hash of dynamic context IDs.
+CLI preflight checks that binding without provider contact. The existing durable
+adapter budget and normal provider ledger remain authoritative; no new transport,
+retry, fallback, model selection or automatic activation is introduced.
