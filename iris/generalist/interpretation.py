@@ -191,7 +191,8 @@ def apply(proposal, *, turn, owner_text, orchestrator, brain, working=None):
             authority=AuthorityContext(explicitly_requested=True, permissions=brain._tool_permissions),
             approve=brain._tool_approval)
         if result.status != ResultStatus.SUCCESS:
-            return reply('I could not list the workspace. No successful result was verified.')
+            return reply('I could not list the workspace. No successful result was verified.',
+                         response_source='host_tool_result',capability_applied=False)
         # No cloud synthesis or cloud-history export of the private listing.
         entries = result.value['entries']
         text = 'Workspace entries:\n' + '\n'.join(entry['name'] for entry in entries)
@@ -199,7 +200,7 @@ def apply(proposal, *, turn, owner_text, orchestrator, brain, working=None):
             text = 'The workspace contains no visible entries.'
         if result.value.get('truncated'):
             text += '\nOnly the first 200 entries are shown.'
-        return reply(text)
+        return reply(text,response_source='host_tool_result',capability_applied=True)
     operation = proposal.arguments['operation']
     if operation == 'start':
         if allowed != 'compound_start':

@@ -62,11 +62,13 @@ fingerprints, blank human scores and stopped admission ledger. Separate reconstr
 
 ## Checkpoint evidence
 
-92 focused tests passed, zero failures/errors/skips, 8.411s. Ten new corrective tests
+93 focused tests passed, zero failures/errors/skips, 8.869s. Eleven new corrective tests
 are included in CAP-34. First focused attempt under the default temporary directory
 hit filesystem access restrictions in existing workspace/vault tests. Repeating with
 TEMP/TMP inside the authorized workspace passed; no permissions or assertions changed.
 Full acceptance follows in VALIDATION.md; this entry alone is not full acceptance.
+Successful workspace listing is also explicitly distinguished from a refused attempt;
+simulated plan confirmation is recorded only when the execution path reaches it.
 
 ## Remaining gates
 

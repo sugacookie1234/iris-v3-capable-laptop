@@ -149,5 +149,18 @@ class M6CorrectiveTests(unittest.TestCase):
             self.assertEqual(row['tool_execution_count'],0)
             self.assertIsNone(row['host_response'])
 
+    def test_registered_listing_outcome_is_distinct_from_attempt(self):
+        case=next(c for c in ev.load_cases() if any(t['fake'].get('output',{}).get('capability')=='workspace_list' for t in c['turns']))
+        case=copy.deepcopy(case)
+        row=ev.evaluate(cases=[case])['rows'][0]
+        self.assertTrue(row['capability_applied'])
+        self.assertEqual(row['host_response_source'],'host_tool_result')
+        self.assertEqual(row['tool_execution_count'],1)
+        case['deny_permission']=True
+        row=ev.evaluate(cases=[case])['rows'][0]
+        self.assertFalse(row['capability_applied'])
+        self.assertEqual(row['tool_execution_count'],0)
+        self.assertIn('No successful result was verified',row['host_response'])
+
 
 if __name__=='__main__':unittest.main()

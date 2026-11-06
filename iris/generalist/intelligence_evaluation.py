@@ -332,6 +332,7 @@ def run_case(case, root, provider):
                         run.cancel(plan.id)
                     else:
                         # ONLY disposable fixed fixture resources. Never owner authority.
+                        row['plan_confirmation_simulated'] = True
                         run.execute(plan.id,plan.revision,plan.digest,session='benchmark',
                             approve=lambda operation:Approval(operation.id,not case.get('deny_approval',False)))
                     row['receipts'] = [{'capability':r.capability,'status':r.status,'verification':r.verification,
@@ -400,7 +401,6 @@ def run_case(case, root, provider):
         effects = [r for r in history.rows() if r['id'] not in prior_receipts
                    and r.get('verification') != 'not_executed']
         row['tool_execution_count'] = len(effects)
-        row['plan_confirmation_simulated'] = bool(case.get('execute') and not case.get('cancel_plan'))
         if expected.get('no_effects'):
             changed = interpretation.snapshot(orchestrator) != active
             row['permission_violations'] = len(effects) + int(changed)
