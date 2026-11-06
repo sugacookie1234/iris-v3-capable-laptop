@@ -176,6 +176,7 @@ class LiveBenchmarkProvider:
         self.attempts = []
         self.lock = threading.Lock()
         self.reviews = []
+        self.responses = []  # Synthetic benchmark output; persisted only in local review artifacts.
 
     def generate(self, request):
         try:
@@ -198,6 +199,7 @@ class LiveBenchmarkProvider:
                 record.update(status='completed',
                     input_tokens=response.input_tokens if type(response.input_tokens) is int and response.input_tokens>=0 else None,
                     output_tokens=response.output_tokens if type(response.output_tokens) is int and response.output_tokens>=0 else None)
+                self.responses.append(response.text)
                 return response
             except BaseException as error:
                 record['status'] = 'failed_or_cancelled_billing_unknown'

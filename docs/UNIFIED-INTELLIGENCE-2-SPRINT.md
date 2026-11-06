@@ -449,3 +449,19 @@ Seven new M6 tests plus 25 existing benchmark/admission tests passed (32 total).
 Fake transport exercises the real CLI path; no real provider was contacted. Public
 provider documentation was read without credentials. Source preparation is not
 permission to make an inference request or enable the experiment.
+
+## M6 checkpoint B — benchmark readiness
+
+34 focused tests pass, including a fake-transport real-mode M6 CLI with the exact
+five-attempt scope, prompt binding, durable admission and local raw-response review.
+Direct evaluate() also refuses live execution/private-project/controlled-route cases.
+The same-task offline route test counts FAST=1, DEEP=1, Council=5 attempts. Human
+review records can be model-blinded without modifying responses or inventing scores.
+
+Final offline development run: 22 cases, 24 turns, 28 fake adapter calls, zero external
+calls; fixture expectations PASS, prompt boundary 28/28, lexical checks 45/45. One
+real registered two-step synthetic workspace workflow completed offline. Semantic
+counts include intentional adverse fixtures and are not intelligence scores. Full
+report/review artifacts: .local/m6-offline. Exact proposed pilot, preflight hashes,
+provisional thresholds, logging/billing risks and approval requirement are in
+UNIFIED-INTELLIGENCE-2-EVALUATION.md. No live inference or rollout occurred.

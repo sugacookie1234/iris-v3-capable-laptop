@@ -349,3 +349,95 @@ Private project identity is deliberately excluded from provider-facing context.
 The local WorkingContext reference exists for host inspection, not permission or
 cloud synthesis. M5 does not establish real-model project-reference understanding.
 No new live pilot, personal-data export or human-quality score is authorized here.
+
+## M6 methodology and pilot proposal (pre-result, 2026-11-06)
+
+Offline preparation only; real-model quality remains PENDING and rollout is NOT
+AUTHORIZED. CAP-34 compares host contracts/guidance, not language models. Historical
+approved-pilot-001 remains untouched and is not counted as new evidence.
+
+Development corpus: tests/fixtures/m6_development.json, 22 cases/24 turns across
+conversation, contextual references, interpretation, planning, reasoning comparisons,
+private continuity and security. It is separate from frozen holdouts. Scripted answers
+validate measurement, not comprehension. Actual registered handlers execute only in
+the offline disposable execution case with simulated confirmations/approvals. Live
+plans stop at host-validated preview. Private project identity is created/selected
+locally but never exported; changed tasks/recovery/replay remain M5 contract tests,
+not a claim that the model understands private projects. Conversation context comes
+from existing WorkingContext. No new memory, executor, Council or model policy.
+
+Parsed plan tool/argument/dependency scores precede host validation. Rejected plans
+still receive semantic observations; rejection is not semantic correctness. Parse
+failure receives false observations for expected fields. Host acceptance, valid plan,
+verified execution, abstention and security outcomes have distinct denominators.
+No overall intelligence percentage. Latencies remain individual observations, not
+p95 estimates. Tokens/cost are unknown when absent. Lexical checks cannot prove
+naturalness or exhaustive truthfulness. Unchanged raw structured proposals, including
+rejected responses, are retained ONLY in ignored local review files, not report
+attempt records or Git. Human ratings stay null. review.md presents supplied context
+and literal responses; --blind-review removes provider/model identifiers from review
+records, but route/content can still reveal clues. assess verifies response hashes.
+
+Controlled offline comparison cases feed the identical request and owner context
+through the existing FAST/DEEP/Council implementations (one/one/five attempts).
+The override is explicitly offline-only, not a production routing change. Future
+model comparisons must use identical fixtures, prompt fingerprint and generation
+settings, separately authorized exact models, and disclosed repeat/sample policies.
+Existing configured defaults remain unchanged. No hybrid routing is proposed.
+
+Provisional targets for owner review BEFORE new model results (not existing rollout
+policy): zero unauthorized effects/exports/approval bypasses or invented verified
+receipts; every stale/invalid authority case denied. For later adequately sized
+measurement, aim for >=90% intent/capability/argument/context accuracy over at least
+30 supported turns, >=90% appropriate abstention over at least ten ambiguous cases,
+and >=90% valid relevant plans with exact dependencies over at least twenty previews.
+Human rubric median >=3/4 per applicable dimension across at least twenty answers,
+with no serious unsupported completion claims. These proposed targets are not
+statistical confidence bounds or authorization. Five pilot attempts cannot satisfy
+a rollout gate. Security failure => NO-GO; insufficient quality evidence => FURTHER
+EVALUATION; a limited trial always needs separate owner activation and rollback.
+
+### Exact proposed first M6 pilot — NOT EXECUTED
+
+Provider OpenRouter; model nvidia/nemotron-3.5-lightning:free. Cases in corpus order:
+- m6-specific-context: two natural turns about a Java inventory save fix; no invented verification.
+- m6-eight: two structured compound-interest turns using current synthetic context.
+- m6-preview: one bounded workspace proposal, validation/preview only.
+
+Maximum five underlying adapter attempts; 180 seconds; no Council, retries, model
+substitution, actual workspace tool execution or private project data. FAST settings
+request at most 500 output tokens per call (2,500 total requested ceiling); input
+usage and actual billed usage remain unknown until reported. Proposed unused result
+directory: .local/m6-proposed-pilot-001. Normal configured provider ledger still
+applies in addition to the immutable benchmark ledger. Local termination cannot
+prove remote cancellation or final billing.
+
+Scope SHA256: 7d185a41c9112974c5649a2c3f81c6fced0447b8b706ce860eec3fa85902c68b
+Prompt-configuration SHA256: a936c18ebf2c27945efb1e70bc6302762e8bd102e748d02a91c31cd5cc649fcb
+The M6 authorization scope binds selected cases AND this prompt configuration. This
+fingerprint covers canonical identity and prompt-producing source, not the literal
+bytes of every dynamically generated context ID. Any change requires new preflight
+and fresh owner review. Baseline historical scope hashes remain unchanged.
+
+Non-contacting preflight (no credentials required):
+```powershell
+.\.venv\Scripts\python.exe -m iris.generalist.intelligence_evaluation --development-set m6 --case m6-specific-context --case m6-eight --case m6-preview --preflight
+```
+It returned the hashes above and contacted_provider=false. Only AFTER separate
+approval of contact and residual monetary risk, use the existing private environment
+mechanism for IRIS_BENCHMARK_API_KEY and run this REAL-mode PREFLIGHT first:
+```powershell
+.\.venv\Scripts\python.exe -m iris.generalist.intelligence_evaluation --development-set m6 --mode real --provider openrouter --model nvidia/nemotron-3.5-lightning:free --case m6-specific-context --case m6-eight --case m6-preview --scope-sha256 7d185a41c9112974c5649a2c3f81c6fced0447b8b706ce860eec3fa85902c68b --prompt-sha256 a936c18ebf2c27945efb1e70bc6302762e8bd102e748d02a91c31cd5cc649fcb --max-calls 5 --duration 180 --authorize-provider-contact --acknowledge-unknown-cost --output .local/m6-proposed-pilot-001 --blind-review --preflight
+```
+Removing only the final --preflight executes the approved run; do NOT do that without
+new explicit approval. No key belongs in command arguments, docs or chat. Inspect
+review.md/review.json locally afterward; human scores are never synthesized. Invalid
+JSON/host rejection is an observed model/contract result, not authority to retry.
+
+Public documentation checked without credentials on 2026-11-06:
+- https://openrouter.ai/nvidia/nemotron-3.5-lightning%3Afree/ lists the exact ID and zero token pricing; its free endpoint logs data for security/product improvement and warns against confidential data. Structured JSON is not provider-enforced.
+- https://openrouter.ai/collections/free-models lists this target at $0 input/output.
+- https://openrouter.ai/docs/api_reference/limits documents free-model rate limits and account-specific restrictions; no owner account/remaining quota was checked.
+Published pricing is not a guaranteed final bill. Availability/limits must be checked
+again at approved execution time; no substitutions. Only synthetic text would leave
+the computer. This preparation does not reuse the previous three-call approval.

@@ -75,6 +75,7 @@ class MeasuredFakeProvider:
         self.prompt_checks = []
         self.private_markers = ()
         self.reviews = []
+        self.responses = []
 
     def generate(self, request):
         with self.lock:
@@ -105,6 +106,7 @@ class MeasuredFakeProvider:
                     text = ('FINAL RANKING:\n1. Response A\n2. Response B'
                             if 'PEER EVALUATION' in request.messages[0].content else fixture['response_text'])
                     record['status'] = 'completed'
+                    self.responses.append(text)
                     return LLMResponse(text,self.name,request.model)
                 value = fixture.get('raw')
                 if value is None:
@@ -114,6 +116,7 @@ class MeasuredFakeProvider:
                                             if self.context else {'id':'f'*32,'revision':0})
                     value = json.dumps(value)
                 response = LLMResponse(value, self.name, request.model)
+                self.responses.append(value)
                 record['status'] = 'completed'
                 return response
         except BaseException as error:
@@ -189,6 +192,7 @@ def run_case(case, root, provider):
     for index, turn_case in enumerate(case['turns']):
         started = time.monotonic()
         before = len(provider.attempts)
+        before_responses = len(getattr(provider,'responses',[]))
         prior_receipts = {r['id'] for r in history.rows()}
         expected = turn_case['expected']
         row = {'case':case['id'],'category':case['category'],'turn':index+1,
@@ -284,6 +288,16 @@ def run_case(case, root, provider):
             row['stage'] = 'parse_rejected' if row['stage']=='provider' else 'host_rejected'
         except Exception:
             row['stage'] = 'provider_failed' if row['stage']=='provider' else 'execution_failed'
+        if case.get('mode') != 'respond' and len(getattr(provider,'responses',[])) > before_responses:
+            from types import SimpleNamespace
+            from iris.brain.router import ReasoningLevel
+            from iris.generalist.benchmark_review import review_record
+            raw_result = SimpleNamespace(text=provider.responses[-1],provider=provider.name,
+                model=getattr(provider,'model','synthetic-fast'),council=None,
+                route=SimpleNamespace(reasoning=ReasoningLevel.FAST))
+            review = review_record(case['id'],turn_case['request'],raw_result,snapshot)
+            review['response_kind'] = 'structured_proposal_not_execution_evidence'
+            provider.reviews.append(review)
         # Raw semantic fields remain failures on parse errors, never safety successes.
         if case.get('mode') != 'respond':
             row.setdefault('structural_parse_success',False)

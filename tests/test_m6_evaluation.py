@@ -2,6 +2,8 @@ import copy
 from contextlib import redirect_stdout
 import io
 import json
+import tempfile
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 from iris.generalist import intelligence_evaluation as evaluation
@@ -87,3 +89,50 @@ class M6EvaluationTests(unittest.TestCase):
         self.assertIn(original[0]['response'],review_markdown(blinded))
         blinded[0]['response']+='changed'
         with self.assertRaises(ValueError): review_markdown(blinded)
+
+    def test_m6_live_cli_with_fake_transport_requires_exact_scope_and_counts_five(self):
+        from iris.generalist.benchmark_admission import LiveBenchmarkProvider
+        from iris.brain.llm import LLMResponse
+        ids=['m6-specific-context','m6-eight','m6-preview']
+        common=['--development-set','m6']+sum((['--case',identifier] for identifier in ids),[])
+        stdout=io.StringIO()
+        with redirect_stdout(stdout): evaluation.main(common+['--preflight'])
+        preflight=json.loads(stdout.getvalue())
+        def factory(run):
+            def transport(request, admitted):
+                fixture=provider.fixture
+                text=fixture.get('response_text')
+                if text is None:
+                    value=dict(fixture['output'],version=1,turn=json.loads(request.messages[-1].content)['turn'])
+                    if value.get('context')=='$active':
+                        value['context']={key:provider.context[key] for key in ('id','revision')}
+                    text=json.dumps(value)
+                return LLMResponse(text,'openrouter',request.model,input_tokens=10,output_tokens=20)
+            provider=LiveBenchmarkProvider(run,transport=transport)
+            return provider
+        with tempfile.TemporaryDirectory(dir=evaluation.ROOT/'.local') as directory, \
+             patch.dict('os.environ',{'IRIS_BENCHMARK_API_KEY':'synthetic-only'}), \
+             patch('iris.generalist.benchmark_admission.LiveBenchmarkProvider',side_effect=factory), \
+             evaluation.offline_boundary(), redirect_stdout(io.StringIO()):
+            result=evaluation.main(common+['--mode','real','--provider','openrouter','--model','synthetic/model',
+                '--scope-sha256',preflight['scope_sha256'],'--prompt-sha256',preflight['prompt_configuration_sha256'],
+                '--max-calls','5','--duration','180','--authorize-provider-contact','--acknowledge-unknown-cost',
+                '--output',directory,'--blind-review'])
+            self.assertEqual(result,0)
+            report=json.loads((Path(directory)/'results.json').read_text())
+            review=json.loads((Path(directory)/'review.json').read_text())
+            self.assertEqual(report['actual_adapter_calls'],5)
+            self.assertEqual(len(review['records']),5)
+            self.assertEqual(report['token_usage']['input'],50)
+            self.assertIsNone(report['actual_cost'])
+            self.assertTrue(all(r['blind'] and r['model'] is None for r in review['records']))
+            self.assertTrue((Path(directory)/'review.md').is_file())
+            self.assertFalse(any(row['receipts'] for row in report['rows']))
+
+    def test_rejected_raw_proposal_available_unchanged_for_local_review(self):
+        case=next(c for c in self.cases() if c['id']=='m6-authority-forgery')
+        report=evaluation.evaluate(cases=[case])
+        self.assertFalse(report['rows'][0]['structural_parse_success'])
+        self.assertEqual(len(report['review']['records']),1)
+        self.assertEqual(report['human_quality']['status'],'unreviewed')
+        self.assertNotIn('response',report['attempts'][0])
