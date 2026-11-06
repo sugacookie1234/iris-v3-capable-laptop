@@ -186,3 +186,15 @@ After offline acceptance, the handoff's next major milestone is M6: separately
 owner-approved live comparison and measured rollout review. This is not approval to
 contact providers or enable the experiment. Native WebView2 reliability/hardware
 acceptance remain independent release gates. No M6 work began in M5.
+
+## M5.1 continuation
+
+The portable-project implementation supersedes M5's backup allowlist gap. Remaining
+acceptance is physical transfer between Windows accounts/devices, with the original
+preserved until restored data is inspected. No owner-data migration was performed.
+No automatic repair, destructive unreadable-record cleanup or restoration into an
+active directory is supported. Those are separate explicit owner-controlled tasks.
+
+Next major intelligence milestone remains M6: real-model evaluation and measured
+rollout review with separate exact scope/budget approval. M5.1 does not authorize
+provider contact or global feature activation. Native reliability remains unrelated.

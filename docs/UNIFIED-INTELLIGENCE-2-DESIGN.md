@@ -282,3 +282,33 @@ NOT included. Account-bound store copies require original Windows recovery mater
 portable project backup/export is a future explicit implementation gate. Unreadable
 records are retained and fail closed, not silently repaired or overwritten. Native
 WebView2 reliability remains unresolved; the chat interface is sufficient.
+
+## M5.1 portable project backup boundary
+
+Supersedes M5's project-backup exclusion. The existing iris.backup archive v1 now
+accepts projects.sqlite3 in addition to the six prior stores. No new backup service,
+key format or migration is introduced. Exact M5 SQL schema/version and envelope
+validation are shared by live continuity and portability; duplicate JSON fields,
+unknown fields, oversized/duplicate references and malformed records fail closed.
+
+Export reads only an offline source snapshot. Validated source-DPAPI envelopes are
+rebuilt as portable JSON in a fresh RAM-only database, inside the existing Scrypt /
+Fernet authenticated archive. Restore validates then re-protects each envelope for
+the destination Windows account, verifies it, and builds a fresh protected database
+before disk staging. Rebuilding prevents portable plaintext surviving in SQLite free
+pages. Any project failure aborts publication of the entire backup/restore. The
+source is untouched and a restored directory never overwrites an existing one.
+
+Old archives lacking projects remain supported. Old binaries reject the new store
+before restoration rather than partially interpreting it. The 64-MiB aggregate
+limit, private getpass input and existing notes-job conversion are unchanged.
+Source/destination/archive ancestor symlinks and junctions are refused; same-user
+filesystem races and RAM/pagefile/crash-dump access are not a guaranteed boundary.
+
+Restored metadata is historical evidence only: no session selection, PlanRun,
+permissions or confirmation is reconstructed. M5's current task revisions and
+ActionHistory corroboration still apply. Missing evidence remains unknown. New
+execution requires a new preview and all current confirmations/approvals. The
+/project recovery command reads no store and gives non-destructive recovery options,
+even with the experiment disabled. No cleanup, migration or provider call occurs.
+See ENCRYPTED-BACKUP.md for unchanged CLI commands, compatibility and recovery limits.

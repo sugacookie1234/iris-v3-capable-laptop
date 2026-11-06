@@ -409,3 +409,18 @@ successfully after adding interrupted/missing-task scenarios. /project recovery 
 non-destructive guidance only and does not require unlocking a record. No live calls.
 Full regression/JS/CAP-34 acceptance follows. Portable account switching is simulated;
 actual Windows DPAPI is tested on this account, not across physical Windows accounts.
+
+## M5.1 closeout — checkpoint C
+
+Implementation remains at the verified A/B source checkpoints bb17a12 and 3f55177;
+C records acceptance and the pending security/design/backlog notes without speculative
+code changes. Full regression completed: 1,153 passed/four skipped (1,157 run), JS12
+passed, CAP-34 252/252 each arm with zero regressions. Focused backup/continuity suite
+has 45 passing cases. Exact evidence and limitations are in VALIDATION.md.
+
+Portable protected project continuity is accepted offline. Recovery cannot select a
+project, restore active plans or reuse approvals. Unknown outcomes stay unknown.
+The archive is not a full laptop/vault/configuration backup. Physical Windows-account/
+device transfer and abrupt power loss remain acceptance gates; RAM/pagefile and other
+plaintext-store staging exposure remain documented. No live provider calls or owner
+backup/restore occurred. M6 requires its own authorization and was not started.

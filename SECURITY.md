@@ -254,3 +254,22 @@ limitations. Project records are currently excluded from portable backup/export;
 no silent migration or encryption fallback occurs. Details and commands are in
 UNIFIED-INTELLIGENCE-2-DESIGN.md. Reverting M5 code leaves protected records intact;
 older code ignores projects.sqlite3. Do not delete owner data as a rollback step.
+
+### M5.1 portable continuity protection
+
+Supersedes the M5 portable-backup exclusion. projects.sqlite3 is now validated and
+converted in memory into the existing passphrase-encrypted archive; restoration
+reprotects envelopes with the destination Windows account and verifies them before
+writing a fresh database. No original account ciphertext is merely copied as the
+portable payload. Project plaintext is never intentionally staged on disk. Other
+legacy live SQLite stores remain plaintext; RAM, pagefiles and crash dumps remain
+residual exposure. Source and destination redirected paths are refused. This does
+not protect against arbitrary same-user malware or guarantee erasure of old copies.
+
+Archive v1 compatibility is preserved; old builds reject projects as an unknown
+store. Bad schema, unreadable/decryption failures and malformed envelopes abort the
+operation without replacing source or final destination. Recovery never grants
+execution authority. /project recovery gives options without opening/deleting data.
+Passphrase loss and corrupted records cannot always be repaired. --confirm-app-stopped
+is an owner assertion, not a global application lock. Physical cross-account/device
+acceptance and power-loss testing remain open. See docs/ENCRYPTED-BACKUP.md.

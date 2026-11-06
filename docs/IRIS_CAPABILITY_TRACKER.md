@@ -301,3 +301,17 @@ Limits: ten projects/ten recent workflows each; account-bound DPAPI; no portable
 project backup yet; no automatic selection, replay, provider export, goal linking,
 folder ingestion or effectful recovery. Private WorkingContext reference never enters
 cloud prompts. Experimental default remains off. See DESIGN.md/VALIDATION.md.
+
+## M5.1 portable continuity delivery evidence
+
+TESTED (offline): existing encrypted backup now supports validated project envelopes,
+in-memory source-account unprotection, portable archive encryption, destination-account
+reprotection and inspection-only recovery. Old archives remain compatible; old builds
+reject new project stores. Source preservation, no-clobber publication and historical
+authority isolation are covered. Existing capability IDs are unchanged.
+
+Evidence: 45 focused tests; full Python 1,153 passed/four skipped; JS12 passed;
+CAP-34 252/252 per arm, zero regressions. Real single-account DPAPI plus synthetic
+cross-account keys, not physical cross-device acceptance. No provider inference or
+experiment activation. Physical transfer, power-loss behavior and native reliability
+remain unverified; see VALIDATION.md and ENCRYPTED-BACKUP.md for exact limits.

@@ -968,3 +968,54 @@ Unreadable records fail closed and require future explicit recovery tooling. Exi
 ActionHistory retention may remove corroborating evidence; summaries then refuse a
 verified claim. No general project completion, exactly-once effect or security
 certification is claimed. Native WebView2 reliability remains unresolved.
+
+## M5.1 final acceptance — 2026-11-06
+
+Recovered checkpoint C at 3f55177140cd4fe99b39c2ed1f64ef1df9a4cb5e, equal to
+origin/sprint/evaluation-business-os. Pending tracked changes were documentation
+only (SECURITY, design, backlog); no staged changes. tatus -sb remained untracked.
+Implementation checkpoints bb17a12 and 3f55177 were preserved. Review found no
+additional blocker requiring a code change. The in-flight full regression completed
+successfully; it was not discarded or repeated. Only documentation changed afterward.
+
+Completed evidence on that source:
+- Focused portable-project/continuity/legacy-backup suite: 45 tests, all passed,
+  zero skips/failures/errors. The final requested rerun is saved separately in
+  .local/m51-focused-final.log; earlier focused run passed in 36.897 seconds.
+- Full Python discovery: 1,157 run, 1,153 passed, four skipped, zero failures/errors,
+  258.083 seconds. Complete log: .local/m51-full-regression.log. One full run.
+- All 12 desktop JavaScript checks passed, zero failures. Observed tool output
+  summarized in .local/m51-desktop-checks-summary.txt; automated checks only.
+- CAP-34 baseline 252/252, candidate 252/252, identical case sets, zero regressions,
+  PASS. Artifacts: .local/m51-contracts/{results.json,summary.md}. This is offline
+  deterministic contract coverage, not real-model intelligence or hardware evidence.
+
+The end-to-end synthetic test creates a project/task, runs registered workspace_list
+and workspace_read under simulated exact confirmations/approvals, injects an
+interrupted stage, closes, exports, restores under another synthetic account codec
+and creates a fresh runtime. Old confirmation is rejected, selection/plan authority
+is absent, historical verified and uncertain outcomes remain distinct, and a fresh
+fake-provider preview executes nothing. Missing history removes verified claims;
+missing/changed tasks block execution. Project deletion leaves the task intact.
+Existing notes-job/task/goal portability remains covered. Real Windows DPAPI was
+exercised on this account; two physical Windows accounts/devices were NOT tested.
+
+All new tests use temporary synthetic stores and fake providers. No owner backup,
+restore, migration, credential operation or live inference was performed. This is an
+execution-scope statement, not an independent forensic audit of files changed by
+other applications. Defaults, voice, microphone, approval policy and native code
+were unchanged. Frozen holdouts stayed unscored and byte-identical:
+interpretation 0A12CD2FD985095C7C371498DD9F77DF915F9BC2291C67AC453CBD5A72BA2A3C;
+working 64752F121CC264CED84B1CEEAD204D59337F6455F0F7750EC1B9B2B0B784D874;
+plan B5D709E5704FB3019B3E8F3712B4FA6B6E277019DDBA64EA8CED999ACBE46C19.
+tatus -sb: F86ED9018F5473F692F3EAE494C4F62B988CD12FDAD06525AE61BA3C538CE37F.
+main/origin-main: b4e5c9636d02657cb3cd89d368583ee6c8ebd006, unchanged.
+
+M5.1 is accepted only as an offline-tested engineering milestone. Archive v1 retains
+compatibility; source-account project payloads become validated portable JSON only
+in RAM inside passphrase encryption, then receive verified destination DPAPI before
+staging. Other stores may stage plaintext. Memory zeroization, paging/crash-dump
+protection, abrupt power-loss recovery and physical cross-device acceptance are not
+claimed. Native WebView2 reliability remains unresolved. No complete laptop/vault/
+settings/credential backup or autonomous recovery is provided. See ENCRYPTED-BACKUP.md.
+M6, hybrid-model architecture changes, live pilots and rollout were not started.
