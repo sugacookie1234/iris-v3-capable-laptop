@@ -341,3 +341,19 @@ Project backups are not yet included in the portable backup allowlist. Copying
 this protected store alone requires the original Windows account/machine recovery
 material. No migration or silent backup-format change is made. Deletion removes
 only continuity; SQLite secure_delete does not erase external copies/backups.
+
+## M5 checkpoint B — integrated recovery (offline)
+
+Protected projects are connected to the existing authenticated chat, TaskStore,
+WorkingContext local-only reference and PlanRun/ToolExecutor/ActionHistory. The
+synthetic lifecycle exercises actual workspace_list/workspace_read handlers on a
+temporary README, exact confirmation and separately simulated operation approvals,
+then a new DesktopRuntime: identity/evidence persist, old authority does not. Fresh
+preview uses a new plan ID. No raw results are stored/exported. Cancellation, missing
+history, task revisions, journal write failure, corruption, restart stage ambiguity,
+concurrent revisions and real Windows DPAPI with synthetic payloads are covered.
+The optional journal never replaces the existing executor or approvals.
+
+45 focused tests pass (24 new project tests plus 21 existing controlled-plan tests).
+Full acceptance is pending. No provider calls or owner-data edits. See DESIGN.md
+for commands, retention, privacy, backup exclusion and bounded recovery semantics.

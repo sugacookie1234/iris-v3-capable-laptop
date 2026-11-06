@@ -37,6 +37,7 @@ CORPUS = (
     ('benchmark_routes','tests.test_benchmark_routes'),
     ('personality','tests.test_personality'),
     ('conversation_refinement','tests.test_conversation_refinement'),
+    ('project_continuity','tests.test_project_continuity'),
 )
 
 

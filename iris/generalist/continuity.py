@@ -49,7 +49,8 @@ class ProjectContinuity:
             if version not in (0, 1):
                 raise ContinuityError('Unsupported project store version.')
             db.execute('CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, payload BLOB NOT NULL)')
-            db.execute('PRAGMA user_version=1')
+            if version == 0:
+                db.execute('PRAGMA user_version=1')
 
     def _paths(self):
         for path in (self.path, *self.path.parents):
@@ -195,6 +196,7 @@ class ProjectContinuity:
                              and row['approval'] == 'approved' and row['origin'] == 'model')
                 status = ('previously verified returned data (not current file state)' if supported else
                           'pending; not executed' if step['state'] == 'pending' else
+                          'not executed; fresh confirmation required' if step['verification'] == 'not_executed' else
                           'interrupted or unverified; outcome unknown')
                 lines.append(f"{step['id']}: {status}.")
         lines.append('Nothing has been resumed. Historical approvals are not authority. '
@@ -235,9 +237,10 @@ def _validate_workflow(value):
 
 class ProjectJournal:
     """In-process observer only. There is deliberately no deserializer for PlanRun."""
-    def __init__(self, store, identifier, revision, check_resources):
+    def __init__(self, store, identifier, revision, check_resources, on_update=None):
         self.store, self.identifier, self.revision = store, identifier, revision
         self.check_resources = check_resources
+        self.on_update = on_update
 
     def validate(self):
         value = self.store.get(self.identifier, self.revision)
@@ -258,3 +261,5 @@ class ProjectJournal:
         value = self.store.journal(self.identifier, self.revision,
             dict(id=run.plan.id, revision=run.plan.revision, state=run.state, updated=_now(), steps=steps))
         self.revision = value['revision']
+        if self.on_update is not None:
+            self.on_update(self.identifier, self.revision)

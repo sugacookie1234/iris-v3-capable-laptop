@@ -65,12 +65,30 @@ class WorkingContextV1:
         self.revision = 0
         self.last_interaction = None
         self._items = ()
+        self._local_project = None
 
     def clear(self):
         self._items = ()
+        self._local_project = None
         self.last_interaction = None
         self.id = uuid4().hex
         self.revision += 1
+
+    def select_local_project(self, identifier, revision):
+        """Host ingress only; private reference is never in the provider snapshot."""
+        reference = WorkingReference(identifier, revision, Source.HOST, Privacy.PRIVATE,
+                                     Export.NONE, '', self.clock() + self.ttl)
+        self._local_project = reference
+
+    def local_project(self):
+        item = self._local_project
+        if item is not None and item.expires_at > self.clock():
+            return asdict(item)
+        self._local_project = None
+        return None
+
+    def clear_local_project(self):
+        self._local_project = None
 
     def _expire(self):
         live = tuple(item for item in self._items if item.expires_at > self.clock())

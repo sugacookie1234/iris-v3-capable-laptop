@@ -226,3 +226,59 @@ disposable fixtures. Ordinary FAST/DEEP/Council measurements call the existing b
 with no executor and share the explicitly selected target rather than changing owner
 policy. benchmark_review.py emits local unscored human-review records and validates
 anchored scores/response hashes. See EVALUATION.md for exact scope and pilot controls.
+
+## M5 bounded project continuity and recovery
+
+The new projects.sqlite3 is a lazy, explicit-owner-command store; no existing data
+is migrated. It contains up to ten DPAPI-protected project envelopes, each with
+80-character title, 400-character optional objective, five task ID/revision links
+and ten most-recent workflow summaries (three steps each). The payload is private,
+export=none. Only random project IDs and SQLite structure are plaintext. Envelope
+writes verify decryption/schema before an atomic SQLite commit. Wrong-account,
+corrupt/unknown schema and symlink/junction redirection fail closed. Protection does
+not defend against same-Windows-user malware, disk rollback or account compromise.
+
+TaskStore remains authoritative; this slice links tasks only, not goals or guessed
+folders. Links copy no content and are rechecked at selection and before/after each
+approval. Missing/deleted/changed links prevent execution. Project identity is an
+explicit full ID, never inferred by a model. Selection is session-only: after restart
+an owner lists/selects a retained record. The bounded WorkingContext local project
+reference has host provenance, revision and normal TTL, private/no-export metadata;
+it never enters provider snapshots, plans' model context, or persistent chat history.
+
+PlanRun now has an optional fail-closed ProjectJournal observer. It journals before
+invocation/approval/verification and after each returned-data receipt. It stores only
+workflow/step IDs, digests, dependencies, lifecycle, verification and ActionHistory
+IDs. No raw arguments, file contents, objective text from the model, approval token,
+confirmation digest/session or tool output is persisted. ActionHistory remains the
+source of invocation timestamps and historical approval evidence. Its existing
+30-day/1000-record retention can make older project evidence unverifiable.
+
+Recovery is inspection, not execution: historical running/approval/verifying steps
+without a durable verified receipt remain interrupted/unknown. Pending steps remain
+unexecuted. Completed claims require both the protected receipt metadata and a
+matching returned/approved MODEL ActionHistory entry. This proves historical bounded
+returned-data verification, never current file state or project correctness. No
+PlanRun is deserialized, no authority restored and no old plan auto-replayed. A fresh
+/plan workspace request uses the existing default-off interpreter, exact confirmation,
+per-operation approvals and read-only allowlist. Journal failure stops later steps;
+shutdown cancellation still stops when evidence cannot be saved.
+
+Authenticated chat commands (experimental feature remains off by default):
+- /project create <title> | <optional objective>
+- /project list
+- /project select <full-id>
+- /project link-task <task-uuid> <current-task-revision>
+- /project show <full-id> or /project resume <full-id> (inspection only)
+- /project clear (deselect only)
+- /project delete <full-id> <current-project-revision>
+- /plan workspace <new request> (fresh M4 preview, never automatic resume)
+
+Deletion affects only project continuity, not tasks/goals/history/backups. Ten recent
+workflow summaries replace older ones; project records persist until explicit delete.
+There is no automatic import, monitor, scheduler, cloud export or global rollout.
+The existing portable backup allowlist intentionally remains unchanged: projects are
+NOT included. Account-bound store copies require original Windows recovery material;
+portable project backup/export is a future explicit implementation gate. Unreadable
+records are retained and fail closed, not silently repaired or overwritten. Native
+WebView2 reliability remains unresolved; the chat interface is sufficient.

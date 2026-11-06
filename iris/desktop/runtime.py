@@ -116,6 +116,8 @@ class DesktopRuntime:
         self._plan_session = secrets.token_hex(16)
         self._pending_host_plan = None
         self._plan_run = None
+        self._projects = None
+        self._selected_project = None
         self.turn_lock = threading.Lock()
         self.approval_lock = threading.Lock()
         self.pending = None
@@ -297,6 +299,7 @@ class DesktopRuntime:
             self._plan_run = None
             self._pending_host_plan = None
             self._plan_session = secrets.token_hex(16)
+            self._selected_project = None
             self.working_context.clear()
             self.orchestrator.clear()
             if self.visual_window:self.visual_window.request(action="close")
@@ -491,6 +494,90 @@ class DesktopRuntime:
             return DesktopCommands.answer('I kept your action history.')
         return self.vault_commands.handle(command)
 
+    def _project_store(self):
+        if self._projects is None:
+            from iris.generalist.continuity import ProjectContinuity
+            self._projects = ProjectContinuity(self.data_dir / 'projects.sqlite3')
+        return self._projects
+
+    def _project_resources(self, project):
+        from iris.generalist.continuity import ContinuityError
+        if not project['resources']:
+            return
+        try:
+            with TaskStore(self.tasks_path, read_only=True) as tasks:
+                for ref in project['resources']:
+                    task = tasks.fetch(ref['id'])
+                    if task is None or task.status == 'deleted' or task.revision != ref['revision']:
+                        raise ContinuityError('A selected task is missing, deleted or changed.')
+        except Exception:
+            raise ContinuityError('Selected task references cannot be verified. Inspect and relink current revisions.') from None
+
+    def _project_command(self, text):
+        if text != '/project' and not text.startswith('/project '):
+            return None
+        def answer(message):
+            return {'reply':message, 'spoken_reply':message, 'route':'LOCAL', 'public_context':False}
+        if not self._context_enabled():
+            return answer('Experimental project continuity is disabled. Nothing was saved.')
+        from iris.generalist.continuity import ContinuityError
+        try:
+            store = self._project_store()
+            args = text.split(maxsplit=2)
+            action = args[1] if len(args) > 1 else 'help'
+            value = args[2] if len(args) > 2 else ''
+            if action == 'create':
+                parts = value.split(' | ', 1)
+                project = store.create(parts[0], parts[1] if len(parts) > 1 else '')
+                return answer(f"Created private project {project['title']}. Select it explicitly with /project select {project['id']}.")
+            if action == 'list':
+                return answer('\n'.join(f"{p['id']} — {p['title']} (revision {p['revision']})" for p in store.list()) or 'No retained projects.')
+            if action == 'clear':
+                if self._plan_run is not None:
+                    self._plan_run.cancel(self._plan_run.plan.id)
+                self._selected_project = None
+                self.working_context.clear_local_project()
+                return answer('Project deselected. Stored records remain; nothing resumed.')
+            if action in ('select','show','resume'):
+                project = store.get(value)  # Explicit full ID; never guessed by title/model.
+                if action == 'select':
+                    self._project_resources(project)
+                    if self._plan_run is not None:
+                        self._plan_run.cancel(self._plan_run.plan.id)
+                    self._selected_project = project['id']
+                    self.working_context.select_local_project(project['id'], project['revision'])
+                report = store.summary(value, self.action_history)
+                try:
+                    self._project_resources(project)
+                    report += f"\n{len(project['resources'])} task references match current revisions."
+                except (ValueError, OSError):
+                    report += '\nLinked resources are changed or unavailable; do not treat them as current.'
+                return answer(report)
+            if action == 'link-task':
+                identifier, revision = value.split()
+                project = store.get(self._selected_project)
+                with TaskStore(self.tasks_path, read_only=True) as tasks:
+                    task = tasks.fetch(identifier)
+                if task is None or task.revision != int(revision):
+                    raise ContinuityError('Task revision does not match.')
+                project = store.link_task(project['id'], project['revision'], task)
+                self.working_context.select_local_project(project['id'], project['revision'])
+                return answer('Task identity linked locally. Its contents were not copied or exported.')
+            if action == 'delete':
+                identifier, revision = value.split()
+                store.delete(identifier, int(revision))
+                if self._selected_project == identifier:
+                    self._selected_project = None
+                    self.working_context.clear_local_project()
+                return answer('Deleted only the project continuity record. Tasks, goals, action history and backups remain.')
+            return answer('Use /project create <title> | <optional objective>, /project list, '
+                '/project select <id>, /project link-task <task-id> <revision>, '
+                '/project show <id>, /project resume <id>, /project clear, or /project delete <id> <revision>. '
+                'Resume inspects evidence only. /plan workspace <new request> creates a fresh preview; approvals remain separate.')
+        except (ValueError, OSError, RuntimeError):
+            return answer('Project continuity request could not be validated or unlocked. '
+                'Use exact IDs/current revisions and inspect linked tasks. No workflow was resumed.')
+
     def _plan_command(self, text):
         if not text.startswith(('/plan ', '/confirm-plan ', '/cancel-plan ')):
             return None
@@ -532,8 +619,15 @@ class DesktopRuntime:
             self._pending_host_plan = plan
             if self._plan_run is not None:
                 self._plan_run.cancel(self._plan_run.plan.id)
+            journal = None
+            if self._selected_project is not None:
+                from iris.generalist.continuity import ProjectJournal
+                project = self._project_store().get(self._selected_project)
+                self._project_resources(project)
+                journal = ProjectJournal(self._project_store(), project['id'], project['revision'], self._project_resources,
+                    on_update=self.working_context.select_local_project)
             self._plan_run = PlanRun(plan,executor=executor,permissions=lambda:self.brain._tool_permissions,
-                working=self.working_context,orchestrator=self.orchestrator)
+                working=self.working_context,orchestrator=self.orchestrator,journal=journal)
             result = answer(preview_text(plan,executable=True))
             result['spoken_reply'] = (f'I prepared a read-only plan with {len(plan.plan.nodes)} steps. '
                 'Nothing has run. Review the displayed details and exact confirmation command; each step also needs approval.')
@@ -629,6 +723,9 @@ class DesktopRuntime:
         capture_history = () if self._context_enabled() else tuple(self.history[-8:])
         try:
             text = text.strip()
+            project_answer = self._project_command(text)
+            if project_answer is not None:
+                return project_answer
             planned = self._plan_command(text) if mode == 'auto' else None
             if planned is not None:
                 return planned

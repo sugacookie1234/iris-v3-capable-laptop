@@ -217,7 +217,7 @@ class PlanRun:
     completed/failed/cancelled/uncertain. Terminal runs are never replayed.
     Existing ActionHistory persists invocation evidence; private outputs stay transient.
     """
-    def __init__(self, plan, *, executor, permissions, working, orchestrator, clock=time.monotonic):
+    def __init__(self, plan, *, executor, permissions, working, orchestrator, clock=time.monotonic, journal=None):
         self.plan = plan
         self.bound_digest = plan.digest
         self.executor = executor
@@ -229,6 +229,13 @@ class PlanRun:
         self.lock = threading.Lock()
         self.state = 'awaiting_confirmation'
         self.receipts = []
+        self.active_step = None
+        self.journal = journal
+        self._checkpoint()
+
+    def _checkpoint(self):
+        if self.journal is not None:
+            self.journal(self)
 
     def cancel(self, identifier):
         with self.lock:
@@ -237,9 +244,15 @@ class PlanRun:
             self.cancel_event.set()
             if self.state == 'awaiting_confirmation':
                 self.state = 'cancelled'
+                try:
+                    self._checkpoint()
+                except Exception:
+                    self.state = 'uncertain'  # Stop even when persistence failed.
             return True
 
     def _validate(self):
+        if self.journal is not None:
+            self.journal.validate()
         if self.cancel_event.is_set() or self.clock() >= self.plan.expires or self.plan.digest != self.bound_digest:
             raise ValueError('Cancelled, expired or changed plan.')
         self.working.validate_snapshot(json.loads(self.plan.context_json),self.orchestrator)
@@ -269,16 +282,20 @@ class PlanRun:
                 permissions = self._validate()
                 if not set(node.depends_on).issubset(completed):
                     raise ValueError('Dependency was not verified.')
+                self.active_step = node.id
+                self._checkpoint()  # Durable attempted-state before invoking any tool.
                 def approval_callback(operation):
                     nonlocal approval_state
                     self.state = 'awaiting_approval'
                     approval_state = 'required'
                     self._validate()
+                    self._checkpoint()
                     decision = approve(operation)
                     self._validate()
                     approval_state = ('approved' if isinstance(decision,Approval)
                         and decision.plan_id == operation.id and decision.approved is True else 'rejected')
                     self.state = 'running'
+                    self._checkpoint()
                     return decision
                 result = self.executor.execute(ToolCall(node.tool,dict(prepared.arguments),RequestOrigin.MODEL),
                     authority=AuthorityContext(permissions=permissions),approve=approval_callback,
@@ -287,6 +304,7 @@ class PlanRun:
                     self.state = 'verifying'
                     status, verification, failure, uncertain = 'uncertain','unverified','verification_failed',True
                     summary = 'Tool returned, but its data was not verified. No later step executed.'
+                    self._checkpoint()
                     summary = verify_result(node,result.value)
                     if self.executor.observer_failed or not result.receipt_id:
                         raise ValueError('Durable invocation evidence unavailable.')
@@ -310,11 +328,27 @@ class PlanRun:
                 approval_state,started,datetime.now(timezone.utc).isoformat(),status,verification,
                 result.receipt_id if result else None,failure,self.cancel_event.is_set(),uncertain,summary)
             self.receipts.append(receipt)
+            self.state = status if status != 'completed' else 'running'
+            self.active_step = None
+            try:
+                self._checkpoint()
+            except Exception:
+                from dataclasses import replace
+                self.receipts[-1] = replace(receipt, status='uncertain', verification='unknown',
+                    uncertain=True, summary='Durable workflow evidence could not be saved; outcome cannot be confirmed.')
+                self.state = 'uncertain'
+                self.cancel_event.set()
+                break
             if status != 'completed':
                 self.state = status
                 break
         else:
             self.state = 'completed'
+            try:
+                self._checkpoint()
+            except Exception:
+                self.state = 'uncertain'
+                self.cancel_event.set()
         return self.report()
 
     def report(self):

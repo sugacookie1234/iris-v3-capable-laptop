@@ -240,3 +240,17 @@ ordinary response measurement has no executor. Model output cannot authorize too
 Local raw human-review artifacts stay under ignored .local and must not be committed.
 Same-user malicious software and provider-side processing remain outside this boundary.
 No live provider assessment or security certification was performed.
+
+### M5 protected project evidence
+
+Explicit project commands create a bounded account-DPAPI-protected store only on
+use. It is not a permission or permanent-personal-memory store. Private project
+references never enter model snapshots; no retrieved text selects projects. Recovery
+requires matching durable invocation evidence and never reconstructs executable
+plans/approvals. Missing/corrupt evidence is unknown; fresh execution needs existing
+current approvals. Task links are revision checked. Same-user malware, DPAPI account
+loss, filesystem race attacks by same-user software and external backup copies remain
+limitations. Project records are currently excluded from portable backup/export;
+no silent migration or encryption fallback occurs. Details and commands are in
+UNIFIED-INTELLIGENCE-2-DESIGN.md. Reverting M5 code leaves protected records intact;
+older code ignores projects.sqlite3. Do not delete owner data as a rollback step.
