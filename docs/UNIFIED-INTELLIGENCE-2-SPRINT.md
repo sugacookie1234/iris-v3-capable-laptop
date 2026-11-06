@@ -393,3 +393,19 @@ partially restoring it. Cipher/KDF/64-MiB database bound and CLI are unchanged.
 and 24 continuity tests. Includes two synthetic account keys, real Windows DPAPI,
 failed reprotection, schema/corruption, staging/no-clobber and source preservation.
 Runtime recovery guidance and end-to-end restored workflow acceptance follow in B.
+
+## M5.1 checkpoint B — recovery acceptance
+
+Portable workflow test now backs up an explicitly selected synthetic project, task
+revision and real registered workspace receipts, plus an injected interrupted stage.
+A fresh DesktopRuntime after restoration has no selected project or active plan,
+rejects the old confirmation and can generate a new fake-provider preview without
+execution. Completed evidence is historical; interrupted work stays unknown. Clearing
+history removes verified claims; missing/changed task records block execution.
+Task/goal/notes-job compatibility, source preservation and deletion isolation pass.
+
+45 focused backup/project tests passed; the two end-to-end recovery tests were rerun
+successfully after adding interrupted/missing-task scenarios. /project recovery is
+non-destructive guidance only and does not require unlocking a record. No live calls.
+Full regression/JS/CAP-34 acceptance follows. Portable account switching is simulated;
+actual Windows DPAPI is tested on this account, not across physical Windows accounts.

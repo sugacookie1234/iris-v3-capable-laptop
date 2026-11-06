@@ -518,6 +518,13 @@ class DesktopRuntime:
             return None
         def answer(message):
             return {'reply':message, 'spoken_reply':message, 'route':'LOCAL', 'public_context':False}
+        if text == '/project recovery':
+            return answer('Recovery options only; nothing was changed. If protected project records are unreadable, '
+                'keep the original store. It may require the original Windows account/environment or an existing '
+                'passphrase-encrypted portable backup. Stop IRIS before using python -m iris.backup; restore '
+                'only into a new destination. Enter the recovery passphrase privately when prompted. '
+                'IRIS cannot recover a lost passphrase or guarantee repair of corrupt records. '
+                'Do not overwrite the original installation. Restoration never resumes workflows or approvals.')
         if not self._context_enabled():
             return answer('Experimental project continuity is disabled. Nothing was saved.')
         from iris.generalist.continuity import ContinuityError
@@ -576,7 +583,8 @@ class DesktopRuntime:
                 'Resume inspects evidence only. /plan workspace <new request> creates a fresh preview; approvals remain separate.')
         except (ValueError, OSError, RuntimeError):
             return answer('Project continuity request could not be validated or unlocked. '
-                'Use exact IDs/current revisions and inspect linked tasks. No workflow was resumed.')
+                'Use exact IDs/current revisions and inspect linked tasks. Protected records may be unreadable; '
+                'keep the original store and use /project recovery to inspect recovery options. No workflow was resumed.')
 
     def _plan_command(self, text):
         if not text.startswith(('/plan ', '/confirm-plan ', '/cancel-plan ')):
