@@ -1,6 +1,8 @@
 """Local human review, never an LLM judge or an automatic acceptance gate."""
 import hashlib
 import re
+import copy
+import json
 
 DIMENSIONS = ('relevance','context','naturalness','grounding','uncertainty',
               'conciseness','clarification','unsupported_claim_avoidance')
@@ -76,3 +78,33 @@ def development_checks(text, expected):
     if 'max_questions' in expected:
         checks['question_bound']=text.count('?')<=expected['max_questions']
     return checks
+
+
+def blind_records(records):
+    """Model/provider blinding only; route and content can still give clues."""
+    records = copy.deepcopy(records)
+    for record in records:
+        record['provider'] = None
+        record['model'] = None
+        record['blind'] = True
+    return records
+
+
+def review_markdown(records):
+    """Owner-readable local answers; indentation renders untrusted output as text."""
+    assess(records)
+    lines = ['# Synthetic response review', '',
+             'Scores remain blank until a human records them in review.json.',
+             'Model-blind records may still reveal clues through wording or route.', '']
+    for index, item in enumerate(records, 1):
+        lines += [f'## Response {index}', '', 'Request:', '']
+        lines += ['    '+line for line in item['request'].splitlines()]
+        lines += ['', 'Supplied synthetic context:', '']
+        lines += ['    '+line for line in json.dumps(item['synthetic_context'],indent=2).splitlines()]
+        lines += ['', 'Unchanged response:', '']
+        lines += ['    '+line for line in item['response'].splitlines()]
+        lines += ['', 'Response SHA256: '+item['response_sha256'], '', 'Review status: '+
+                  ('unreviewed' if not any(v is not None for v in item['scores'].values()) else 'scores supplied'), '']
+    lines += ['## Rubric', '', *[f'- {key}: {value}' for key,value in RUBRIC['dimensions'].items()],
+              '', RUBRIC['instructions']]
+    return '\n'.join(lines)+'\n'

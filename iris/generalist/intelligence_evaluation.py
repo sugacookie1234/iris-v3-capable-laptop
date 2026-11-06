@@ -37,9 +37,19 @@ from iris.generalist.benchmark_admission import AdmissionRefused, ProviderAttemp
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / 'tests/fixtures/intelligence_development.json'
 CONVERSATION_CORPUS = ROOT / 'tests/fixtures/conversation_development.json'
+M6_CORPUS = ROOT / 'tests/fixtures/m6_development.json'
 HOLDOUTS = ('interpretation_holdout.json', 'working_context_holdout.json', 'controlled_plan_holdout.json')
 METRICS = ('intent', 'capability', 'arguments', 'context', 'abstention', 'host_acceptance',
-           'plan_validity', 'verified_completion', 'security_expectation')
+           'plan_validity', 'dependencies', 'verified_completion', 'security_expectation')
+
+
+def prompt_fingerprint():
+    """Configuration fingerprint, not a claim of identical dynamically rendered prompts."""
+    paths = ('config/identity.md','iris/identity.py','iris/brain/engine.py','iris/brain/router.py',
+             'iris/brain/council.py','iris/generalist/interpretation.py','iris/generalist/controlled_plan.py',
+             'iris/memory/working.py','iris/generalist/intelligence_evaluation.py')
+    return hashlib.sha256(json.dumps({p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest()
+        for p in paths},sort_keys=True).encode()).hexdigest()
 
 
 class BudgetExceeded(RuntimeError):
@@ -155,6 +165,14 @@ def run_case(case, root, provider):
     if case.get('deny_permission'):
         brain._tool_permissions = frozenset()
     working, orchestrator = WorkingContextV1(), Orchestrator()
+    if case.get('project_context'):
+        # Synthetic, explicitly selected local identity; never export private data.
+        from cryptography.fernet import Fernet
+        from iris.generalist.continuity import ProjectContinuity
+        cipher = Fernet(Fernet.generate_key())
+        store = ProjectContinuity(root/'projects.sqlite3',codec=(cipher.encrypt,cipher.decrypt))
+        project = store.create('PRIVATE_PROJECT_SENTINEL', 'Private synthetic objective')
+        working.select_local_project(project['id'],project['revision'])
     if case.get('active'):
         orchestrator.context = ActiveContext(expires=orchestrator.clock()+900)
         if case.get('expired'):
@@ -166,7 +184,7 @@ def run_case(case, root, provider):
     # Explicitly excluded synthetic retrieved material; never promoted to authority.
     for text in case.get('private_context',[]):
         working.remember(text,source=Source.EXTERNAL,privacy=Privacy.PRIVATE,export=Export.NONE)
-    provider.private_markers = tuple(case.get('private_context',[]))
+    provider.private_markers = tuple(case.get('private_context',[])) + (('PRIVATE_PROJECT_SENTINEL',project['id']) if case.get('project_context') else ())
     rows = []
     for index, turn_case in enumerate(case['turns']):
         started = time.monotonic()
@@ -187,7 +205,17 @@ def run_case(case, root, provider):
             if case.get('mode') == 'respond':
                 # Response quality only: no tool executor on this interface.
                 brain._tool_executor = None
-                result = brain.respond(turn_case['request'],working_context=snapshot)
+                route_context = nullcontext()
+                if case.get('evaluation_route'):
+                    if not isinstance(provider,MeasuredFakeProvider):
+                        raise ValueError('Controlled route overrides are offline-only.')
+                    from dataclasses import replace
+                    from iris.brain.router import route_message, ReasoningLevel
+                    selected = replace(route_message(turn_case['request']),reasoning=ReasoningLevel(case['evaluation_route']))
+                    route_context = patch('iris.brain.engine.route_message',return_value=selected)
+                with route_context:
+                    result = brain.respond(turn_case['request'],working_context=snapshot)
+                row['controlled_route_override'] = case.get('evaluation_route')
                 from iris.generalist.benchmark_review import review_record
                 provider.reviews.append(review_record(case['id'],turn_case['request'],result,snapshot))
                 if 'response_checks' in expected:
@@ -206,13 +234,14 @@ def run_case(case, root, provider):
                     working_context=snapshot)
                 row['structural_parse_success'] = True
                 row['stage'] = 'host_validation'
+                # Score the model's proposal BEFORE the host can reject it.
+                for metric, field, key in (('capability','tools','tool'),('arguments','plan_arguments','arguments'),
+                                           ('dependencies','plan_dependencies','depends_on')):
+                    if field in expected:
+                        row['metrics'][metric] = [node.get(key) if type(node) is dict else None for node in proposal.nodes] == expected[field]
                 plan = validate_proposal(proposal,request=turn_case['request'],turn=turn,session='benchmark',
                     executor=executor,permissions=brain._tool_permissions,working=working,orchestrator=orchestrator)
                 row['metrics']['plan_validity'] = True
-                if 'tools' in expected:
-                    row['metrics']['capability'] = [n.tool for n in plan.plan.nodes] == expected['tools']
-                if 'plan_arguments' in expected:
-                    row['metrics']['arguments'] = [dict(n.arguments) for n in plan.plan.nodes] == expected['plan_arguments']
                 row['host_accepted'] = True
                 row['preview_executed'] = bool(history.rows())
                 if case.get('execute'):
@@ -264,6 +293,9 @@ def run_case(case, root, provider):
                 row['metrics'].setdefault(metric,False)
         if case.get('mode') == 'plan':
             row['metrics'].setdefault('plan_validity',False)
+            for metric, field in (('capability','tools'),('arguments','plan_arguments'),('dependencies','plan_dependencies')):
+                if field in expected:
+                    row['metrics'].setdefault(metric,False)
         row['metrics']['host_acceptance'] = row['host_accepted']
         effects = [r for r in history.rows() if r['id'] not in prior_receipts
                    and r.get('verification') != 'not_executed']
@@ -298,6 +330,8 @@ def offline_boundary():
 
 def evaluate(*, max_calls=64, duration=120, cases=None, live_provider=None):
     cases = load_cases() if cases is None else cases
+    if live_provider is not None and any(c.get('execute') or c.get('offline_only') or c.get('project_context') or c.get('evaluation_route') for c in cases):
+        raise ValueError('Private project and controlled-route fixtures remain offline-only.')
     fingerprint = hashlib.sha256(json.dumps(cases,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     with tempfile.TemporaryDirectory(prefix='iris-intelligence-') as directory, (offline_boundary() if live_provider is None else nullcontext()):
         root = Path(directory)
@@ -318,6 +352,7 @@ def evaluate(*, max_calls=64, duration=120, cases=None, live_provider=None):
     return {'version':2,'benchmark':'iris-intelligence-development-v2','mode':'offline_fake' if live_provider is None else 'real_provider',
             'timestamp':datetime.now(timezone.utc).isoformat(),'commit':commit,'case_sha256':fingerprint,
             'identity_sha256':hashlib.sha256(load_identity().raw_text.encode()).hexdigest(),
+            'prompt_configuration_sha256':prompt_fingerprint(),
             'holdouts_unscored':{name:hashlib.sha256((ROOT/'tests/fixtures'/name).read_bytes()).hexdigest() for name in HOLDOUTS},
             'budget':{'adapter_calls':max_calls,'duration_seconds':duration,'monetary_ceiling':0 if live_provider is None else None,
                       'unknown_cost_acknowledged':live_provider is not None},
@@ -340,7 +375,7 @@ def evaluate(*, max_calls=64, duration=120, cases=None, live_provider=None):
                 and all(r.get('development_response_checks',{}).values()) for r in rows),
             'limitations':['Offline outputs test measurement and contracts, not model intelligence.',
                 'Ordinary response routes reuse IRISBrain; selected target is identical across reasoning roles, not the owner default configuration.',
-                'Route tasks differ; no cross-route ranking or general conversational-quality claim.',
+                'Only explicit controlled-route fixtures use identical tasks; no real cross-route ranking or general quality claim.',
                 'Host acceptance is a rate, not correctness; denied malicious proposals are not model successes.',
                 'Conversational relevance and unsupported claims require human review; no automatic quality claim.',
                 'Development response checks are limited lexical oracles; scripted answers do not establish comprehension.',
@@ -371,20 +406,25 @@ def main(argv=None):
     parser.add_argument('--provider')
     parser.add_argument('--model')
     parser.add_argument('--case',action='append',dest='case_ids')
-    parser.add_argument('--development-set',choices=('baseline','conversation'),default='baseline')
+    parser.add_argument('--development-set',choices=('baseline','conversation','m6'),default='baseline')
+    parser.add_argument('--prompt-sha256')
     parser.add_argument('--scope-sha256')
     parser.add_argument('--authorize-provider-contact',action='store_true')
     parser.add_argument('--acknowledge-unknown-cost',action='store_true')
     parser.add_argument('--preflight',action='store_true')
+    parser.add_argument('--blind-review',action='store_true')
     args = parser.parse_args(argv)
-    if args.mode=='real' and args.development_set!='baseline':
+    if args.mode=='real' and args.development_set=='conversation':
         parser.error('Conversation refinement cases are offline-only; no live scope is authorized here.')
-    cases = load_cases(CONVERSATION_CORPUS if args.development_set=='conversation' else CORPUS)
+    cases = load_cases({'baseline':CORPUS,'conversation':CONVERSATION_CORPUS,'m6':M6_CORPUS}[args.development_set])
     if args.case_ids:
         if len(set(args.case_ids)) != len(args.case_ids) or set(args.case_ids)-{c['id'] for c in cases}:
             parser.error('Select distinct existing development case IDs.')
         cases = [c for c in cases if c['id'] in args.case_ids]
     scope = hashlib.sha256(json.dumps(cases,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    configuration = prompt_fingerprint()
+    if args.development_set=='m6':
+        scope = hashlib.sha256(json.dumps({'case_sha256':scope,'prompt_configuration_sha256':configuration},sort_keys=True).encode()).hexdigest()
     live = None
     if args.mode == 'real':
         from iris.generalist.benchmark_admission import LiveAuthorization, DurableRun, LiveBenchmarkProvider
@@ -392,9 +432,11 @@ def main(argv=None):
             authorization = LiveAuthorization(args.provider,args.model,args.scope_sha256,args.max_calls,args.duration,
                 args.authorize_provider_contact,args.acknowledge_unknown_cost)
             authorization.validate()
+            if args.development_set=='m6' and args.prompt_sha256 != configuration:
+                raise ValueError('Confirm the current prompt configuration fingerprint.')
             if not args.case_ids or scope != args.scope_sha256:
                 raise ValueError('Confirm explicit case IDs and their current fingerprint.')
-            if any(c.get('execute') or c['category'] in ('failure','adversarial') for c in cases):
+            if any(c.get('execute') or c.get('offline_only') or c.get('project_context') or c.get('evaluation_route') or c['category'] in ('failure','adversarial') for c in cases):
                 raise ValueError('Live pilot supports conversational/interpretation/preview cases only; offline fault and execution cases are excluded.')
             if args.output is None or not args.output.resolve().is_relative_to((ROOT/'.local').resolve()):
                 raise ValueError('Select a dedicated result directory beneath repository .local.')
@@ -406,6 +448,7 @@ def main(argv=None):
             live = LiveBenchmarkProvider(DurableRun(args.output,authorization))
     if args.preflight:
         print(json.dumps({'scope_sha256':scope,'cases':[c['id'] for c in cases],
+                          'prompt_configuration_sha256':configuration,
                           'mode':args.mode,'contacted_provider':False}))
         return 0
     args.output = args.output or Path('.local/intelligence-evaluation')
@@ -423,7 +466,11 @@ def main(argv=None):
             live.run.stop() # Completing or abandoning a run never grants automatic replay.
     args.output.mkdir(parents=True,exist_ok=True)
     review = report.pop('review')
+    from iris.generalist.benchmark_review import blind_records, review_markdown
+    if args.blind_review:
+        review['records'] = blind_records(review['records'])
     (args.output/'review.json').write_text(json.dumps(review,indent=2)+'\n',encoding='utf-8')
+    (args.output/'review.md').write_text(review_markdown(review['records']),encoding='utf-8')
     (args.output/'results.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
     (args.output/'summary.md').write_text(summary(report),encoding='utf-8')
     print(summary(report))

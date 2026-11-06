@@ -424,3 +424,28 @@ The archive is not a full laptop/vault/configuration backup. Physical Windows-ac
 device transfer and abrupt power loss remain acceptance gates; RAM/pagefile and other
 plaintext-store staging exposure remain documented. No live provider calls or owner
 backup/restore occurred. M6 requires its own authorization and was not started.
+
+## M6 checkpoint A — evaluation preparation, not live acceptance
+
+Recovered 736f6e5 with only preserved tatus -sb untracked. Existing respond,
+InterpretationV1, ProposedPlanV1, WorkingContext, ToolExecutor, Council and durable
+admission remain the implementation. No default model, rollout or permission change.
+Audit: response reviews existed, but plan field scores were calculated only after
+host validation and route samples used different tasks. M6 scores raw parsed plan
+capabilities/arguments/dependencies before host validation, with false observations
+on parse failure. Host acceptance/plan validity remain separate rates. No overall
+intelligence score is produced.
+
+A separate 22-case/24-turn development corpus combines natural conversation,
+context-dependent Java/SQLite references, ambiguous progress, topic changes,
+interpretation and compound follow-ups, planning, adversarial/stale proposals,
+identical-task FAST/DEEP/Council comparisons and a protected local project fixture.
+Frozen holdouts and historical pilot files are unchanged. Comparisons and private
+project context are explicitly offline-only. Existing M5/M5.1 contract suites retain
+changed-task, missing-history, interrupted/restarted and approval-replay coverage;
+those are host tests, not real-model project-understanding scores.
+
+Seven new M6 tests plus 25 existing benchmark/admission tests passed (32 total).
+Fake transport exercises the real CLI path; no real provider was contacted. Public
+provider documentation was read without credentials. Source preparation is not
+permission to make an inference request or enable the experiment.
