@@ -32,6 +32,15 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def unique_pairs(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError('Duplicate JSON field.')
+        result[key] = value
+    return result
+
+
 class ProjectContinuity:
     """Ten encrypted project envelopes; no source contents or reusable approvals.
 
@@ -76,10 +85,19 @@ class ProjectContinuity:
             db.close()
 
     def _decode(self, identifier, payload):
+        return self.decode_envelope(identifier, payload, self._open)
+
+    @staticmethod
+    def decode_envelope(identifier, payload, opener):
+        """Validate a protected or portable envelope without opening a live store."""
         try:
-            if len(payload) > 70000:
+            if type(payload) is not bytes or len(payload) > 70000:
                 raise ValueError
-            value = json.loads(self._open(bytes(payload)))
+            raw = opener(payload)
+            if type(raw) is not bytes or len(raw) > 64000:
+                raise ValueError
+            value = json.loads(raw, object_pairs_hook=unique_pairs,
+                               parse_constant=lambda _: (_ for _ in ()).throw(ValueError('Non-finite value.')))
             if (type(value) is not dict or set(value) != {'version','id','title','description',
                     'created','updated','revision','privacy','export','resources','workflows'}
                     or type(value['version']) is not int or value['version'] != 1
@@ -102,6 +120,9 @@ class ProjectContinuity:
                 raise ValueError
             for workflow in value['workflows']:
                 _validate_workflow(workflow)
+            if (len({r['id'] for r in value['resources']}) != len(value['resources'])
+                    or len({w['id'] for w in value['workflows']}) != len(value['workflows'])):
+                raise ValueError
             return value
         except Exception:
             raise ContinuityError('Project evidence cannot be unlocked or validated. No recovery action is permitted.') from None

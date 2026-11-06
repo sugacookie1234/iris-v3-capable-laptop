@@ -375,3 +375,21 @@ Next: explicit portable project backup/recovery remains a narrow readiness gap; 
 handoff's next major intelligence milestone is M6, owner-approved measurement/rollout
 review. Neither live evaluation nor rollout is authorized by M5 completion. Do not
 repeat this sprint or troubleshoot native WebView2 as part of its continuation.
+
+## M5.1 checkpoint A — portable project envelopes
+
+Recovered 2be1504 with only tatus -sb untracked. Extended the existing archive v1
+allowlist with projects.sqlite3. Exact project SQL schema/version, integrity, ten-row
+limit and shared M5 envelope validation are enforced. Source DPAPI envelopes are
+validated and rebuilt as portable JSON in a fresh in-memory SQLite snapshot. Restore
+validates portable envelopes, protects them under the destination account, verifies
+the roundtrip and builds a fresh protected database before writing any project file.
+Rebuilding prevents plaintext remnants in SQLite free pages. No source writes.
+
+Unknown fields/duplicate JSON fields and redirected paths are rejected. Existing
+archives remain valid; older binaries reject the unknown projects store rather than
+partially restoring it. Cipher/KDF/64-MiB database bound and CLI are unchanged.
+40 focused tests passed: ten new portable-project tests plus six existing backup
+and 24 continuity tests. Includes two synthetic account keys, real Windows DPAPI,
+failed reprotection, schema/corruption, staging/no-clobber and source preservation.
+Runtime recovery guidance and end-to-end restored workflow acceptance follow in B.
