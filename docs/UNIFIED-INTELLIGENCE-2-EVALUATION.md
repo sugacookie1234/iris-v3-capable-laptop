@@ -101,3 +101,26 @@ owner file access, paid request or hardware acceptance occurred.
 Final M4 results: 1082 Python tests run, 1078 passed, four skipped; 12 desktop JS
 checks passed; CAP-34 174/174 each arm, zero regressions. Twenty-one planning test
 methods were added. The reserved planning holdout hash is recorded in VALIDATION.md.
+
+
+## M4.5 checkpoint A — offline intelligence measurement foundation
+
+`python -m iris.generalist.intelligence_evaluation` uses a separate 24-case,
+25-turn synthetic development corpus and the real IRISBrain interpretation/plan
+interfaces, validators, WorkingContext, ToolExecutor, ActionHistory and provider
+admission ledger. A two-step workflow executes registered listing/reading handlers
+against disposable files; confirmations and per-operation approvals are simulated.
+No owner settings, workspace, credentials or provider ledger are loaded.
+
+Metrics separate semantic field matches, host acceptance, plan validity, verified
+completion and expected security outcomes. Fixture failures are deliberately present;
+there is no combined intelligence pass percentage. Raw output and private context
+are not written to reports. Missing token usage is unknown, not estimated. Reports
+include individual timings, commit/corpus fingerprints and hashes of untouched,
+unscored holdouts. Conversational quality/unsupported claims still require human
+review. This is a direct contract probe, not full DesktopRuntime chat routing.
+
+Checkpoint A focused validation: 10 tests passed (synthetic only). Real mode fails
+closed before loading accounts or contacting providers. Live authorization/bounded
+transport and DEEP/Council measurement remain unfinished; M4.5 is PARTIAL. No usable
+live-run command is claimed at this checkpoint. Default-off settings are unchanged.
