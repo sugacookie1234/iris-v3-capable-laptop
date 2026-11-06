@@ -97,7 +97,7 @@ class BenchmarkAdmissionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             provider=LiveBenchmarkProvider(DurableRun(directory,self.policy()),
                 transport=lambda *_:LLMResponse('inert','other','other'))
-            with self.assertRaises(ValueError):provider.generate(LLMRequest(provider.model,[]))
+            with self.assertRaises(RuntimeError):provider.generate(LLMRequest(provider.model,[]))
 
 
 if __name__=='__main__':unittest.main()

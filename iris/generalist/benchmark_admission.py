@@ -20,6 +20,14 @@ from iris.brain.llm import LLMResponse, LLMToolCall
 from iris.usage import ProviderUsage
 
 
+class AdmissionRefused(ValueError):
+    pass
+
+
+class ProviderAttemptFailed(RuntimeError):
+    pass
+
+
 @dataclass(frozen=True)
 class LiveAuthorization:
     provider: str
@@ -167,7 +175,10 @@ class LiveBenchmarkProvider:
         self.reviews = []
 
     def generate(self, request):
-        self.run.check(request)
+        try:
+            self.run.check(request)
+        except ValueError:
+            raise AdmissionRefused('Run admission refused before provider invocation.') from None
         started = time.monotonic()
         with self.run.usage.reserve('model'):
             self.run.check(request)
@@ -181,11 +192,15 @@ class LiveBenchmarkProvider:
                 self.run.check(request)
                 if response.provider != self.name or response.model != self.model:
                     raise ValueError('Provider/model changed after authorization.')
-                record.update(status='completed',input_tokens=response.input_tokens,output_tokens=response.output_tokens)
+                record.update(status='completed',
+                    input_tokens=response.input_tokens if type(response.input_tokens) is int and response.input_tokens>=0 else None,
+                    output_tokens=response.output_tokens if type(response.output_tokens) is int and response.output_tokens>=0 else None)
                 return response
-            except BaseException:
+            except BaseException as error:
                 record['status'] = 'failed_or_cancelled_billing_unknown'
                 self.run.stop()
-                raise
+                if isinstance(error,KeyboardInterrupt):
+                    raise
+                raise ProviderAttemptFailed('Attempt failed/cancelled; billing is unknown and run is stopped.') from None
             finally:
                 record['seconds'] = time.monotonic()-started

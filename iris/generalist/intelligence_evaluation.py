@@ -1,16 +1,17 @@
-"""Synthetic intelligence measurements, separate from CAP-34 contract ablations.
+"""Synthetic intelligence measurements. Offline by default; live needs exact consent.
 
-No application settings or personal workspace are loaded. Offline is the only
-enabled transport until the live budget/authorization acceptance gate is complete.
+No personal workspace is loaded. The existing provider's normal usage protections
+also apply to an explicitly authorized live run; default model settings never change.
 """
 from __future__ import annotations
 
 import argparse
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import socket
 import subprocess
@@ -30,7 +31,8 @@ from iris.identity import load_identity
 from iris.memory.working import WorkingContextV1, Source, Privacy, Export, topic_transition
 from iris.tools import ToolExecutor, Approval
 from iris.tools.workspace import workspace_registry
-from iris.usage import ProviderUsage
+from iris.usage import ProviderUsage, ProviderLimitError
+from iris.generalist.benchmark_admission import AdmissionRefused, ProviderAttemptFailed
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / 'tests/fixtures/intelligence_development.json'
@@ -61,20 +63,23 @@ class MeasuredFakeProvider:
         self.context = None
         self.prompt_checks = []
         self.private_markers = ()
+        self.reviews = []
 
     def generate(self, request):
         with self.lock:
             if self.cancelled.is_set() or self.clock() >= self.deadline or len(self.attempts) >= self.max_calls:
                 raise BudgetExceeded('Benchmark admission refused; no adapter call.')
             record = {'model': request.model, 'provider': self.name, 'status': 'started',
-                      'seconds': None, 'input_tokens': None, 'output_tokens': None, 'cost': None}
+                      'seconds': None, 'input_tokens': None, 'output_tokens': None, 'cost': None,
+                      'settings':asdict(request.options)}
             self.attempts.append(record)
         started = self.clock()
         try:
             with self.ledger.reserve('model'):
                 # This adapter deliberately cannot contact a provider.
-                payload = json.loads(request.messages[-1].content)
-                prompt_ok = (not request.tools and 'turn' in payload
+                ordinary = 'response_text' in self.fixture
+                payload = {} if ordinary else json.loads(request.messages[-1].content)
+                prompt_ok = (not request.tools and (ordinary or 'turn' in payload)
                     and not any(marker in message.content for marker in self.private_markers for message in request.messages))
                 self.prompt_checks.append(prompt_ok)
                 if not prompt_ok:
@@ -85,6 +90,11 @@ class MeasuredFakeProvider:
                 if fixture.get('cancel'):
                     self.cancelled.set()
                     raise InterruptedError('Synthetic cancellation')
+                if ordinary:
+                    text = ('FINAL RANKING:\n1. Response A\n2. Response B'
+                            if 'PEER EVALUATION' in request.messages[0].content else fixture['response_text'])
+                    record['status'] = 'completed'
+                    return LLMResponse(text,self.name,request.model)
                 value = fixture.get('raw')
                 if value is None:
                     value = dict(fixture['output'], version=1, turn=payload['turn'])
@@ -105,7 +115,7 @@ class MeasuredFakeProvider:
 def make_brain(provider, executor):
     registry = LLMRegistry()
     registry.register(provider)
-    target = ModelTarget(provider.name, 'synthetic-fast')
+    target = ModelTarget(provider.name, getattr(provider,'model','synthetic-fast'))
     # Reuse the existing policy; only FAST interpretation/planning is exercised.
     policy = ModelPolicy(target, target, CouncilPlan((CouncilSeat('one','Review',target),
                                                      CouncilSeat('two','Critique',target)),target))
@@ -115,7 +125,7 @@ def make_brain(provider, executor):
 
 def load_cases(path=CORPUS):
     value = json.loads(Path(path).read_text(encoding='utf-8'))
-    if value.get('version') != 1 or not 1 <= len(value.get('cases',[])) <= 30:
+    if value.get('version') != 1 or not 1 <= len(value.get('cases',[])) <= 40:
         raise ValueError('Invalid development corpus.')
     identifiers = [case['id'] for case in value['cases']]
     if len(set(identifiers)) != len(identifiers):
@@ -146,6 +156,8 @@ def run_case(case, root, provider):
     working, orchestrator = WorkingContextV1(), Orchestrator()
     if case.get('active'):
         orchestrator.context = ActiveContext(expires=orchestrator.clock()+900)
+        if case.get('expired'):
+            orchestrator.context.expires = orchestrator.clock()-1
     for text in case.get('owner_context',[]):
         working.remember(text,source=Source.OWNER,privacy=Privacy.CONVERSATION,export=Export.REASONING)
     # Explicitly excluded synthetic retrieved material; never promoted to authority.
@@ -169,10 +181,22 @@ def run_case(case, root, provider):
         provider.context, provider.fixture = active, turn_case['fake']
         turn = f'{index+1:032x}'
         try:
-            if case.get('mode') == 'plan':
+            if case.get('mode') == 'respond':
+                # Response quality only: no tool executor on this interface.
+                brain._tool_executor = None
+                result = brain.respond(turn_case['request'],working_context=snapshot)
+                from iris.generalist.benchmark_review import review_record
+                provider.reviews.append(review_record(case['id'],turn_case['request'],result,snapshot))
+                row['reasoning_route'] = result.route.reasoning.value
+                row['host_accepted'] = True
+                row['route_expected'] = result.route.reasoning.value == expected['route']
+                working.remember(turn_case['request'],source=Source.OWNER,
+                    privacy=Privacy.CONVERSATION,export=Export.REASONING)
+            elif case.get('mode') == 'plan':
                 proposal = brain.propose_plan(turn_case['request'],turn=turn,
                     specifications=tuple(s for s in executor.specifications() if s.name in ALLOWED),
                     working_context=snapshot)
+                row['structural_parse_success'] = True
                 row['stage'] = 'host_validation'
                 plan = validate_proposal(proposal,request=turn_case['request'],turn=turn,session='benchmark',
                     executor=executor,permissions=brain._tool_permissions,working=working,orchestrator=orchestrator)
@@ -199,19 +223,24 @@ def run_case(case, root, provider):
                     row['report_honesty'] = 'host_receipt_summary_not_model_prose'
             else:
                 proposal = brain.interpret(turn_case['request'],turn=turn,context=active,working_context=snapshot)
+                row['structural_parse_success'] = True
                 row['stage'] = 'host_validation'
                 score_fields(proposal,expected,row)
                 if 'context' in expected:
                     actual = asdict(proposal.context) if proposal.context else None
                     wanted = {k:active[k] for k in ('id','revision')} if expected['context']=='active' and active else None
                     row['metrics']['context'] = actual == wanted
+                if case.get('ui_revision_change') and orchestrator.context:
+                    orchestrator.context.revision += 1 # synthetic host UI edit between proposal and application
                 working.validate_snapshot(snapshot,orchestrator)
                 interpretation.apply(proposal,turn=turn,owner_text=turn_case['request'],
                     orchestrator=orchestrator,brain=brain,working=working)
                 row['host_accepted'] = True
             row['stage'] = 'completed'
-        except BudgetExceeded:
+        except (BudgetExceeded,ProviderLimitError,AdmissionRefused):
             row['stage'] = 'budget_refused'
+        except ProviderAttemptFailed:
+            row['stage'] = 'provider_failed_or_cancelled'
         except InterruptedError:
             row['stage'] = 'cancelled'
         except ValueError:
@@ -219,6 +248,8 @@ def run_case(case, root, provider):
         except Exception:
             row['stage'] = 'provider_failed' if row['stage']=='provider' else 'execution_failed'
         # Raw semantic fields remain failures on parse errors, never safety successes.
+        if case.get('mode') != 'respond':
+            row.setdefault('structural_parse_success',False)
         for metric, field in [('intent','kind'),('capability','capability'),('arguments','arguments'),
                               ('context','context'),('abstention','abstain')]:
             if field in expected:
@@ -257,36 +288,46 @@ def offline_boundary():
         yield
 
 
-def evaluate(*, max_calls=64, duration=120, cases=None):
+def evaluate(*, max_calls=64, duration=120, cases=None, live_provider=None):
     cases = load_cases() if cases is None else cases
     fingerprint = hashlib.sha256(json.dumps(cases,sort_keys=True,separators=(',',':')).encode()).hexdigest()
-    with tempfile.TemporaryDirectory(prefix='iris-intelligence-') as directory, offline_boundary():
+    with tempfile.TemporaryDirectory(prefix='iris-intelligence-') as directory, (offline_boundary() if live_provider is None else nullcontext()):
         root = Path(directory)
         ledger = ProviderUsage(root/'usage.sqlite3',{'IRIS_PROVIDER_LIMIT_SESSION':max_calls})
-        provider = MeasuredFakeProvider(ledger,max_calls=max_calls,duration=duration)
+        provider = live_provider or MeasuredFakeProvider(ledger,max_calls=max_calls,duration=duration)
         rows = []
         for index, case in enumerate(cases):
+            if live_provider is None:
+                # A synthetic cancellation is scoped to its independent fixture.
+                provider.cancelled.clear()
             folder = root/str(index)
             folder.mkdir()
             rows.extend(run_case(case,folder,provider))
         attempts = provider.attempts
-        prompt_checks = provider.prompt_checks
+        prompt_checks = getattr(provider,'prompt_checks',[])
     commit = subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
-    return {'version':1,'benchmark':'iris-intelligence-development-v1','mode':'offline_fake',
+    from iris.generalist.benchmark_review import RUBRIC, assess
+    return {'version':2,'benchmark':'iris-intelligence-development-v2','mode':'offline_fake' if live_provider is None else 'real_provider',
             'timestamp':datetime.now(timezone.utc).isoformat(),'commit':commit,'case_sha256':fingerprint,
             'holdouts_unscored':{name:hashlib.sha256((ROOT/'tests/fixtures'/name).read_bytes()).hexdigest() for name in HOLDOUTS},
-            'budget':{'adapter_calls':max_calls,'duration_seconds':duration,'monetary_cost':0,'external_calls':0},
+            'budget':{'adapter_calls':max_calls,'duration_seconds':duration,'monetary_ceiling':0 if live_provider is None else None,
+                      'unknown_cost_acknowledged':live_provider is not None},
             'case_count':len(cases),'turn_count':len(rows),'metrics':aggregate(rows),
             'categories':{name:aggregate([r for r in rows if r['category']==name]) for name in sorted({r['category'] for r in rows})},
             'rows':rows,'attempts':attempts,'actual_adapter_calls':len(attempts),
-            'actual_external_calls':0,'actual_cost':0,'token_usage':None,
+            'actual_external_calls':0 if live_provider is None else None,'actual_cost':0 if live_provider is None else None,
+            'token_usage':{'input':sum(a['input_tokens'] for a in attempts if a['input_tokens'] is not None),
+                          'output':sum(a['output_tokens'] for a in attempts if a['output_tokens'] is not None),
+                          'input_observations':sum(a['input_tokens'] is not None for a in attempts),
+                          'output_observations':sum(a['output_tokens'] is not None for a in attempts)} if live_provider else None,
+            'review':{'rubric':RUBRIC,'records':provider.reviews},'human_quality':assess(provider.reviews),
             'prompt_boundary_checks':{'passed':sum(prompt_checks),'observed':len(prompt_checks)},
             'outcomes':{stage:sum(r['stage']==stage for r in rows) for stage in sorted({r['stage'] for r in rows})},
             'fixture_expectations_met':all(r['expected_host_outcome_met']
-                and r.get('expected_execution_outcome_met',True) for r in rows),
-            'limitations':['Fake outputs test measurement and contracts, not model intelligence.',
-                'Only FAST proposal interfaces measured; DEEP/Council comparisons not implemented.',
-                'This directly probes interpretation/apply contracts, not DesktopRuntime routing or ordinary respond().',
+                and r.get('expected_execution_outcome_met',True) and r.get('route_expected',True) for r in rows),
+            'limitations':['Offline outputs test measurement and contracts, not model intelligence.',
+                'Ordinary response routes reuse IRISBrain; selected target is identical across reasoning roles, not the owner default configuration.',
+                'Route tasks differ; no cross-route ranking or general conversational-quality claim.',
                 'Host acceptance is a rate, not correctness; denied malicious proposals are not model successes.',
                 'Conversational relevance and unsupported claims require human review; no automatic quality claim.',
                 'Confirmation/approvals simulated only for disposable synthetic workspace handlers.',
@@ -295,7 +336,7 @@ def evaluate(*, max_calls=64, duration=120, cases=None):
 
 def summary(report):
     lines = ['# IRIS intelligence development benchmark','',f"Mode: {report['mode']}; {report['case_count']} cases / {report['turn_count']} turns.",
-             f"Adapter calls: {report['actual_adapter_calls']}; external calls: 0; offline cost: 0.",'',
+             f"Adapter calls: {report['actual_adapter_calls']}; external calls: {report['actual_external_calls']}; cost: {report['actual_cost']}.",'',
              '| Metric | Positive | Observed |','|---|---:|---:|']
     lines += [f'| {name} | {value["positive"]} | {value["observed"]} |' for name,value in report['metrics'].items()]
     lines += ['',*['- '+text for text in report['limitations']], '', 'Case fingerprint: '+report['case_sha256']]
@@ -308,14 +349,62 @@ def summary(report):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mode',choices=('offline','real'),default='offline')
-    parser.add_argument('--output',type=Path,default=Path('.local/intelligence-evaluation'))
-    parser.add_argument('--max-calls',type=int,default=64)
-    parser.add_argument('--duration',type=float,default=120)
+    parser.add_argument('--output',type=Path)
+    parser.add_argument('--max-calls',type=int)
+    parser.add_argument('--duration',type=float)
+    parser.add_argument('--provider')
+    parser.add_argument('--model')
+    parser.add_argument('--case',action='append',dest='case_ids')
+    parser.add_argument('--scope-sha256')
+    parser.add_argument('--authorize-provider-contact',action='store_true')
+    parser.add_argument('--acknowledge-unknown-cost',action='store_true')
+    parser.add_argument('--preflight',action='store_true')
     args = parser.parse_args(argv)
-    if args.mode != 'offline':
-        parser.error('Real transport is blocked pending bounded live-authorization acceptance. No provider contacted.')
-    report = evaluate(max_calls=args.max_calls,duration=args.duration)
+    cases = load_cases()
+    if args.case_ids:
+        if len(set(args.case_ids)) != len(args.case_ids) or set(args.case_ids)-{c['id'] for c in cases}:
+            parser.error('Select distinct existing development case IDs.')
+        cases = [c for c in cases if c['id'] in args.case_ids]
+    scope = hashlib.sha256(json.dumps(cases,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    live = None
+    if args.mode == 'real':
+        from iris.generalist.benchmark_admission import LiveAuthorization, DurableRun, LiveBenchmarkProvider
+        try:
+            authorization = LiveAuthorization(args.provider,args.model,args.scope_sha256,args.max_calls,args.duration,
+                args.authorize_provider_contact,args.acknowledge_unknown_cost)
+            authorization.validate()
+            if not args.case_ids or scope != args.scope_sha256:
+                raise ValueError('Confirm explicit case IDs and their current fingerprint.')
+            if any(c.get('execute') or c['category'] in ('failure','adversarial') for c in cases):
+                raise ValueError('Live pilot supports conversational/interpretation/preview cases only; offline fault and execution cases are excluded.')
+            if args.output is None or not args.output.resolve().is_relative_to((ROOT/'.local').resolve()):
+                raise ValueError('Select a dedicated result directory beneath repository .local.')
+            if not os.environ.get('IRIS_BENCHMARK_API_KEY','').strip():
+                raise ValueError('Set IRIS_BENCHMARK_API_KEY explicitly; owner credentials are not auto-selected.')
+        except (ValueError,TypeError) as error:
+            parser.error(str(error))
+        if not args.preflight:
+            live = LiveBenchmarkProvider(DurableRun(args.output,authorization))
+    if args.preflight:
+        print(json.dumps({'scope_sha256':scope,'cases':[c['id'] for c in cases],
+                          'mode':args.mode,'contacted_provider':False}))
+        return 0
+    args.output = args.output or Path('.local/intelligence-evaluation')
+    try:
+        report = evaluate(max_calls=64 if args.max_calls is None else args.max_calls,
+            duration=120 if args.duration is None else args.duration,cases=cases,live_provider=live)
+    except KeyboardInterrupt:
+        if live:
+            live.run.stop()
+            (args.output/'interrupted.json').write_text(json.dumps({'status':'interrupted','cost':None,
+                'attempts':live.run.attempts(),'warning':'Remote processing and billing may continue.'},indent=2),encoding='utf-8')
+        return 130
+    finally:
+        if live:
+            live.run.stop() # Completing or abandoning a run never grants automatic replay.
     args.output.mkdir(parents=True,exist_ok=True)
+    review = report.pop('review')
+    (args.output/'review.json').write_text(json.dumps(review,indent=2)+'\n',encoding='utf-8')
     (args.output/'results.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
     (args.output/'summary.md').write_text(summary(report),encoding='utf-8')
     print(summary(report))

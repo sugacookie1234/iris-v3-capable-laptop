@@ -33,6 +33,8 @@ CORPUS = (
     ('working_context','tests.test_working_context'),
     ('controlled_plans','tests.test_controlled_plan'),
     ('intelligence_measurement','tests.test_intelligence_evaluation'),
+    ('benchmark_admission','tests.test_benchmark_admission'),
+    ('benchmark_routes','tests.test_benchmark_routes'),
 )
 
 

@@ -931,6 +931,142 @@
           }
         }
       ]
+    },
+    {
+      "id": "ordinary-fast",
+      "category": "ordinary_response",
+      "mode": "respond",
+      "owner_context": [
+        "I have been working on my programming project."
+      ],
+      "turns": [
+        {
+          "request": "I think it is coming along well.",
+          "fake": {
+            "response_text": "That sounds encouraging. I cannot verify the result from this conversation alone."
+          },
+          "expected": {
+            "host_accept": true,
+            "route": "FAST"
+          }
+        },
+        {
+          "request": "Anyway, let us discuss my business.",
+          "fake": {
+            "response_text": "We can discuss the business. Which project do you mean?"
+          },
+          "expected": {
+            "host_accept": true,
+            "route": "FAST"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ordinary-deep",
+      "category": "ordinary_response",
+      "mode": "respond",
+      "owner_context": [
+        "I have been working on my programming project."
+      ],
+      "turns": [
+        {
+          "request": "Analyze the trade-offs of studying alone versus a study group.",
+          "fake": {
+            "response_text": "That sounds encouraging. I cannot verify the result from this conversation alone."
+          },
+          "expected": {
+            "host_accept": true,
+            "route": "DEEP"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ordinary-council",
+      "category": "ordinary_response",
+      "mode": "respond",
+      "owner_context": [
+        "I have been working on my programming project."
+      ],
+      "turns": [
+        {
+          "request": "Consult the council about study groups and uncertainty.",
+          "fake": {
+            "response_text": "That sounds encouraging. I cannot verify the result from this conversation alone."
+          },
+          "expected": {
+            "host_accept": true,
+            "route": "COUNCIL"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ui-revision",
+      "category": "context",
+      "active": true,
+      "turns": [
+        {
+          "request": "What if the rate were eight percent?",
+          "fake": {
+            "output": {
+              "kind": "hypothetical",
+              "text": "Synthetic conversational response; no actual grade is known.",
+              "capability": "compound",
+              "arguments": {
+                "operation": "update",
+                "changes": {
+                  "rate": 8
+                }
+              },
+              "context": "$active"
+            }
+          },
+          "expected": {
+            "kind": "hypothetical",
+            "capability": "compound",
+            "arguments": {
+              "operation": "update",
+              "changes": {
+                "rate": 8
+              }
+            },
+            "context": "active",
+            "host_accept": false
+          }
+        }
+      ],
+      "ui_revision_change": true
+    },
+    {
+      "id": "expired-example",
+      "category": "context",
+      "active": true,
+      "turns": [
+        {
+          "request": "Walk me through an example.",
+          "fake": {
+            "output": {
+              "kind": "clarification",
+              "text": "Synthetic conversational response; no actual grade is known.",
+              "capability": null,
+              "arguments": {},
+              "context": null
+            }
+          },
+          "expected": {
+            "kind": "clarification",
+            "capability": null,
+            "arguments": {},
+            "context": null,
+            "host_accept": false,
+            "abstain": true,
+            "no_effects": true
+          }
+        }
+      ],
+      "expired": true
     }
   ]
 }
