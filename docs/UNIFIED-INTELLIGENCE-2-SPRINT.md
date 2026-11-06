@@ -218,3 +218,16 @@ Acceptance is deliberately partial: no usable live-run command, live benchmark,
 provider ranking or rollout recommendation is claimed. Native WebView2 startup/
 reauthentication remains unresolved; this sprint does not alter it. M5 remains next
 only after M4.5's remaining evaluation-readiness work is complete.
+
+
+## M4.5 completion checkpoint A — durable admission
+
+Added benchmark_admission.py, reusing ProviderUsage and the existing OpenRouter
+transport. Consent binds exact model, synthetic scope fingerprint, call ceiling,
+deadline and separate unknown-cost acknowledgment. Run policy and attempts persist;
+changed policy, interrupted reservations or stopped runs cannot reset authority.
+A bounded subprocess cancels the local provider worker; this cannot guarantee that
+remote processing/billing stopped. The normal configured provider ledger is still
+applied by the existing transport. Tests use fake workers and isolated ledgers only.
+Eight admission tests passed. CLI integration/route/review acceptance is in progress;
+no live request or owner credential lookup has been performed in development.
