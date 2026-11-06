@@ -135,3 +135,14 @@ justified. Current read-only plans invalidate on restart and never resume automa
 Do not extend to effectful operations until their verifiers, cancellation/uncertainty,
 exact approvals and recovery semantics are separately demonstrated. Live model rollout
 still needs an approved synthetic benchmark/call budget; native reliability remains open.
+
+
+## Immediate continuation: finish M4.5 before M5
+
+Offline intelligence measurement checkpoint exists; see evaluation/sprint docs.
+Remaining: exact-target live consent and bounded transport with hard cancellation,
+known-cost enforcement or separately approved unknown-cost risk, durable run ledger,
+ordinary conversational/DEEP/Council measurement and human-reviewed claim/relevance
+rubric. Add expiry/revision and broader multi-turn cases without touching frozen
+holdouts. Then document a usable owner-approved live command. No live run is
+currently authorized, and --mode real intentionally refuses. M5 is not started.

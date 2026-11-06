@@ -30,7 +30,9 @@ class IntelligenceEvaluationTests(unittest.TestCase):
         self.assertFalse(completed['preview_executed'])
         self.assertEqual([r['status'] for r in completed['receipts']],['completed','completed'])
         self.assertEqual([r['capability'] for r in completed['receipts']],['workspace_list','workspace_read'])
-        self.assertEqual(report['metrics']['verified_completion'],{'positive':1,'observed':3})
+        self.assertEqual(report['metrics']['verified_completion'],{'positive':1,'observed':4})
+        partial=next(r for r in report['rows'] if r['case']=='missing-file')
+        self.assertEqual([r['status'] for r in partial['receipts']],['completed','failed'])
 
     def test_corpus_is_separate_and_reports_failures_without_quality_inflation(self):
         cases=[c for c in evaluation.load_cases() if c['category']!='planning' and c['id']!='list']

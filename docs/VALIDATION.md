@@ -816,3 +816,37 @@ New planning holdout SHA256:
 Its five cases are reserved/unscored; M1/M2 and M3 holdout hashes remain unchanged.
 These passes establish host contracts and actual synthetic-file handler behavior,
 not a real-model planning-success rate or generally autonomous task completion.
+
+
+## M4.5 partial offline checkpoint — 2026-11-05
+
+- Focused measurement suite: 10 passed; initial temporary SQLite handle cleanup
+  failure was corrected with explicit connection closure, then retested.
+- Full regression: 1092 run, 1088 passed, four skipped, zero failures/errors;
+  117.288 seconds. Log: `.local/intelligence-evaluation-full.log`.
+- Desktop JavaScript: all 12 `tests/desktop_*_check.cjs` checks passed.
+- CAP-34: baseline 184/184, candidate 184/184, zero regressions. Artifacts:
+  `.local/intelligence-contract-evaluation/results.json` and `summary.md`.
+- Separate intelligence benchmark: 26 cases, 27 turns, 27 fake adapter attempts,
+  zero external calls/spending. Fixture execution expectations all met, 12/12
+  refusal/cancellation no-effect checks, 27/27 bounded prompt checks. Artifacts:
+  `.local/intelligence-evaluation/results.json` and `summary.md`.
+- Registered workspace_list/workspace_read executed on temporary synthetic files.
+  Two-step success and second-step missing-file failure produced host receipts.
+  Owner confirmation and per-operation approvals were simulated. A restricted
+  initial worker launch failed; the existing Windows workers passed under the
+  approved test execution context, without weakening their security checks.
+- Frozen interpretation/context/planning holdout SHA256 values remain unchanged:
+  0A12CD2FD985095C7C371498DD9F77DF915F9BC2291C67AC453CBD5A72BA2A3C;
+  64752F121CC264CED84B1CEEAD204D59337F6455F0F7750EC1B9B2B0B784D874;
+  B5D709E5704FB3019B3E8F3712B4FA6B6E277019DDBA64EA8CED999ACBE46C19.
+  They were not scored. `tatus -sb` remains untouched (SHA256
+  F86ED9018F5473F692F3EAE494C4F62B988CD12FDAD06525AE61BA3C538CE37F).
+
+M4.5 remains PARTIAL: no live transport/approved real-model measurement, full
+response-route benchmark, human quality scoring or usable live-run command yet.
+`--mode real` fails closed. Native reliability/hardware acceptance remain unresolved.
+Existing security/authentication tests passed; this is not security certification.
+No owner data/settings or default-off flags changed. Main remains at
+b4e5c9636d02657cb3cd89d368583ee6c8ebd006. Continue from the M4.5 sprint checkpoint,
+not M5; focused tests for new work first, broader regression only after code changes.

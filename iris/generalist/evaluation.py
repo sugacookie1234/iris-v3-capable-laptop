@@ -32,6 +32,7 @@ CORPUS = (
     ('semantic_interpretation','tests.test_interpretation'),
     ('working_context','tests.test_working_context'),
     ('controlled_plans','tests.test_controlled_plan'),
+    ('intelligence_measurement','tests.test_intelligence_evaluation'),
 )
 
 

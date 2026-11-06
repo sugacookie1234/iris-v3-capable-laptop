@@ -860,6 +860,77 @@
       ],
       "execute": true,
       "cancel_plan": true
+    },
+    {
+      "id": "missing-file",
+      "category": "planning",
+      "mode": "plan",
+      "turns": [
+        {
+          "request": "/plan workspace List the workspace then read missing.md.",
+          "fake": {
+            "output": {
+              "objective": "List then read the requested file.",
+              "nodes": [
+                {
+                  "id": "list",
+                  "tool": "workspace_list",
+                  "arguments": {
+                    "path": "."
+                  },
+                  "depends_on": []
+                },
+                {
+                  "id": "read",
+                  "tool": "workspace_read",
+                  "arguments": {
+                    "path": "missing.md",
+                    "max_chars": 1000
+                  },
+                  "depends_on": [
+                    "list"
+                  ]
+                }
+              ],
+              "context_refs": []
+            }
+          },
+          "expected": {
+            "host_accept": true,
+            "tools": [
+              "workspace_list",
+              "workspace_read"
+            ],
+            "plan_arguments": [
+              {
+                "path": "."
+              },
+              {
+                "path": "missing.md",
+                "max_chars": 1000
+              }
+            ],
+            "execution_state": "failed"
+          }
+        }
+      ],
+      "execute": true
+    },
+    {
+      "id": "provider-cancelled",
+      "category": "failure",
+      "turns": [
+        {
+          "request": "Explain compound interest.",
+          "fake": {
+            "cancel": true
+          },
+          "expected": {
+            "host_accept": false,
+            "no_effects": true
+          }
+        }
+      ]
     }
   ]
 }

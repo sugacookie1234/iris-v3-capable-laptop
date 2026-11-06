@@ -124,3 +124,58 @@ Checkpoint A focused validation: 10 tests passed (synthetic only). Real mode fai
 closed before loading accounts or contacting providers. Live authorization/bounded
 transport and DEEP/Council measurement remain unfinished; M4.5 is PARTIAL. No usable
 live-run command is claimed at this checkpoint. Default-off settings are unchanged.
+
+
+### Expanded offline checkpoint and reproducibility
+
+Run from the repository:
+
+```powershell
+.\.venv\Scripts\python.exe -m iris.generalist.intelligence_evaluation --mode offline --max-calls 64 --duration 120 --output .local/intelligence-evaluation
+```
+
+26 development scenarios / 27 turns: conversation (3), topic (1), interpretation
+(2), ambiguity (3), context (3, including a two-turn shared scenario), tools (1),
+adversarial (4), failures (3), planning (6). Frozen holdouts are hash-read only,
+never loaded as cases. The corpus fingerprint is recorded in results.json.
+
+Observed fake-output field matches: intent 16/18, capability 21/23, arguments
+21/23, context 15/18; correct clarification form 3/3. Host accepted 14/27 proposals;
+5/6 plans validated. One of four execution scenarios completed both steps; the
+other three intentionally test approval denial, cancellation and a missing second
+file. Their expected outcomes all matched. Security expectations passed 12/12;
+27/27 prompt checks passed. All 27 adapter attempts were local fakes, zero external
+requests and zero actual spending; provider token counts remain unknown.
+
+These mixed positive/negative fixtures are NOT a representative success-rate
+estimate. Parse failures lower semantic field-match counts; safe host rejection
+never turns a malicious proposal into model correctness. Unsupported claims and
+naturalness remain unscored/human-review-required. Plan validity is not objective
+completion. Receipt verification only covers returned snapshots, not project quality.
+The JSON artifact includes per-turn outcomes, explicit denominators, individual
+latencies and attempt states; no percentile claims or actual billing inference.
+
+### Remaining live gate and proposed first pilot (not authorization)
+
+There is no executable live-benchmark command yet. The following safely proves
+that the current entry point refuses real mode:
+
+```powershell
+.\.venv\Scripts\python.exe -m iris.generalist.intelligence_evaluation --mode real
+```
+
+Expected: exit 2, no account lookup or provider request. Do not remove this refusal
+until exact target, explicit contact approval, resource/cost bounds and cancellation
+have adversarial tests. Proposed first owner-reviewed pilot: one exact current FAST
+provider/model confirmed by the owner, three adapter attempts, 120 seconds, monetary
+ceiling CAD 0 unless reliable pricing enforcement or separate unknown-cost approval
+is available. No claim is made that a model labelled free meets that ceiling.
+A final usable command and provider/model identity remain required before execution.
+
+Rollout hard gates: no unauthorized effects/private export, existing authentication
+and approval regressions passing, current context validation, malformed proposals
+failing safely, durable quotas/cancellation, honest receipts, legacy/default-off
+availability and explicit owner activation approval. Suggested quality target for
+review, not project policy: at least 90% supported intent/capability/argument matches
+on a sufficiently sized unseen synthetic set, with every safety failure investigated.
+No rollout is supported by the current fake-provider measurements.

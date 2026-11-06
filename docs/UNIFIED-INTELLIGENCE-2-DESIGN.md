@@ -194,3 +194,20 @@ sent for model synthesis, saved as personal memories or included in working/chat
 Only deterministic local summaries are returned. No native window is required.
 This is a synthetic-tested engineering slice, not live planning accuracy or hardware
 acceptance. The existing native reliability gate remains unresolved.
+
+
+## M4.5 measurement boundary (partial checkpoint)
+
+The intelligence runner is distinct from CAP-34's guidance ablation. It directly
+invokes existing FAST interpretation/planning interfaces, then production validators
+and registered read-only handlers in a disposable synthetic workspace. It does not
+replace DesktopRuntime or authorize owner operations. Every fake adapter attempt
+uses a temporary ProviderUsage ledger; concurrency/call/deadline/cancellation
+admission is tested. Reports omit raw prompts, outputs and private file contents.
+Only receipt metadata and field-match results are retained.
+
+There is intentionally no live adapter at this checkpoint. `--mode real` refuses
+before evaluation/account loading. This prevents accidental provider consumption
+while live authorization, exact-target binding, unknown-cost consent, durable run
+budgets and hard in-flight timeouts are unfinished. Ordinary respond(), DEEP and
+Council quality measurement are also unfinished. No experimental defaults changed.

@@ -194,3 +194,27 @@ approvals, no blind replay of uncertain effects and explicit resource selection.
 Do not add effectful tools or enable the interpreter automatically. An owner-approved
 synthetic live-model benchmark remains a separate rollout gate. Focused command:
 `python -m unittest tests.test_controlled_plan tests.test_generalist_plan tests.test_tools`.
+
+
+## M4.5 continuation checkpoint — PARTIAL
+
+Recovered clean M4 HEAD 129ddab; preserved the untracked `tatus -sb` unchanged.
+Checkpoint A 2b86086 adds the isolated evaluation runner, development corpus and
+10 focused tests. Follow-up expands to 26 cases / 27 turns, adds partial failure
+and cancellation, and registers measurement tests with CAP-34. No owner data,
+credentials, preferences, main or frozen holdouts changed. No inference network
+requests were made. Real transport remains disabled even with `--mode real`.
+
+Continue M4.5, not M5: implement and test explicit exact-provider/model/contact
+consent, separately acknowledged unknown-cost risk or enforceable monetary ceiling,
+persistent run admission, hard deadline/cancellation and no fallback/retry. Then
+connect a later live run to the same synthetic fixtures without exporting answers
+or expected labels. Add ordinary response/DEEP/Council measurements using existing
+routing, human-review artifacts/rubrics, and context-expiry/UI-revision cases.
+Do not mistake direct interpreter host rejection for a DesktopRuntime regression;
+ordinary social conversation currently follows a different production path.
+
+Acceptance is deliberately partial: no usable live-run command, live benchmark,
+provider ranking or rollout recommendation is claimed. Native WebView2 startup/
+reauthentication remains unresolved; this sprint does not alter it. M5 remains next
+only after M4.5's remaining evaluation-readiness work is complete.

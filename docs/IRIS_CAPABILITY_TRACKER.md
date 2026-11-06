@@ -258,3 +258,13 @@ CAP-34 includes adversarial controlled-plan fixtures. Broader autonomous plannin
 dynamic output mapping and durable effectful recovery remain IN-PROGRESS/deferred.
 See Unified Intelligence design/evaluation and final VALIDATION.md results. No
 live-model or native acceptance status is advanced by these synthetic tests.
+
+
+## M4.5 evaluation readiness — partial
+
+CAP-34 now includes intelligence-measurement contract checks. Separate offline
+artifacts exercise 26 synthetic development scenarios with field-level scores,
+actual disposable workspace handlers, refusal evidence, ledger admission and
+fingerprints. Live benchmark transport, full reasoning-route comparison and
+human-quality evaluation remain incomplete. No real-model intelligence or rollout
+capability is accepted; M1–M4 remain default-off. Existing IDs are preserved.
