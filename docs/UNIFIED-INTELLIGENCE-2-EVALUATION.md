@@ -293,3 +293,41 @@ requires its own later scope/budget approval; three calls cannot complete five s
 Readiness does not authorize activation of experimental intelligence. Existing
 security hard gates and owner rollout approval remain mandatory. Native reliability
 and hardware acceptance remain unresolved; M5 is not part of this sprint.
+
+
+## M4.7 focused conversation development set
+
+The original authorized live pilot remains unchanged under .local/approved-pilot-001.
+Its three responses are historical evidence, not new validation of this refinement.
+No additional live requests are authorized or performed. No human ratings are assigned.
+
+A separate 10-case development set covers greetings, acknowledgements, Java inventory
+file-saving context, a uniquely identified second storage approach, ambiguous project
+progress, a topic switch, private retrieved instructions, DEEP analysis, a synthetic
+host failure receipt and urgency. Run only offline:
+
+```powershell
+.\.venv\Scripts\python.exe -m iris.generalist.intelligence_evaluation --development-set conversation --output .local/conversation-refinement-offline
+```
+
+Ten fake adapter calls; 10/10 fixture expectations and prompt checks; 40/40 explicit
+lexical checks. These are scripted-output checks, not evidence that a real LLM
+understands context or follows the style. Human review remains unreviewed. Required
+mentions/forbidden phrases/address/question counts are transparent, limited oracles;
+negative regression examples fail them. Expected checks and case IDs never enter
+provider prompts. Real mode explicitly rejects this development set.
+
+The benchmark now retains bounded assistant text as Source.MODEL in the existing
+WorkingContext, matching production ordinary conversation. It is not verified fact,
+authority or permanent memory. Explicit topic transitions clear this context. Recent
+wording may be absent/expired/trimmed, so honorific repetition avoidance remains a
+prompt preference, not a guarantee. Reports include the canonical identity hash as
+well as corpus/commit fingerprints, since unchanged requests may use a revised prompt.
+All frozen holdouts and original baseline case definitions remain unchanged.
+
+Prompt-path tests verify NORMAL/OPERATIONS/COMPANION/URGENT compilation, actual FAST
+and DEEP requests, and all Council stages including the chairman. Strict model plan
+proposals remain protocol-only; host previews/receipts are not rewritten for style.
+A later real-model comparison would need separate owner approval of new scope,
+identity version, exact model, call/duration limits and cost uncertainty. No prior
+pilot approval is reused. M5 is not part of this checkpoint.

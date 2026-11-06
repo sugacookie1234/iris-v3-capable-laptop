@@ -35,6 +35,8 @@ CORPUS = (
     ('intelligence_measurement','tests.test_intelligence_evaluation'),
     ('benchmark_admission','tests.test_benchmark_admission'),
     ('benchmark_routes','tests.test_benchmark_routes'),
+    ('personality','tests.test_personality'),
+    ('conversation_refinement','tests.test_conversation_refinement'),
 )
 
 

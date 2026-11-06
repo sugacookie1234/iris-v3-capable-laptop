@@ -76,4 +76,3 @@ class PersonalityTests(unittest.TestCase):
         response = DesktopCommands.answer('The action failed. Nothing was verified.', 'The action failed.')
         self.assertEqual(response['reply'], 'The action failed. Nothing was verified.')
         self.assertEqual(response['spoken_reply'], 'The action failed.')
-

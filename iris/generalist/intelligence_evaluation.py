@@ -36,6 +36,7 @@ from iris.generalist.benchmark_admission import AdmissionRefused, ProviderAttemp
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / 'tests/fixtures/intelligence_development.json'
+CONVERSATION_CORPUS = ROOT / 'tests/fixtures/conversation_development.json'
 HOLDOUTS = ('interpretation_holdout.json', 'working_context_holdout.json', 'controlled_plan_holdout.json')
 METRICS = ('intent', 'capability', 'arguments', 'context', 'abstention', 'host_acceptance',
            'plan_validity', 'verified_completion', 'security_expectation')
@@ -160,6 +161,8 @@ def run_case(case, root, provider):
             orchestrator.context.expires = orchestrator.clock()-1
     for text in case.get('owner_context',[]):
         working.remember(text,source=Source.OWNER,privacy=Privacy.CONVERSATION,export=Export.REASONING)
+    for text in case.get('host_context',[]):
+        working.remember(text,source=Source.HOST,privacy=Privacy.PUBLIC,export=Export.REASONING)
     # Explicitly excluded synthetic retrieved material; never promoted to authority.
     for text in case.get('private_context',[]):
         working.remember(text,source=Source.EXTERNAL,privacy=Privacy.PRIVATE,export=Export.NONE)
@@ -187,10 +190,15 @@ def run_case(case, root, provider):
                 result = brain.respond(turn_case['request'],working_context=snapshot)
                 from iris.generalist.benchmark_review import review_record
                 provider.reviews.append(review_record(case['id'],turn_case['request'],result,snapshot))
+                if 'response_checks' in expected:
+                    from iris.generalist.benchmark_review import development_checks
+                    row['development_response_checks']=development_checks(result.text,expected['response_checks'])
                 row['reasoning_route'] = result.route.reasoning.value
                 row['host_accepted'] = True
                 row['route_expected'] = result.route.reasoning.value == expected['route']
                 working.remember(turn_case['request'],source=Source.OWNER,
+                    privacy=Privacy.CONVERSATION,export=Export.REASONING)
+                working.remember(result.text,source=Source.MODEL,
                     privacy=Privacy.CONVERSATION,export=Export.REASONING)
             elif case.get('mode') == 'plan':
                 proposal = brain.propose_plan(turn_case['request'],turn=turn,
@@ -309,6 +317,7 @@ def evaluate(*, max_calls=64, duration=120, cases=None, live_provider=None):
     from iris.generalist.benchmark_review import RUBRIC, assess
     return {'version':2,'benchmark':'iris-intelligence-development-v2','mode':'offline_fake' if live_provider is None else 'real_provider',
             'timestamp':datetime.now(timezone.utc).isoformat(),'commit':commit,'case_sha256':fingerprint,
+            'identity_sha256':hashlib.sha256(load_identity().raw_text.encode()).hexdigest(),
             'holdouts_unscored':{name:hashlib.sha256((ROOT/'tests/fixtures'/name).read_bytes()).hexdigest() for name in HOLDOUTS},
             'budget':{'adapter_calls':max_calls,'duration_seconds':duration,'monetary_ceiling':0 if live_provider is None else None,
                       'unknown_cost_acknowledged':live_provider is not None},
@@ -322,14 +331,19 @@ def evaluate(*, max_calls=64, duration=120, cases=None, live_provider=None):
                           'output_observations':sum(a['output_tokens'] is not None for a in attempts)} if live_provider else None,
             'review':{'rubric':RUBRIC,'records':provider.reviews},'human_quality':assess(provider.reviews),
             'prompt_boundary_checks':{'passed':sum(prompt_checks),'observed':len(prompt_checks)},
+            'development_response_checks':{
+                'passed':sum(value for row in rows for value in row.get('development_response_checks',{}).values()),
+                'observed':sum(len(row.get('development_response_checks',{})) for row in rows)},
             'outcomes':{stage:sum(r['stage']==stage for r in rows) for stage in sorted({r['stage'] for r in rows})},
             'fixture_expectations_met':all(r['expected_host_outcome_met']
-                and r.get('expected_execution_outcome_met',True) and r.get('route_expected',True) for r in rows),
+                and r.get('expected_execution_outcome_met',True) and r.get('route_expected',True)
+                and all(r.get('development_response_checks',{}).values()) for r in rows),
             'limitations':['Offline outputs test measurement and contracts, not model intelligence.',
                 'Ordinary response routes reuse IRISBrain; selected target is identical across reasoning roles, not the owner default configuration.',
                 'Route tasks differ; no cross-route ranking or general conversational-quality claim.',
                 'Host acceptance is a rate, not correctness; denied malicious proposals are not model successes.',
                 'Conversational relevance and unsupported claims require human review; no automatic quality claim.',
+                'Development response checks are limited lexical oracles; scripted answers do not establish comprehension.',
                 'Confirmation/approvals simulated only for disposable synthetic workspace handlers.',
                 'Individual timings include host overhead; no latency percentiles at this sample size.']}
 
@@ -343,6 +357,8 @@ def summary(report):
     lines += ['', 'Fixture execution expectations: '+('PASS' if report['fixture_expectations_met'] else 'FAIL'),
               'Outcome counts: '+json.dumps(report['outcomes'],sort_keys=True),
               'Prompt boundary checks: '+json.dumps(report['prompt_boundary_checks'],sort_keys=True)]
+    if report['development_response_checks']['observed']:
+        lines += ['Development lexical checks (not comprehension): '+json.dumps(report['development_response_checks'],sort_keys=True)]
     return '\n'.join(lines)+'\n'
 
 
@@ -355,12 +371,15 @@ def main(argv=None):
     parser.add_argument('--provider')
     parser.add_argument('--model')
     parser.add_argument('--case',action='append',dest='case_ids')
+    parser.add_argument('--development-set',choices=('baseline','conversation'),default='baseline')
     parser.add_argument('--scope-sha256')
     parser.add_argument('--authorize-provider-contact',action='store_true')
     parser.add_argument('--acknowledge-unknown-cost',action='store_true')
     parser.add_argument('--preflight',action='store_true')
     args = parser.parse_args(argv)
-    cases = load_cases()
+    if args.mode=='real' and args.development_set!='baseline':
+        parser.error('Conversation refinement cases are offline-only; no live scope is authorized here.')
+    cases = load_cases(CONVERSATION_CORPUS if args.development_set=='conversation' else CORPUS)
     if args.case_ids:
         if len(set(args.case_ids)) != len(args.case_ids) or set(args.case_ids)-{c['id'] for c in cases}:
             parser.error('Select distinct existing development case IDs.')

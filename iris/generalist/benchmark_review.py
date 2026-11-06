@@ -1,5 +1,6 @@
 """Local human review, never an LLM judge or an automatic acceptance gate."""
 import hashlib
+import re
 
 DIMENSIONS = ('relevance','context','naturalness','grounding','uncertainty',
               'conciseness','clarification','unsupported_claim_avoidance')
@@ -54,3 +55,24 @@ def assess(records):
     return {'status':'unreviewed' if not reviewed else 'human_reviewed',
             'reviewed_records':reviewed,'total_records':len(records),
             'dimensions':{key:{'sum':sum(values),'observed':len(values)} for key,values in totals.items()}}
+
+
+def development_checks(text, expected):
+    """Transparent lexical checks for development fixtures, NOT a quality judge.
+
+    Required mentions cannot establish comprehension, and forbidden phrases cannot
+    exhaustively detect unsupported claims. Expected data never enters a prompt.
+    """
+    if set(expected)-{'mentions','avoids','max_sir','max_questions'}:
+        raise ValueError('Unknown development response check.')
+    lowered=text.casefold()
+    checks={}
+    for index,group in enumerate(expected.get('mentions',[])):
+        checks[f'mention_{index}']=any(term.casefold() in lowered for term in group)
+    for index,term in enumerate(expected.get('avoids',[])):
+        checks[f'avoid_{index}']=term.casefold() not in lowered
+    if 'max_sir' in expected:
+        checks['address_bound']=len(re.findall(r'\bsir\b',text,re.I))<=expected['max_sir']
+    if 'max_questions' in expected:
+        checks['question_bound']=text.count('?')<=expected['max_questions']
+    return checks
