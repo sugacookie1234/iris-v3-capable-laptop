@@ -40,6 +40,7 @@ CORPUS = (
     ('project_continuity','tests.test_project_continuity'),
     ('project_backup','tests.test_project_backup'),
     ('m6_evaluation','tests.test_m6_evaluation'),
+    ('m6_corrective','tests.test_m6_corrective'),
 )
 
 

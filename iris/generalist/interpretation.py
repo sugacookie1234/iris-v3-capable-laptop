@@ -181,7 +181,9 @@ def apply(proposal, *, turn, owner_text, orchestrator, brain, working=None):
         # No generated text is a verified action receipt or public memory candidate.
         conversational = allowed in ('social_guess', 'contextual')
         return reply(proposal.text if conversational else CLARIFICATION,
-                     conversation_context=conversational)
+                     conversation_context=conversational,
+                     response_source='model_conversation' if conversational else 'host_clarification',
+                     capability_applied=False)
     if proposal.capability == 'workspace_list':
         if allowed != 'workspace_list' or brain._tool_executor is None:
             raise ValueError('Workspace listing is unavailable for this turn.')
@@ -223,6 +225,8 @@ def apply(proposal, *, turn, owner_text, orchestrator, brain, working=None):
     # Compute all numbers and acknowledgements locally, ignoring proposed prose.
     result = orchestrator.presentation()
     result['route'] = 'FAST-EXPERIMENTAL'
+    result['response_source'] = 'host_compound_calculation'
+    result['capability_applied'] = True
     return result
 
 
@@ -232,6 +236,9 @@ text: concise natural reply (1-2000 characters), capability: null/compound/works
 arguments: {}, context: null or {id: active example ID, revision: its exact revision}.
 For compound use kind hypothetical and arguments {operation: start/update/show/reset/compare_original, changes: {}}.
 Start uses default inputs and null context; other operations require current context.
+For a requested compound scenario change or comparison, select the compound capability;
+do not substitute prose calculations with null capability. The host calculates the values
+and produces the answer. Never invent balances, rates or a scenario revision in text.
 Update changes may contain principal, rate, years (integer), contribution (monthly), compared_rate.
 Use compare_original for an explicit comparison with the original example (initial annual rate five percent).
 Interpret only the current request; do not invent numerical inputs. Contradictory or ambiguous references

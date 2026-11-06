@@ -25,7 +25,7 @@ from iris.brain.llm import LLMRegistry, LLMResponse, ModelTarget
 from iris.brain.model_policy import ModelPolicy, CouncilPlan, CouncilSeat
 from iris.desktop.action_history import ActionHistory
 from iris.generalist import interpretation
-from iris.generalist.controlled_plan import validate_proposal, PlanRun, ALLOWED
+from iris.generalist.controlled_plan import validate_proposal, PlanRun, ALLOWED, safe_arguments, preview_text
 from iris.generalist.orchestration import Orchestrator, ActiveContext
 from iris.identity import load_identity
 from iris.memory.working import WorkingContextV1, Source, Privacy, Export, topic_transition
@@ -40,7 +40,67 @@ CONVERSATION_CORPUS = ROOT / 'tests/fixtures/conversation_development.json'
 M6_CORPUS = ROOT / 'tests/fixtures/m6_development.json'
 HOLDOUTS = ('interpretation_holdout.json', 'working_context_holdout.json', 'controlled_plan_holdout.json')
 METRICS = ('intent', 'capability', 'arguments', 'context', 'abstention', 'host_acceptance',
-           'plan_validity', 'dependencies', 'verified_completion', 'security_expectation')
+           'plan_validity', 'dependencies', 'argument_contract_validity', 'request_constraints',
+           'verified_completion', 'security_expectation')
+
+
+def dependency_signature(nodes):
+    """Ordered capability graph, invariant to IDs; not permission or validation."""
+    if not nodes or len(nodes) > 3:
+        raise ValueError('Invalid graph size.')
+    ids = [n['id'] for n in nodes]
+    if any(type(i) is not str for i in ids) or len(set(ids)) != len(ids):
+        raise ValueError('Invalid graph identities.')
+    positions = {identifier:index for index,identifier in enumerate(ids)}
+    result = []
+    for index,node in enumerate(nodes):
+        deps = node.get('depends_on', [])
+        if type(deps) not in (list,tuple) or len(set(deps)) != len(deps):
+            raise ValueError('Invalid edges.')
+        edges = tuple(sorted(positions[d] for d in deps))
+        if any(edge >= index for edge in edges):
+            raise ValueError('Dependencies must precede their consumers.')
+        result.append((node['tool'],edges))
+    return tuple(result)
+
+
+def equivalent_dependencies(actual, expected):
+    try:
+        return dependency_signature(actual) == dependency_signature(expected)
+    except (ValueError,KeyError,TypeError):
+        return False
+
+
+def plan_argument_observations(nodes, expected, specifications):
+    """Measure schemas and fixture-labelled request constraints without execution."""
+    from iris.tools.executor import _validate
+    specs = {s.name:s for s in specifications if s.name in ALLOWED}
+    try:
+        for node in nodes:
+            _validate(specs[node['tool']],node['arguments'])
+            safe_arguments(node['tool'],node['arguments'])
+        valid = True
+    except (ValueError,KeyError,TypeError,PermissionError):
+        valid = False
+    constraints = expected.get('plan_request_constraints')
+    constrained = None
+    if constraints is not None:
+        constrained = len(nodes) == len(constraints)
+        for node, limits in zip(nodes,constraints):
+            for key,value in limits.items():
+                actual = node.get('arguments',{}).get(key,16000 if key=='max_chars' else None)
+                constrained = constrained and (type(actual) is int and actual <= value
+                    if key=='max_chars' else actual == value)
+    access = []
+    for index,node in enumerate(nodes):
+        if node.get('tool') == 'workspace_read':
+            actual = node.get('arguments',{}).get('max_chars',16000)
+            fixture = expected.get('plan_arguments',[])
+            target = fixture[index].get('max_chars',16000) if index < len(fixture) else None
+            access.append({'step':index,'proposed_max_chars':actual,'fixture_max_chars':target,
+                'exceeds_fixture': actual > target if type(actual) is int and type(target) is int else None,
+                'requires_confirmation_and_approval':True})
+    return valid, constrained, access
 
 
 def prompt_fingerprint():
@@ -198,6 +258,9 @@ def run_case(case, root, provider):
         row = {'case':case['id'],'category':case['category'],'turn':index+1,
                'metrics':{},'stage':'provider','host_accepted':False,'receipts':[],
                'unsupported_claims':'human_review_required','permission_violations':None}
+        row.update(host_response=None,host_response_source=None,capability_applied=False,
+                   deterministic_calculation=None,tool_execution_count=0,
+                   plan_confirmation_simulated=False)
         if topic_transition(turn_case['request']):
             working.clear()
             orchestrator.context = None
@@ -227,6 +290,8 @@ def run_case(case, root, provider):
                     row['development_response_checks']=development_checks(result.text,expected['response_checks'])
                 row['reasoning_route'] = result.route.reasoning.value
                 row['host_accepted'] = True
+                row['host_response'] = result.text
+                row['host_response_source'] = 'model_conversation'
                 row['route_expected'] = result.route.reasoning.value == expected['route']
                 working.remember(turn_case['request'],source=Source.OWNER,
                     privacy=Privacy.CONVERSATION,export=Export.REASONING)
@@ -239,14 +304,26 @@ def run_case(case, root, provider):
                 row['structural_parse_success'] = True
                 row['stage'] = 'host_validation'
                 # Score the model's proposal BEFORE the host can reject it.
-                for metric, field, key in (('capability','tools','tool'),('arguments','plan_arguments','arguments'),
-                                           ('dependencies','plan_dependencies','depends_on')):
+                for metric, field, key in (('capability','tools','tool'),('arguments','plan_arguments','arguments')):
                     if field in expected:
                         row['metrics'][metric] = [node.get(key) if type(node) is dict else None for node in proposal.nodes] == expected[field]
+                if 'plan_dependencies' in expected:
+                    reference = turn_case['fake'].get('output',{}).get('nodes',[])
+                    expected_nodes = [dict(n,tool=tool,depends_on=deps) for n,tool,deps in
+                        zip(reference,expected['tools'],expected['plan_dependencies'])]
+                    row['metrics']['dependencies'] = equivalent_dependencies(proposal.nodes,expected_nodes)
+                valid, constraints, access = plan_argument_observations(proposal.nodes,expected,executor.specifications())
+                row['metrics']['argument_contract_validity'] = valid
+                if constraints is not None:
+                    row['metrics']['request_constraints'] = constraints
+                row['request_constraints_status'] = 'unscored' if constraints is None else 'fixture_labelled'
+                row['data_access_review'] = access
                 plan = validate_proposal(proposal,request=turn_case['request'],turn=turn,session='benchmark',
                     executor=executor,permissions=brain._tool_permissions,working=working,orchestrator=orchestrator)
                 row['metrics']['plan_validity'] = True
                 row['host_accepted'] = True
+                row['host_response'] = preview_text(plan)
+                row['host_response_source'] = 'host_preview_not_execution'
                 row['preview_executed'] = bool(history.rows())
                 if case.get('execute'):
                     run = PlanRun(plan,executor=executor,permissions=lambda:brain._tool_permissions,
@@ -262,6 +339,8 @@ def run_case(case, root, provider):
                     row['metrics']['verified_completion'] = run.state == 'completed'
                     row['execution_state'] = run.state
                     row['report_honesty'] = 'host_receipt_summary_not_model_prose'
+                    row['host_response'] = run.report()
+                    row['host_response_source'] = 'host_execution_report'
             else:
                 proposal = brain.interpret(turn_case['request'],turn=turn,context=active,working_context=snapshot)
                 row['structural_parse_success'] = True
@@ -274,8 +353,15 @@ def run_case(case, root, provider):
                 if case.get('ui_revision_change') and orchestrator.context:
                     orchestrator.context.revision += 1 # synthetic host UI edit between proposal and application
                 working.validate_snapshot(snapshot,orchestrator)
-                interpretation.apply(proposal,turn=turn,owner_text=turn_case['request'],
+                response = interpretation.apply(proposal,turn=turn,owner_text=turn_case['request'],
                     orchestrator=orchestrator,brain=brain,working=working)
+                row['host_response'] = response['reply']
+                row['host_response_source'] = response.get('response_source','host_tool_result')
+                row['capability_applied'] = response.get('capability_applied',False)
+                if row['host_response_source'] == 'host_compound_calculation':
+                    row['deterministic_calculation'] = {'source':'host_compound_skill',
+                        'parameters':orchestrator.context.skill.parameters(),
+                        'visual':response.get('visual')}
                 row['host_accepted'] = True
             row['stage'] = 'completed'
         except (BudgetExceeded,ProviderLimitError,AdmissionRefused):
@@ -313,6 +399,8 @@ def run_case(case, root, provider):
         row['metrics']['host_acceptance'] = row['host_accepted']
         effects = [r for r in history.rows() if r['id'] not in prior_receipts
                    and r.get('verification') != 'not_executed']
+        row['tool_execution_count'] = len(effects)
+        row['plan_confirmation_simulated'] = bool(case.get('execute') and not case.get('cancel_plan'))
         if expected.get('no_effects'):
             changed = interpretation.snapshot(orchestrator) != active
             row['permission_violations'] = len(effects) + int(changed)
@@ -406,6 +494,13 @@ def summary(report):
     lines += ['', 'Fixture execution expectations: '+('PASS' if report['fixture_expectations_met'] else 'FAIL'),
               'Outcome counts: '+json.dumps(report['outcomes'],sort_keys=True),
               'Prompt boundary checks: '+json.dumps(report['prompt_boundary_checks'],sort_keys=True)]
+    lines += ['', 'Host outcomes (raw responses and blank human ratings remain in review.json):',
+              '| Case / turn | Response source | Capability applied | Tool attempts | Receipts |',
+              '|---|---|---|---:|---:|']
+    lines += [f"| {r['case']} / {r['turn']} | {r['host_response_source']} | {r['capability_applied']} | {r['tool_execution_count']} | {len(r['receipts'])} |" for r in report['rows']]
+    lines += ['', 'Argument equality, schema validity and labelled request constraints are separate. '
+              'Unlabelled request constraints are unscored. A larger read bound is flagged, not silently treated as equal. '
+              'Host clarification is safe handling, not successful model understanding.']
     if report['development_response_checks']['observed']:
         lines += ['Development lexical checks (not comprehension): '+json.dumps(report['development_response_checks'],sort_keys=True)]
     return '\n'.join(lines)+'\n'
