@@ -268,3 +268,13 @@ actual disposable workspace handlers, refusal evidence, ledger admission and
 fingerprints. Live benchmark transport, full reasoning-route comparison and
 human-quality evaluation remain incomplete. No real-model intelligence or rollout
 capability is accepted; M1–M4 remain default-off. Existing IDs are preserved.
+
+
+## M4.5 benchmark-readiness update
+
+CAP-34 now covers exact-model live admission, durable bounded accounting, configured
+provider protections, fake-transport real-mode preflight, ordinary FAST/DEEP/Council
+measurement, no-label export and local human review. Real-model competence remains
+UNVERIFIED; human quality remains UNREVIEWED. Live pilot scope is intentionally limited
+to synthetic response/interpretation/previews, with no owner-data access or rollout.
+Existing capability IDs and default-off settings are preserved. See final validation.

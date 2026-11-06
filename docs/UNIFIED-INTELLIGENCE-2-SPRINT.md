@@ -231,3 +231,38 @@ remote processing/billing stopped. The normal configured provider ledger is stil
 applied by the existing transport. Tests use fake workers and isolated ledgers only.
 Eight admission tests passed. CLI integration/route/review acceptance is in progress;
 no live request or owner credential lookup has been performed in development.
+
+
+## M4.5 route/review checkpoint
+
+2b32ff6: durable admission and bounded worker foundation.
+fc986f0: explicit live preflight, ordinary FAST/DEEP/Council measurements and local
+human-review workflow. Follow-up keeps the normal provider ledger session stable
+across child adapters, verified with a mocked existing transport. No provider was
+contacted. Focused acceptance: 25 tests passed; full evidence follows in VALIDATION.
+
+31 development cases / 33 turns / 37 fake attempts. All fixture expectations met;
+no real-model intelligence or human-quality score is accepted. Reserved holdouts
+remain unchanged/unscored. Existing interpreter defaults, security origins, tools,
+owner data, voice configuration and native fallback are unchanged.
+
+Exact next action after engineering acceptance: owner review of EVALUATION.md's
+three-call synthetic pilot, exact model and unknown-cost risk, then a separately
+authorized run and human review. Do not run it automatically. M5 follows only after
+these limitations/evidence are understood; M5 was not started. Native WebView2
+reliability remains unresolved. No hardware acceptance is claimed.
+
+
+### Final M4.5 acceptance and continuation
+
+25 focused tests passed; 1107 Python tests run / 1103 passed / four skipped;
+12 desktop JS checks passed; CAP-34 199/199 each arm, zero regressions. The last
+stable-session fix was included in final full acceptance. Offline reports contain
+31 cases / 33 turns / 37 fake attempts and four unscored ordinary-response records.
+See VALIDATION.md for exact logs and EVALUATION.md for the complete pilot command.
+
+M4.5 is closed as bounded benchmark-readiness infrastructure. Real-model quality is
+not accepted. Do not execute the pilot without separate exact-target/scope/cost-risk
+approval. No rollout or M5 work occurred. Next evidence gate is the approved tiny
+pilot and human review; next development milestone is M5 bounded recovery/project
+continuity, preserving the existing authority and privacy boundaries.

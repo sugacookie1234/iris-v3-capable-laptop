@@ -211,3 +211,18 @@ before evaluation/account loading. This prevents accidental provider consumption
 while live authorization, exact-target binding, unknown-cost consent, durable run
 budgets and hard in-flight timeouts are unfinished. Ordinary respond(), DEEP and
 Council quality measurement are also unfinished. No experimental defaults changed.
+
+
+## M4.5 bounded live readiness
+
+Supersedes the earlier transport-disabled checkpoint. benchmark_admission.py binds
+exact consent to persistent run accounting and uses bounded worker processes around
+the existing transport. Normal provider limits additionally apply with a stable
+session across workers. No verified price is available; unknown-cost acknowledgment
+is mandatory and no currency ceiling is advertised. Cancellation is local, never
+proof of remote billing cancellation. interpretation/planning remain host-validated;
+live previews do not execute confirmed workspace plans. Offline execution uses only
+disposable fixtures. Ordinary FAST/DEEP/Council measurements call the existing brain
+with no executor and share the explicitly selected target rather than changing owner
+policy. benchmark_review.py emits local unscored human-review records and validates
+anchored scores/response hashes. See EVALUATION.md for exact scope and pilot controls.

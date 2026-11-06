@@ -179,3 +179,117 @@ availability and explicit owner activation approval. Suggested quality target fo
 review, not project policy: at least 90% supported intent/capability/argument matches
 on a sufficiently sized unseen synthetic set, with every safety failure investigated.
 No rollout is supported by the current fake-provider measurements.
+
+
+## M4.5 completion — benchmark readiness (supersedes partial transport notes)
+
+The live entry point now uses benchmark_admission.py and the existing
+OpenAICompatibleProvider/OpenRouter transport. No new HTTP client, fallback, retries,
+model router, owner tool permissions or experimental default is introduced.
+
+**Admission:** explicit real mode, exact OpenRouter model, explicit case IDs and
+matching scope SHA256, contact consent, separate unknown-cost consent, 1–100 actual
+adapter attempts, a duration of at most 600 seconds, a dedicated `.local` directory,
+and an explicitly supplied IRIS_BENCHMARK_API_KEY are required. Other providers and
+wildcard models fail locally. Model availability is not asserted without a live run.
+The configured owner ProviderUsage restrictions still apply in addition to the run
+ledger; all child adapters share a stable benchmark session. Existing owner quota
+policy and credentials are never changed. The benchmark key is not written to disk.
+
+SQLite binds immutable consent/deadline and atomically accounts attempts. Restart
+cannot reset the budget. Interrupted reservations block automatic recovery; stopped
+or completed runs cannot be reopened. A failed provider attempt stops the run.
+Council fan-out uses the same gate for every candidate, critique and chair call.
+The bounded subprocess is terminated on cancellation/deadline; remote processing or
+billing may continue. A killed transport can leave a normal-provider reservation
+pending: inspect it using the existing owner-controlled recovery procedure; never
+clear it automatically. Local deadline enforcement includes bounded worker cleanup
+(up to two seconds), not a promise about remote cancellation or bill finalization.
+
+**Cost:** no monetary ceiling is claimed. This transport does not supply verifiable
+billing/pricing. A model ending in `free` is not treated as free. The separate
+unknown-cost flag acknowledges residual financial exposure, while call/time limits
+remain enforced. Token counts are reported only when observed, with observation
+counts. Unknown tokens/cost are not inferred from success. Adapter attempts can
+include pre-network failures; actual HTTP call counts remain unknown in live reports.
+Generation settings are adapter-request settings; existing transport adjustments
+(e.g. model-specific token limits) still apply.
+
+**Scope:** live pilot accepts synthetic ordinary-response, interpretation and plan
+preview cases. Deliberate provider-fault/adversarial-output fixtures and confirmed
+workspace execution fixtures stay offline. Offline actual-handler execution remains
+covered. Response quality uses IRISBrain.respond with production routing and no
+executor; no generated tool request can execute through that interface. Structured
+proposals use existing validators. Exact owner authorization remains necessary for
+any future expansion. All selected reasoning roles use the explicitly chosen model;
+this is a bounded single-target comparison harness, not a silent copy/change of the
+owner's multi-model defaults. Routes use appropriate different tasks and are not
+ranked as if those tasks were interchangeable.
+
+**Coverage:** 31 development cases / 33 turns; 37 fake adapter attempts. FAST ordinary
+conversation and an explicit topic transition, DEEP analysis and existing two-seat
+Council are exercised. Council makes five calls (two candidates, two critiques, one
+chair). Additional stale UI revision and expired-context fixtures fail safely.
+
+Final offline field matches: intent 18/20, capability 23/25, arguments 23/25,
+context 17/20, abstention 4/4. Host acceptance 18/33; plan validity 5/6; verified
+completion 1/4 deliberately mixed execution cases. Security expectations 13/13;
+prompt checks 37/37. Fixture expectations all met, not an intelligence pass rate.
+Real-model metrics remain unavailable. CAP-34 remains a separate contract ablation.
+
+### Local human review
+
+Each run writes `review.json` beside the content-free aggregate report. It contains
+synthetic requests/context, actual route/model, response hash, Council candidates
+and critiques, blank scores, reviewer identity, notes and declared blinding status.
+Current records are model-labeled, not blind. Do not commit raw review artifacts.
+There is no hidden LLM judge. All generated scores are null/unreviewed.
+
+Eight dimensions use explicit 0–4 anchors: relevance, context, naturalness, grounding,
+uncertainty, conciseness, clarification and unsupported-claim avoidance. Leave an
+inapplicable dimension null and explain why. Reviewers edit scores/name/notes locally;
+never edit the hashed response. Validate and summarize a completed review with:
+
+```powershell
+.\.venv\Scripts\python.exe -c "import json; from iris.generalist.benchmark_review import assess; print(json.dumps(assess(json.load(open('.local/benchmark-readiness-offline/review.json', encoding='utf-8'))['records']), indent=2))"
+```
+
+This is human judgment with observed denominators, not task verification or proof of
+naturalness. Expected labels, case IDs, hidden scoring fields and rubric instructions
+are not included in model requests. Only synthetic task inputs and filtered host
+context enter prompts. No private owner workspace/database is loaded by the harness.
+
+### Proposed first pilot — requires separate owner authorization
+
+Proposed scope: ordinary-fast + ordinary-deep, **three underlying attempts**, **120
+seconds**, OpenRouter, one exact owner-confirmed model. The existing source includes
+`nvidia/nemotron-3.5-lightning:free`; this is a candidate identifier, not a verified
+current configuration, availability check or zero-cost promise. Owner must approve
+that exact target and explicitly accept unknown monetary exposure before execution.
+No live pilot was authorized or performed during development.
+
+First inspect scope without credentials or network activity:
+
+```powershell
+.\.venv\Scripts\python.exe -m iris.generalist.intelligence_evaluation --case ordinary-fast --case ordinary-deep --preflight
+```
+
+Current scope SHA256:
+`30d12880e44f4f07f823bc42a10d0543c216aa958c56a2fa876a4b68a5e648f3`.
+If it changes, review and reauthorize the changed scope rather than copying a new
+hash blindly. Set IRIS_BENCHMARK_API_KEY privately in the launch environment; do not
+paste it into a command, repository file or report. After separate authorization,
+the complete command is:
+
+```powershell
+.\.venv\Scripts\python.exe -m iris.generalist.intelligence_evaluation --mode real --provider openrouter --model nvidia/nemotron-3.5-lightning:free --case ordinary-fast --case ordinary-deep --scope-sha256 30d12880e44f4f07f823bc42a10d0543c216aa958c56a2fa876a4b68a5e648f3 --max-calls 3 --duration 120 --authorize-provider-contact --acknowledge-unknown-cost --output .local/approved-pilot-001 --preflight
+```
+
+This exact command still makes no call because it ends in `--preflight`. Only after
+owner approval, remove that final flag to execute. Use a new dedicated result folder
+for a separately approved run; never delete a ledger to reset admission. Ctrl+C
+cancels local processing and records interrupted/billing-unknown evidence. Council
+requires its own later scope/budget approval; three calls cannot complete five stages.
+Readiness does not authorize activation of experimental intelligence. Existing
+security hard gates and owner rollout approval remain mandatory. Native reliability
+and hardware acceptance remain unresolved; M5 is not part of this sprint.

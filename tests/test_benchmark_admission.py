@@ -5,17 +5,18 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch, Mock
 
 from iris.brain.llm import LLMRequest, LLMResponse
 from iris.generalist.benchmark_admission import LiveAuthorization, DurableRun, LiveBenchmarkProvider, bounded_transport
 from iris.usage import ProviderLimitError
 
 
-def sleeping_worker(connection,request,timeout):
+def sleeping_worker(connection,request,timeout,session):
     time.sleep(5)
 
 
-def response_worker(connection,request,timeout):
+def response_worker(connection,request,timeout,session):
     connection.send_bytes(json.dumps({'response':asdict(LLMResponse('Synthetic response','openrouter',request.model))}).encode())
     connection.close()
 
@@ -98,6 +99,20 @@ class BenchmarkAdmissionTests(unittest.TestCase):
             provider=LiveBenchmarkProvider(DurableRun(directory,self.policy()),
                 transport=lambda *_:LLMResponse('inert','other','other'))
             with self.assertRaises(RuntimeError):provider.generate(LLMRequest(provider.model,[]))
+
+    def test_existing_transport_receives_configured_ledger_and_stable_session(self):
+        from iris.generalist.benchmark_admission import transport_worker
+        connection=Mock();usage=Mock()
+        with patch.dict('os.environ',{'IRIS_BENCHMARK_API_KEY':'synthetic-only'}), \
+             patch('iris.usage.default_usage',return_value=usage), \
+             patch('iris.brain.providers.openai_compatible.OpenAICompatibleProvider') as transport:
+            transport.return_value.generate.return_value=LLMResponse('synthetic','openrouter','synthetic/model')
+            transport_worker(connection,LLMRequest('synthetic/model',[]),10,'stable-run-session')
+            config=transport.call_args.args[0]
+            self.assertIs(config.usage,usage)
+            self.assertEqual(usage.session,'stable-run-session')
+            self.assertEqual(config.base_url,'https://openrouter.ai/api')
+            self.assertEqual(transport.return_value.generate.call_count,1)
 
 
 if __name__=='__main__':unittest.main()

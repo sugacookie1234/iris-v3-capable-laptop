@@ -224,3 +224,19 @@ The workflow adds no endpoints, network tools, writes, shell or permission grant
 Detailed plan receipts are session-only; the existing action history retains content-free
 invocation evidence. Durable effectful recovery and stronger data-at-rest protection
 remain separate work. This is not a general autonomous agent or sandbox certification.
+
+
+### Explicit benchmark transport
+
+M4.5 adds an offline-default benchmark, not a new assistant execution channel.
+Real mode requires exact OpenRouter model/synthetic scope consent, call/deadline
+limits, a dedicated local ledger and explicit unknown-cost acknowledgment. Every
+adapter also uses normal configured provider accounting with a stable run session.
+No price/free-tier guarantee is inferred. Bounded worker termination cannot prove
+remote cancellation or prevent charges already incurred; unfinished normal-provider
+reservations require the existing owner review process, never automatic reset.
+Live pilot tool scope is synthetic interpretation and non-executing previews;
+ordinary response measurement has no executor. Model output cannot authorize tools.
+Local raw human-review artifacts stay under ignored .local and must not be committed.
+Same-user malicious software and provider-side processing remain outside this boundary.
+No live provider assessment or security certification was performed.

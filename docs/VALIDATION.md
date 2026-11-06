@@ -850,3 +850,47 @@ Existing security/authentication tests passed; this is not security certificatio
 No owner data/settings or default-off flags changed. Main remains at
 b4e5c9636d02657cb3cd89d368583ee6c8ebd006. Continue from the M4.5 sprint checkpoint,
 not M5; focused tests for new work first, broader regression only after code changes.
+
+
+## M4.5 benchmark-readiness final acceptance — 2026-11-05
+
+Recovered HEAD fc986f0 with the stable-provider-session fix, its regression test and
+five documentation updates uncommitted; preserved all of them. Earlier checkpoints
+2b32ff6 and fc986f0 were already pushed. The unrelated tatus -sb remains untouched.
+
+- Focused final suites: **25 passed**, 3.860 seconds; `.local/benchmark-focused-final.log`.
+- Full final Python discovery: **1107 run, 1103 passed, four skipped**, zero failures
+  or errors, 120.353 seconds; `.local/benchmark-readiness-full-final.log`.
+- All **12 desktop JavaScript checks passed**. These are automated checks, not native
+  hardware acceptance. No frontend source changed after that run.
+- CAP-34 final: **199/199 baseline and 199/199 candidate**, zero regressions;
+  `.local/benchmark-readiness-contracts-final/results.json` and `summary.md`.
+- Earlier full run: 1106 run / 1102 passed / four skipped. Earlier CAP-34: 198/198
+  each. Final runs supersede these after the stable-session accounting fix/test.
+- Offline intelligence: **31 cases / 33 turns / 37 fake adapter attempts**, all
+  fixture expectations met; 13/13 no-effect security expectations and 37/37 prompt
+  checks. `.local/benchmark-readiness-offline/{results.json,summary.md,review.json}`.
+  Counts agree across rows, attempts and summary. Four ordinary-response review
+  records are unreviewed with every score null. FAST/FAST/DEEP/Council produced
+  1/1/1/5 calls respectively; other calls probe interpretation/planning contracts.
+- Exact real-mode preflight and complete CLI execution were tested using synthetic
+  credentials, fake transport and blocked sockets. No live inference or billable
+  network call occurred. The existing transport's configured ledger and stable
+  cross-worker session were verified through mocks, not a personal account.
+
+Admission tests cover missing consent/unknown-cost acceptance, exact targets, changed
+policy, budget concurrency, interrupted reservations, restart, cancellation/deadline,
+worker termination, provider failure and unexpected response identity. Route tests
+cover existing Council fan-out, prompt-label exclusion, review integrity and scoring
+identity. Existing M1–M4 authority/privacy/authentication regression assertions pass.
+Frozen holdouts remain unchanged and unscored; hashes match the preceding checkpoint.
+
+M4.5 is accepted as **bounded benchmark-readiness infrastructure**, not accepted
+real-model intelligence, naturalness, rollout readiness or security certification.
+Only the documented OpenRouter/synthetic response/interpretation/preview pilot is
+supported live; confirmed execution/fault-injection cases stay offline. Unknown
+monetary exposure requires separate explicit acknowledgment; no monetary ceiling or
+remote-cancellation guarantee exists. A separately approved pilot and actual human
+review remain necessary before judging quality or enabling experimental features.
+Native WebView2 reliability remains unresolved. No M5 implementation, owner-data
+migration, credentials/settings change or main merge occurred.

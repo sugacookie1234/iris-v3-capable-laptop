@@ -146,3 +146,14 @@ ordinary conversational/DEEP/Council measurement and human-reviewed claim/releva
 rubric. Add expiry/revision and broader multi-turn cases without touching frozen
 holdouts. Then document a usable owner-approved live command. No live run is
 currently authorized, and --mode real intentionally refuses. M5 is not started.
+
+
+## M4.5 readiness continuation (supersedes earlier transport blocker)
+
+Exact-target live preflight and bounded transport, persistent accounting, existing
+FAST/DEEP/Council measurement and local human-review workflow are implemented.
+Remaining evidence: a separately owner-authorized tiny synthetic pilot with explicit
+unknown-cost consent; then human review and any quality findings. Never infer quality
+from fake-provider passes. Multi-provider/multi-model comparisons and live confirmed
+workflow execution are future scoped expansions, not silently enabled capabilities.
+M5 remains the next development milestone; do not start it within this sprint.

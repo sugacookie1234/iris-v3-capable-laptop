@@ -116,15 +116,18 @@ class DurableRun:
             return [{'state':row[0],'started':row[1]} for row in db.execute('SELECT state,started FROM provider_attempts ORDER BY started,id')]
 
 
-def transport_worker(connection, request, timeout):
+def transport_worker(connection, request, timeout, session):
     """Existing transport keeps existing owner protections; no alternate HTTP client."""
     try:
         from iris.brain.providers.openai_compatible import OpenAICompatibleConfig, OpenAICompatibleProvider
         key = os.environ.get('IRIS_BENCHMARK_API_KEY','')
         if not key:
             raise ValueError('Missing explicitly supplied benchmark credential.')
+        from iris.usage import default_usage
+        usage = default_usage()
+        usage.session = session # One durable benchmark session across all child adapters.
         provider = OpenAICompatibleProvider(OpenAICompatibleConfig(name='openrouter',
-            base_url='https://openrouter.ai/api',api_key=key,timeout_seconds=timeout))
+            base_url='https://openrouter.ai/api',api_key=key,timeout_seconds=timeout,usage=usage))
         # generate() uses default_usage(): normal configured provider limits still apply.
         response = provider.generate(request)
         connection.send_bytes(json.dumps({'response':asdict(response)},allow_nan=False).encode())
@@ -138,7 +141,7 @@ def transport_worker(connection, request, timeout):
 def bounded_transport(request, run, *, worker=transport_worker):
     context = multiprocessing.get_context('spawn')
     receive, send = context.Pipe(duplex=False)
-    process = context.Process(target=worker,args=(send,request,max(.01,run.remaining())),daemon=True)
+    process = context.Process(target=worker,args=(send,request,max(.01,run.remaining()),run.session),daemon=True)
     try:
         process.start()
         send.close()
