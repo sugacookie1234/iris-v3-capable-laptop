@@ -171,3 +171,18 @@ Next substantial milestone is M5: Bounded Recovery & Persistent Project Continui
 Do not infer reliable conversational intelligence from scripted fixture success;
 retain the current privacy, authority and default-off boundaries. Native WebView2
 reliability and hardware acceptance remain separate unresolved gates.
+
+## M5 remaining acceptance gates and continuation
+
+Implemented scope: explicit private projects, task-reference revisions, bounded
+workflow metadata and inspection-only restart recovery. No automatic execution,
+project inference, broad memory ingestion or effectful resume. Portable encrypted
+project backup/export is not implemented; the current allowlist remains unchanged.
+A future focused slice should add explicit portable snapshot/recovery and deletion
+recovery handling for unreadable envelopes with separate owner-controlled operations.
+Do not migrate live protected data during that development.
+
+After offline acceptance, the handoff's next major milestone is M6: separately
+owner-approved live comparison and measured rollout review. This is not approval to
+contact providers or enable the experiment. Native WebView2 reliability/hardware
+acceptance remain independent release gates. No M6 work began in M5.

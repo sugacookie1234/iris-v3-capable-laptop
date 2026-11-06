@@ -151,8 +151,8 @@ class ProjectContinuity:
 
     def delete(self, identifier, revision):
         with self._db() as db:
-            # Even an unreadable envelope can be explicitly removed by ID, but not
-            # mistaken for a validated revision. Recovery never overwrites it.
+            # Unreadable evidence cannot supply a validated deletion revision.
+            # Retain it for owner recovery rather than silently overwriting it.
             self._get(db, identifier, revision)
             db.execute('DELETE FROM projects WHERE id=?', (identifier,))
 

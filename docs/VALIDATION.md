@@ -932,3 +932,39 @@ fidelity but cannot guarantee cross-turn address behavior, especially after clea
 or expiry. No owner data, credentials, voice settings, tool authority, provider model
 policy, rollout flags or main changed. M5 was not started; native reliability remains
 unresolved. Main remains b4e5c9636d02657cb3cd89d368583ee6c8ebd006.
+
+## M5 final acceptance — 2026-11-06
+
+Recovered 472ed5a with only tatus -sb untracked. Checkpoints ffff396 (protected
+project store) and 9e313bc (runtime/journal integration) are pushed. Accepted as a
+bounded offline-tested continuity slice, not autonomous recovery or live-model
+project understanding. Actual registered workspace_list and workspace_read handlers
+ran only on temporary synthetic resources under exact simulated owner confirmation
+and separate per-operation approvals. A newly constructed DesktopRuntime preserved
+project evidence but had no selected project, pending plan or reusable confirmation.
+
+Validation:
+- Focused: 45 tests passed (24 new continuity + 21 existing controlled-plan tests).
+- Full: 1,142 run; 1,138 passed; four skipped; zero failures/errors; 292.441 seconds.
+  Evidence: .local/m5-full-regression.log. Run once after source stabilized.
+- Desktop JavaScript: all 12 checks passed. These are automated checks, not physical
+  keyboard/microphone/window acceptance.
+- CAP-34: 237/237 baseline and 237/237 candidate; zero regressions, gate PASS.
+  Evidence: .local/m5-contracts/{results.json,summary.md}. Contract tests, not model quality.
+- Actual Windows DPAPI roundtrip used synthetic data; wrong-key behavior was also
+  exercised through the synthetic authenticated codec. A second Windows account was
+  not tested. Crash stages use injected interruption/stored states, not power loss.
+- Frozen holdouts unchanged/unscored: interpretation 0A12CD2FD985095C7C371498DD9F77DF915F9BC2291C67AC453CBD5A72BA2A3C;
+  working 64752F121CC264CED84B1CEEAD204D59337F6455F0F7750EC1B9B2B0B784D874;
+  plan B5D709E5704FB3019B3E8F3712B4FA6B6E277019DDBA64EA8CED999ACBE46C19.
+- tatus -sb remains untracked, SHA256 F86ED9018F5473F692F3EAE494C4F62B988CD12FDAD06525AE61BA3C538CE37F.
+  main/origin-main remain b4e5c9636d02657cb3cd89d368583ee6c8ebd006.
+
+No live provider calls, production store changes, credential changes, model/voice
+changes or experimental rollout. Existing authentication/approval regression coverage
+passed. Private context is excluded from model snapshots. Persistent project backup
+is NOT in the portable allowlist; same-account copies need Windows recovery material.
+Unreadable records fail closed and require future explicit recovery tooling. Existing
+ActionHistory retention may remove corroborating evidence; summaries then refuse a
+verified claim. No general project completion, exactly-once effect or security
+certification is claimed. Native WebView2 reliability remains unresolved.

@@ -288,3 +288,16 @@ and tables. No postprocessor forces sir and no routing, tool authority or voice
 provider setting changed. CAP-34 gains prompt-path and context-refinement regression
 checks. Real-model personality consistency and context comprehension remain UNVERIFIED;
 local human-review ratings remain UNREVIEWED. See final VALIDATION.md evidence.
+
+## M5 continuity delivery evidence
+
+TESTED (offline): explicit protected project identity, five task ID/revision links,
+three-step existing read-only workflows, durable metadata, conservative restart
+inspection and fresh-plan-only continuation. Existing capability IDs are preserved;
+CAP-34 adds 24 continuity contracts (237/237 per arm). Full Python 1,138 passed/four
+skipped; JS12 passed. No real-model or native hardware acceptance is claimed.
+
+Limits: ten projects/ten recent workflows each; account-bound DPAPI; no portable
+project backup yet; no automatic selection, replay, provider export, goal linking,
+folder ingestion or effectful recovery. Private WorkingContext reference never enters
+cloud prompts. Experimental default remains off. See DESIGN.md/VALIDATION.md.

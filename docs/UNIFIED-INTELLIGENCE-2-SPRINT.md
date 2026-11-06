@@ -357,3 +357,21 @@ The optional journal never replaces the existing executor or approvals.
 45 focused tests pass (24 new project tests plus 21 existing controlled-plan tests).
 Full acceptance is pending. No provider calls or owner-data edits. See DESIGN.md
 for commands, retention, privacy, backup exclusion and bounded recovery semantics.
+
+## M5 closeout
+
+Full acceptance passed: 1,138 Python passed/four skipped (1,142 run), 12 JavaScript
+checks, CAP-34 237/237 each arm with zero regressions. 24 continuity tests cover the
+bounded lifecycle; 45 focused tests include the existing M4 authority cases. All
+fixtures are synthetic, no real providers. See VALIDATION.md for exact evidence.
+
+The supported slice is create/select project, explicitly link task identity, preview
+and confirm existing read-only workspace steps, persist protected evidence, restart,
+inspect verified/unknown/pending progress and request a fresh preview. Old approvals
+never resume. Project deletion leaves tasks, goals and ActionHistory intact. Working
+context has a private local-only reference; no cloud project understanding is claimed.
+
+Next: explicit portable project backup/recovery remains a narrow readiness gap; the
+handoff's next major intelligence milestone is M6, owner-approved measurement/rollout
+review. Neither live evaluation nor rollout is authorized by M5 completion. Do not
+repeat this sprint or troubleshoot native WebView2 as part of its continuation.

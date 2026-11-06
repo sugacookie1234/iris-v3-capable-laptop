@@ -331,3 +331,21 @@ proposals remain protocol-only; host previews/receipts are not rewritten for sty
 A later real-model comparison would need separate owner approval of new scope,
 identity version, exact model, call/duration limits and cost uncertainty. No prior
 pilot approval is reused. M5 is not part of this checkpoint.
+
+## M5 evaluation scope
+
+Twenty-four new synthetic project-continuity tests use temporary protected stores,
+registered workspace handlers and the existing confirmation/approval path. A fresh
+DesktopRuntime is constructed after close to check retained verified evidence and
+rejection of old confirmations. Fake model proposals are used only for new previews;
+recovery itself calls no model. Tests include real account-DPAPI roundtrip on Windows,
+wrong-key synthetic authenticated encryption, corruption/versions, bounds, concurrent
+revision conflicts, task revision change, deletion isolation, interruption stages,
+missing receipts, cancellation and journal write failures. These measure host
+contracts, not model planning quality or exactly-once effects. CAP-34 includes this
+suite; existing frozen holdouts remain unchanged and unscored.
+
+Private project identity is deliberately excluded from provider-facing context.
+The local WorkingContext reference exists for host inspection, not permission or
+cloud synthesis. M5 does not establish real-model project-reference understanding.
+No new live pilot, personal-data export or human-quality score is authorized here.
