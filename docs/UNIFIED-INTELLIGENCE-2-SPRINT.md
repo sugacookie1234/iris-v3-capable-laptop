@@ -320,3 +320,24 @@ Next: owner review of wording and optional separately scoped live validation; th
 next substantial development milestone is M5 Bounded Recovery & Persistent Project
 Continuity. Do not activate experiments or infer real-model understanding from these
 scripted tests. Preserve existing authorities and the unresolved native release gate.
+
+## M5 checkpoint A — protected continuity foundation
+
+Recovered 472ed5a, only preserved tatus -sb untracked. ActionHistory retains
+bounded content-free invocation evidence; NotesJobs supplies account-bound DPAPI
+patterns; TaskStore/GoalStore remain authoritative for their own records.
+WorkingContext is ephemeral and must not be serialized. The missing abstraction
+is a small encrypted project envelope, not another task or memory system.
+
+ProjectContinuity adds at most ten explicit projects, 80-character titles,
+400-character descriptions, five task ID/revision links and ten workflow summaries
+of up to three steps each. Whole payloads use existing Windows DPAPI, verified
+before transactional publication; no plaintext fallback. IDs alone remain plaintext.
+Revision conflicts, unsupported schemas, decryption failures and redirected paths
+fail closed. No live store is created by development tests. Seven synthetic store
+tests pass. Runtime commands and workflow observer integration remain checkpoint B.
+
+Project backups are not yet included in the portable backup allowlist. Copying
+this protected store alone requires the original Windows account/machine recovery
+material. No migration or silent backup-format change is made. Deletion removes
+only continuity; SQLite secure_delete does not erase external copies/backups.
