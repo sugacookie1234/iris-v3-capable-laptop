@@ -266,3 +266,26 @@ not accepted. Do not execute the pilot without separate exact-target/scope/cost-
 approval. No rollout or M5 work occurred. Next evidence gate is the approved tiny
 pilot and human review; next development milestone is M5 bounded recovery/project
 continuity, preserving the existing authority and privacy boundaries.
+
+
+## M4.7 checkpoint A — diagnosis and minimal identity refinement
+
+Recovered HEAD 4ad6302, only tatus -sb untracked. Canonical Personality is included
+by compile_identity_prompt for every behaviour mode; IRISBrain.respond supplies it
+to FAST/DEEP and Council candidate/critique/chair stages. interpret also includes it.
+The model-only plan proposal uses the strict plan protocol; user-facing plan/receipt
+text is host-generated, not a personality-synthesis path. The three missing addresses
+in the historical pilot do not prove a missing prompt or establish a root cause.
+
+The original wording made address use discretionary and did not specifically guide
+casual topic transitions or avoid duplicating analytical prose/table content. Small
+canonical identity additions clarify usual greetings/acknowledgements with sir,
+recent-reply/urgent exceptions, short casual transitions and proportionate analysis.
+No output postprocessor, new memory system, routing or tool change was introduced.
+
+29 focused identity/personality/brain tests passed with fake providers and temporary
+fixtures. A restricted-path Obsidian test first required the existing Windows test
+execution context; no production path-security assertion was weakened. One new mode
+fixture was corrected to use the router's existing read-file OPERATIONS trigger.
+No inference calls were made. Cross-turn address avoidance remains a prompt preference:
+bounded context may be absent, trimmed or cleared. Historical pilot files are intact.
