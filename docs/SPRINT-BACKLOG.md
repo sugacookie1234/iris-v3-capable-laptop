@@ -213,3 +213,18 @@ implement hybrid local/cloud routing, or advance beyond this evidence gate merel
 because offline contracts pass. Native WebView2 and physical hardware acceptance
 remain separate unresolved gates. Future limited rollout requires actual model
 results, genuine human review, adequate samples and separate owner authorization.
+# Current M6 post-pilot continuation — 2026-11-06
+
+Corrective implementation: context prompt capture, preserved safe compound fallback,
+host-result observability, graph-equivalent dependency scoring and independent argument
+measurements. Details: M6-POST-PILOT.md; acceptance: VALIDATION.md.
+
+Next gate is owner review of unchanged pilot responses, followed only with fresh
+explicit authorization by a newly fingerprinted bounded validation. Investigate
+remaining real-model context/selection errors from evidence; no automatic retry,
+rollout, model replacement or local/cloud hybrid routing. Native reliability remains
+an independent unresolved gate. No later milestone is authorized by this closeout.
+
+M6 corrective acceptance is complete: 93 focused, 1,173 Python passed/four skipped,
+JS12, CAP-34 272/272 each arm, zero regressions. No implementation work remains in
+this bounded pass; the remaining model-quality gate requires separate authorization.

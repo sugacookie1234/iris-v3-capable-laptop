@@ -1072,3 +1072,78 @@ store/credential operations, provider/voice/default changes or new capabilities.
 Native WebView2 reliability, physical hardware and cross-account backup acceptance
 remain separate unresolved gates. No model ranking, general intelligence, perfect
 prompt-injection defense or security certification is claimed.
+## M6 post-pilot corrective final acceptance — 2026-11-06
+
+Recovered local ab60f11 (newer than remote 05a7106), with five documentation edits;
+preserved all work and untracked `tatus -sb`. Implementation 05a7106/ab60f11 is
+accepted as an offline-tested corrective pass. No new real-model inference occurred.
+
+Final evidence:
+- Focused: 93 tests passed, zero failures/errors/skips, 8.869s.
+  `.local/m6-corrective-focused-final.log`. Command: `.venv\Scripts\python.exe -m
+  unittest tests.test_m6_corrective tests.test_m6_evaluation tests.test_interpretation
+  tests.test_conversation_refinement tests.test_working_context
+  tests.test_benchmark_admission tests.test_benchmark_routes tests.test_intelligence_evaluation`.
+  Eleven new corrective tests cover actual prompt messages/provenance/privacy, expiry,
+  clarification, compound omission/local arithmetic, graph equivalence and invalid
+  edges, exact/schema/request argument distinctions, and listing outcomes.
+- Full Python: **1,177 run; 1,173 passed; four skipped; zero failures/errors**,
+  126.264s. `.local/m6-corrective-full-isolated.log`. Existing `unittest discover -s
+  tests`, using the original `.venv\Scripts\python.exe`, run from the source-only
+  `.local/m6-corrective-test-tree`. All 257 tracked Python files were byte-compared
+  with current ab60f11 and match. No source changes followed acceptance; no repeated
+  full regression for documentation-only work.
+- JavaScript: all **12/12** `tests/desktop_*_check.cjs` passed with Node; durable
+  output `.local/m6-corrective-js.log`. These are automated DOM/lifecycle tests,
+  not physical microphone, display or WebView2 hardware acceptance.
+- CAP-34: **272/272 baseline, 272/272 candidate**, matching case sets, zero
+  regressions, gate PASS. Existing runner `python -m iris.generalist.evaluation
+  --output D:\I.R.I.S\iris-v3-capable-laptop\.local\m6-corrective-contracts-isolated`
+  from the same source-only tree. Artifacts: `results.json`, `summary.md`, and
+  `.local/m6-corrective-cap34-isolated.log`. No model-quality comparison is implied.
+- M6 development benchmark: `python -m iris.generalist.intelligence_evaluation
+  --development-set m6 --output .local/m6-corrective-offline-final`: 22 cases,
+  24 turns, 28 fake calls, zero external inference, fixture expectations PASS;
+  prompt checks 28/28, limited lexical checks 45/45. All 24 human records unscored.
+  Exact argument metric remains 8/9 (intentional adverse fixtures retained);
+  dependency graph and argument-contract metrics each 2/2. Unlabelled request
+  constraints remain unscored, not assumed satisfied.
+
+Environment failures were preserved, not hidden: the first focused attempt hit
+temporary-folder access restrictions; workspace-local TEMP/TMP resolved them. The
+initial full run then reported 1,176 tests, three failures, 17 errors, four skips;
+CAP-34 269/271 each arm. Windows DPAPI failed in the restricted execution account,
+and older default-path tests attempted to load the checkout's protected config.
+No assertion was weakened and no owner settings were changed. Acceptance therefore
+used a disposable copy of tracked source (no owner `.local`, untracked files or
+credentials copied), workspace-local TEMP/TMP, cleared process-only IRIS/OpenRouter/
+Fish environment variables, and the Windows user context for synthetic DPAPI tests.
+The later additional listing-outcome regression accounts for the final 1,177 total.
+Full logs for unsuccessful runs remain `.local/m6-corrective-full.log` and
+`.local/m6-corrective-cap34.log`. Re-running was justified by these failures and
+the final outcome-metadata refinement, not an attempt to conceal failing checks.
+
+Integrity: all five `.local/m6-proposed-pilot-001` files match the pre-change SHA256
+manifest `.local/m6-corrective-preservation.json`. Original ledger remains stopped
+with five completed attempts. Review fingerprints validate; reviewer scores remain
+blank. Frozen holdouts are unchanged and unscored:
+- interpretation: 0a12cd2fd985095c7c371498dd9f77df915f9bc2291c67ac453cbd5a72ba2a3c
+- working: 64752f121cc264ced84b1ceead204d59337f6455f0f7750ec1b9b2b0b784d874
+- plan: b5d709e5704fb3019b3e8f3712b4fa6b6e277019ddba64ea8ced999acbe46c19
+`tatus -sb`: f86ed9018f5473f692f3eae494c4f62b988cd12fdad06525ae61ba3c538ce37f.
+main/origin-main remain b4e5c9636d02657cb3cd89d368583ee6c8ebd006.
+
+Historical host reconstruction is separate from original observations:
+`.local/m6-corrective-analysis/historical-host-analysis-final.{json,md}`. Reproduce
+offline using `.venv\Scripts\python.exe .local/m6-corrective-analysis/reproduce.py`
+with workspace-local TEMP/TMP. It reuses saved responses and committed validators,
+rebinding only disposable context IDs. It makes no inference or workspace tool calls,
+never writes the pilot directory, and asserts its hashes unchanged. It cannot
+retroactively create an original UI recording.
+
+Experimental interpretation remains default-off (runtime requires explicit `true`);
+model/provider/voice settings, permissions and owner data are unchanged. Native
+WebView2 reliability and real hardware acceptance remain unresolved. The corrective
+pass is PASS for engineering/measurement; real-model improvement and rollout remain
+UNVERIFIED/NOT AUTHORIZED. Fresh approval is required for the proposed follow-up in
+UNIFIED-INTELLIGENCE-2-EVALUATION.md; no live request is executed by this closeout.

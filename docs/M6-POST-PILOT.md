@@ -66,7 +66,10 @@ fingerprints, blank human scores and stopped admission ledger. Separate reconstr
 are included in CAP-34. First focused attempt under the default temporary directory
 hit filesystem access restrictions in existing workspace/vault tests. Repeating with
 TEMP/TMP inside the authorized workspace passed; no permissions or assertions changed.
-Full acceptance follows in VALIDATION.md; this entry alone is not full acceptance.
+Full acceptance is recorded in VALIDATION.md: 1,173 Python passed/four skipped,
+12 JavaScript checks passed, CAP-34 272/272 per arm with zero regressions. The
+source-only acceptance copy matches all 257 tracked Python files. Corrective pass
+PASS (offline engineering); no new real-model quality acceptance is implied.
 Successful workspace listing is also explicitly distinguished from a refused attempt;
 simulated plan confirmation is recorded only when the execution path reaches it.
 
@@ -79,3 +82,11 @@ synthetic cases, five maximum attempts, 180 seconds, one explicitly approved mod
 new unused output and newly computed scope/prompt fingerprints. Obtain fresh provider
 and billing-risk approval first; never reuse the consumed pilot ledger/authorization.
 No local/cloud hybrid routing or subsequent milestone was implemented.
+
+Final reconstruction and reproducible local script:
+`.local/m6-corrective-analysis/historical-host-analysis-final.{json,md}` and
+`.local/m6-corrective-analysis/reproduce.py`. The script uses saved replies, committed
+validators and disposable context IDs, blocks network, asserts zero tool attempts and
+checks original artifact hashes. Original responses, blank review and admission remain
+untouched. Full commands, failed environment runs and successful acceptance are in
+VALIDATION.md.

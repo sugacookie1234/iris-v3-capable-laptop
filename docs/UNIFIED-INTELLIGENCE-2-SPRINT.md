@@ -478,3 +478,19 @@ owner review in EVALUATION.md. Do not execute Checkpoint D without new explicit
 provider/model/scope/prompt/budget and residual-cost approval. Do not infer rollout
 readiness from offline success. Human review and adequately sized real evidence
 remain pending. Preserve in-chat fallback and all current authority/privacy controls.
+# M6 post-pilot corrective checkpoint — 2026-11-06
+
+Recovered 1bf3bdc; code checkpoints 05a7106 and ab60f11 preserve the live pilot and
+untracked `tatus -sb`. Context serialization is verified; relevant prompt guidance
+is minimal. Existing deterministic fallback is preserved and now observable. Plan
+graph scoring is ID-invariant without weakening exact argument comparisons.
+See M6-POST-PILOT.md and VALIDATION.md for evidence and remaining gates. No new
+inference, experiment activation, hybrid routing or subsequent milestone started.
+
+# M6 corrective closeout acceptance
+
+PASS for offline engineering: 93 focused; full Python 1,173 passed/four skipped;
+JavaScript 12/12; CAP-34 272/272 each arm, identical sets, zero regressions. Original
+pilot artifacts and holdouts unchanged. No new inference or rollout. See VALIDATION.md
+for source-copy equivalence, DPAPI environment failures and exact commands. Actual
+real-model improvement remains unverified; fresh approval is required for follow-up.

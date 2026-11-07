@@ -328,3 +328,10 @@ per arm, zero regressions. 28 fake calls produced 24 unscored response records. 
 are measurement/contract results only. Real-model quality is PENDING, rollout is NOT
 AUTHORIZED. No owner data export, live inference, hybrid routing or model promotion.
 Exact proposed pilot and limitations: UNIFIED-INTELLIGENCE-2-EVALUATION.md.
+# M6 corrective evidence — 2026-11-06
+
+Existing capability IDs and permissions retained. Offline-tested context serialization,
+compound omission fallback, host outcome reporting and graph-equivalent plan scoring
+are documented in M6-POST-PILOT.md. Live pilot quality did not pass; prompt refinements
+have no new real-model acceptance. Rollout remains unauthorized and default-off.
+Current regression counts and environment limitations are in VALIDATION.md.

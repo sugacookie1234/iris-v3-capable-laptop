@@ -441,3 +441,44 @@ Public documentation checked without credentials on 2026-11-06:
 Published pricing is not a guaranteed final bill. Availability/limits must be checked
 again at approved execution time; no substitutions. Only synthetic text would leave
 the computer. This preparation does not reuse the previous three-call approval.
+# M6 post-pilot corrective evidence — 2026-11-06
+
+The original five-attempt authorization was consumed; the pilot completed but failed
+semantic expectations. No further inference is authorized or performed here. Earlier
+"pilot pending" entries above are historical. Original artifacts remain unchanged.
+
+See [M6-POST-PILOT.md](M6-POST-PILOT.md) for root causes, reconstructed host outcomes
+and scoring distinctions. Raw bad numerical prose was not the host's answer: the
+existing compound fallback produced clarification. Context reached actual provider
+requests; model comprehension still needs a separately approved measurement.
+
+Reports now separate raw proposal scores, host response/source, calculation evidence,
+tool attempts, simulated confirmation and receipts. Dependency comparison uses ordered
+capability graphs rather than arbitrary IDs. Exact argument equality remains strict;
+contract validity, explicitly labelled request constraints and read-size review are
+separate. No human score or real-model improvement is inferred from fixtures.
+
+Offline preflight for a proposed later repeat (NOT authorized): same three synthetic
+cases, maximum five attempts/180 seconds, same exact model subject to fresh approval,
+unused `.local/m6-corrective-proposed-pilot-002` directory. Current scope:
+`f9efcd44bf1b25b023d0bcad026eadc5bb5b5981fb86ad93ba6e617b4c1a8ded`;
+prompt configuration:
+`962355c28baf8a58423af6e46504cde82f975a36bd079b3a2304861ca98bf828`.
+Recompute before requesting approval if source changes. Preflight made no contact.
+No budget, ledger reset, automatic retry or provider substitution is granted.
+
+Proposed provider/model: OpenRouter / `nvidia/nemotron-3.5-lightning:free`.
+Exact cases: `m6-specific-context`, `m6-eight`, `m6-preview` (two + two + one turns).
+Synthetic requests, relevant synthetic context and prompt instructions would leave
+the computer; no owner records or workspace contents. Fresh approval must acknowledge
+endpoint logging and uncertain final billing. Input usage is unknown until returned;
+each proposed FAST request currently has a 500-output-token limit (five attempts:
+2,500 requested output tokens maximum), not a monetary guarantee. Recheck public
+availability/policy before authorized execution, without substituting models.
+
+Criteria: use the supplied Java/file-saving referent without inventing successful
+tests; propose the 8% update and original comparison with valid current references;
+let the host compute the numbers; propose the correct read-only graph with typed
+arguments and report any exact read-limit mismatch. Compare raw proposals and host
+outcomes separately. Human conversational scores stay blank until owner review.
+No tool execution, Council, retry, rollout or model-default changes are included.

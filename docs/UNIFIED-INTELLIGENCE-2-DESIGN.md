@@ -332,3 +332,12 @@ identity/prompt-producing source; this is not a byte hash of dynamic context IDs
 CLI preflight checks that binding without provider contact. The existing durable
 adapter budget and normal provider ledger remain authoritative; no new transport,
 retry, fallback, model selection or automatic activation is introduced.
+# M6 observability clarification — 2026-11-06
+
+The evaluation result has distinct layers: raw proposal/parse, host acceptance,
+host-visible response and source, deterministic calculation payload, actual tool
+attempts, execution receipts and unscored human review. Host acceptance does not
+assert intent correctness; a safe clarification remains a model-selection failure.
+Plan dependency equivalence is an ordered capability graph, independent of node
+labels. Exact arguments, registered contract validity and labelled request constraints
+are separate measurements; none confers execution approval. See M6-POST-PILOT.md.
