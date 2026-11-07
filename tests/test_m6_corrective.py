@@ -211,4 +211,44 @@ class M6FollowupContextTests(unittest.TestCase):
         self.assertIsNone(owner.context.skill.compared_rate)
 
 
+
+
+class M6SchemaObservationTests(unittest.TestCase):
+    def test_missing_text_retains_partial_fields_without_contract_credit(self):
+        case=copy.deepcopy(next(c for c in ev.load_cases(ev.M6_CORPUS) if c['id']=='m6-eight'))
+        raw=dict(case['turns'][0]['fake']['output'],version=1,turn='0'*31+'1',context=None)
+        raw.pop('text')
+        case['turns']=case['turns'][:1]
+        case['turns'][0]['fake']['raw']=json.dumps(raw)
+        report=ev.evaluate(cases=[case]);row=report['rows'][0]
+        self.assertEqual(row['stage'],'parse_rejected')
+        self.assertFalse(row['metrics']['capability'])
+        self.assertFalse(row['capability_applied'])
+        self.assertIsNone(row['deterministic_calculation'])
+        self.assertEqual(row['tool_execution_count'],0)
+        obs=row['raw_interpretation_observations']
+        self.assertEqual(obs['missing_fields'],['text'])
+        self.assertTrue(obs['field_matches']['capability'])
+        self.assertEqual(report['review']['records'][0]['response'],json.dumps(raw))
+
+    def test_missing_context_is_distinct_from_null(self):
+        expected={'context':None}
+        missing=ev.interpretation_observations('{}',expected,None)
+        null=ev.interpretation_observations('{"context":null}',expected,None)
+        self.assertIsNone(missing['field_matches']['context'])
+        self.assertTrue(null['field_matches']['context'])
+
+    def test_ambiguous_or_unbounded_json_is_unobserved(self):
+        for raw in ('{"kind":"a","kind":"b"}', '{"x":NaN}', '{"x":1e999}', '['*1000, ' '*8001, '[]'):
+            with self.subTest(raw=raw[:30]):
+                self.assertEqual(ev.interpretation_observations(raw,{},None)['status'],'unobserved')
+
+    def test_diagnostics_do_not_echo_unknown_content_or_coerce_types(self):
+        raw='{"PRIVATE_MARKER":"SECRET_MARKER","arguments":{"rate":true}}'
+        observation=ev.interpretation_observations(raw,{'arguments':{'rate':1}},None)
+        self.assertEqual(observation['unknown_field_count'],1)
+        self.assertNotIn('MARKER',json.dumps(observation))
+        self.assertFalse(observation['field_matches']['arguments'])
+
+
 if __name__=='__main__':unittest.main()

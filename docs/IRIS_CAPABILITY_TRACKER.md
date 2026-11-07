@@ -343,3 +343,11 @@ See [M6-FOLLOWUP-CORRECTION.md](M6-FOLLOWUP-CORRECTION.md) for original/current
 scenario context, prompt refinements, three added regression contracts and exact
 verification evidence. No capability authority, rollout or live-quality acceptance
 was added. Both consumed pilot runs are preserved.
+
+
+## M6 pilot 003 schema diagnostics — 2026-11-07
+
+Read-only raw-field diagnostics now distinguish incomplete response objects from
+partial semantic matches without changing strict parser acceptance or scores.
+See [M6-SCHEMA-DIAGNOSTICS.md](M6-SCHEMA-DIAGNOSTICS.md) for the three-pilot
+findings and exact offline validation. No new model-quality acceptance or rollout.

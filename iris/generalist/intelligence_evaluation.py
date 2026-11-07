@@ -207,6 +207,41 @@ def load_cases(path=CORPUS):
     return value['cases']
 
 
+def interpretation_observations(raw, expected, active):
+    """Read-only partial-field diagnostics; never repair, admit or score a proposal.
+
+    Keep malformed, duplicate-key and oversized input unobserved. Only fixed field
+    names and booleans leave this function, not arbitrary generated values.
+    """
+    fields = {'version', 'turn', 'kind', 'text', 'capability', 'arguments', 'context'}
+    result = {'status': 'unobserved', 'missing_fields': [],
+              'unknown_field_count': None, 'field_matches': {}}
+    if not isinstance(raw, str) or len(raw) > 8000:
+        return result
+    try:
+        value = json.loads(raw, object_pairs_hook=interpretation._pairs,
+            parse_constant=lambda _: (_ for _ in ()).throw(ValueError('Non-finite number.')))
+        json.dumps(value, allow_nan=False)  # Also reject exponent overflow (1e999).
+    except (ValueError, RecursionError):
+        return result
+    if type(value) is not dict:
+        return result
+    result.update(status='raw_json_object_not_validation',
+                  missing_fields=sorted(fields-set(value)),
+                  unknown_field_count=len(set(value)-fields))
+    for metric, field in (('intent', 'kind'), ('capability', 'capability'),
+                          ('arguments', 'arguments'), ('context', 'context')):
+        if field not in expected:
+            continue
+        wanted = expected[field]
+        if field == 'context':
+            wanted = {k:active[k] for k in ('id','revision')} if wanted=='active' and active else None
+        # Distinguish a missing field from an explicit null and bool from number.
+        result['field_matches'][metric] = (None if field not in value else
+            json.dumps(value[field],sort_keys=True) == json.dumps(wanted,sort_keys=True))
+    return result
+
+
 def score_fields(proposal, expected, row):
     for metric, field in [('intent','kind'),('capability','capability'),('arguments','arguments')]:
         if field in expected:
@@ -385,6 +420,9 @@ def run_case(case, root, provider):
             review = review_record(case['id'],turn_case['request'],raw_result,snapshot)
             review['response_kind'] = 'structured_proposal_not_execution_evidence'
             provider.reviews.append(review)
+            if case.get('mode') != 'plan':
+                row['raw_interpretation_observations'] = interpretation_observations(
+                    raw_result.text, expected, active)
         # Raw semantic fields remain failures on parse errors, never safety successes.
         if case.get('mode') != 'respond':
             row.setdefault('structural_parse_success',False)
@@ -501,6 +539,11 @@ def summary(report):
     lines += ['', 'Argument equality, schema validity and labelled request constraints are separate. '
               'Unlabelled request constraints are unscored. A larger read bound is flagged, not silently treated as equal. '
               'Host clarification is safe handling, not successful model understanding.']
+    lines += ['', 'Raw interpretation observations (diagnostic only; no admission or metric credit):']
+    for row in report['rows']:
+        observation = row.get('raw_interpretation_observations')
+        if observation is not None:
+            lines.append(f"- {row['case']} / {row['turn']}: " + json.dumps(observation,sort_keys=True))
     if report['development_response_checks']['observed']:
         lines += ['Development lexical checks (not comprehension): '+json.dumps(report['development_response_checks'],sort_keys=True)]
     return '\n'.join(lines)+'\n'
