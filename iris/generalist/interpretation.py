@@ -101,6 +101,11 @@ def snapshot(orchestrator):
         return None
     return {'id': context.visual_reference, 'revision': context.revision,
             'parameters': context.skill.parameters(), 'state': context.skill.state.value,
+            # Existing reset/compare_original semantics use the fixed educational
+            # baseline, not the most recent update or an inferred owner preference.
+            'original_parameters': {'principal': 1000, 'rate': 5, 'years': 10,
+                                    'contribution': 0, 'compared_rate': None},
+            'calculation_convention': 'monthly compounding; contributions at month end',
             'source': 'host', 'privacy': 'public_hypothetical', 'workflow': context.workflow}
 
 
@@ -242,6 +247,15 @@ do not substitute prose calculations with null capability. The host calculates t
 and produces the answer. Never invent balances, rates or a scenario revision in text.
 Update changes may contain principal, rate, years (integer), contribution (monthly), compared_rate.
 Use compare_original for an explicit comparison with the original example (initial annual rate five percent).
+public_example.parameters is the CURRENT scenario; public_example.original_parameters is the
+fixed original educational baseline, not the current rate. A change does not redefine the original.
+For an original comparison return kind hypothetical, capability compound, arguments
+{operation: compare_original, changes: {}}, and the CURRENT example id/revision.
+If principal, years or contribution differ from the original, ask for clarification instead;
+this operation compares rates only under otherwise identical assumptions.
+For compound proposals, text should briefly describe the requested operation without any
+computed balances, differences or percentages of growth. The host uses monthly compounding.
+Do not answer an original-comparison request by merely restating the current scenario.
 Interpret only the current request; do not invent numerical inputs. Contradictory or ambiguous references
 require clarification with null capability and empty arguments. Explain a difference using show.
 Workspace listing is action, arguments {path: "."}, context null. No other tools are available.

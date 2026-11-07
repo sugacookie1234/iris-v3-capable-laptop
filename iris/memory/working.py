@@ -158,4 +158,10 @@ def prompt(snapshot):
             'means when a unique relevant referent is supplied. An owner saying a fix is done '
             'is not evidence of testing; distinguish reported progress from host-verified results. '
             'Do not invent grades, project selection, completed actions or missing references. '
-            'Ask for clarification if referents are ambiguous.\n' + json.dumps(snapshot, ensure_ascii=False))
+            'Ask for clarification if referents are ambiguous. '
+            'When one relevant project/problem is identified, name it briefly in your reply '
+            'instead of asking which issue it was. For a verification question, say what '
+            'evidence is still needed (for example a test reproducing the reported problem); '
+            'do not imply that you ran it. Use plain language with the owner, not internal '
+            'terms such as owner-authored or host-verified. Keep simple follow-ups concise.\n'
+            + json.dumps(snapshot, ensure_ascii=False))

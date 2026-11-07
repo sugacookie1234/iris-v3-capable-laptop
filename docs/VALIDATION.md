@@ -1147,3 +1147,11 @@ WebView2 reliability and real hardware acceptance remain unresolved. The correct
 pass is PASS for engineering/measurement; real-model improvement and rollout remain
 UNVERIFIED/NOT AUTHORIZED. Fresh approval is required for the proposed follow-up in
 UNIFIED-INTELLIGENCE-2-EVALUATION.md; no live request is executed by this closeout.
+
+
+## M6 second-pilot offline correction
+
+See [M6-FOLLOWUP-CORRECTION.md](M6-FOLLOWUP-CORRECTION.md) for original/current
+scenario context, prompt refinements, three added regression contracts and exact
+verification evidence. No capability authority, rollout or live-quality acceptance
+was added. Both consumed pilot runs are preserved.

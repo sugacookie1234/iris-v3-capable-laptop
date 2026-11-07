@@ -163,4 +163,52 @@ class M6CorrectiveTests(unittest.TestCase):
         self.assertIn('No successful result was verified',row['host_response'])
 
 
+
+
+class M6FollowupContextTests(unittest.TestCase):
+    def test_actual_comparison_request_keeps_original_separate_from_current(self):
+        case=copy.deepcopy(next(c for c in ev.load_cases(ev.M6_CORPUS) if c['id']=='m6-eight'))
+        captured=[]; original=ev.MeasuredFakeProvider.generate
+        def capture(provider, request):
+            captured.append(request)
+            return original(provider,request)
+        with patch.object(ev.MeasuredFakeProvider,'generate',capture):
+            report=ev.evaluate(cases=[case])
+        first=json.loads(captured[0].messages[-1].content)['public_example']
+        second=json.loads(captured[1].messages[-1].content)['public_example']
+        self.assertEqual(first['parameters']['rate'],5)
+        self.assertEqual(second['parameters']['rate'],8)
+        self.assertEqual(second['original_parameters']['rate'],5)
+        self.assertEqual(first['original_parameters'],second['original_parameters'])
+        self.assertIn('monthly compounding',second['calculation_convention'])
+        self.assertEqual(report['rows'][1]['deterministic_calculation']['parameters']['compared_rate'],5)
+        self.assertTrue(all(row['tool_execution_count']==0 for row in report['rows']))
+
+    def test_original_snapshot_is_detached_and_expiry_removes_it(self):
+        now=[0.0]; owner=Orchestrator(clock=lambda:now[0])
+        owner.context=ActiveContext(expires=10)
+        view=interpretation.snapshot(owner)
+        view['original_parameters']['rate']=99
+        view['parameters']['rate']=99
+        owner.context.skill.change({'rate':9})
+        fresh=interpretation.snapshot(owner)
+        self.assertEqual(fresh['original_parameters']['rate'],5)
+        self.assertEqual(fresh['parameters']['rate'],9)
+        now[0]=11
+        self.assertIsNone(interpretation.snapshot(owner))
+
+    def test_original_comparison_still_refuses_changed_principal(self):
+        owner=Orchestrator();owner.context=ActiveContext(expires=owner.clock()+900)
+        owner.context.skill.change({'principal':2000,'rate':8})
+        state=interpretation.snapshot(owner);turn='a'*32
+        proposal=interpretation.parse(json.dumps(dict(version=1,turn=turn,kind='hypothetical',
+            text='Compare the original rate.',capability='compound',
+            arguments={'operation':'compare_original','changes':{}},
+            context={'id':state['id'],'revision':state['revision']})),turn)
+        with self.assertRaises(ValueError):
+            interpretation.apply(proposal,turn=turn,owner_text='Compare that to the original.',
+                orchestrator=owner,brain=None)
+        self.assertIsNone(owner.context.skill.compared_rate)
+
+
 if __name__=='__main__':unittest.main()

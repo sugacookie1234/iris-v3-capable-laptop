@@ -335,3 +335,11 @@ compound omission fallback, host outcome reporting and graph-equivalent plan sco
 are documented in M6-POST-PILOT.md. Live pilot quality did not pass; prompt refinements
 have no new real-model acceptance. Rollout remains unauthorized and default-off.
 Current regression counts and environment limitations are in VALIDATION.md.
+
+
+## M6 second-pilot offline correction
+
+See [M6-FOLLOWUP-CORRECTION.md](M6-FOLLOWUP-CORRECTION.md) for original/current
+scenario context, prompt refinements, three added regression contracts and exact
+verification evidence. No capability authority, rollout or live-quality acceptance
+was added. Both consumed pilot runs are preserved.
