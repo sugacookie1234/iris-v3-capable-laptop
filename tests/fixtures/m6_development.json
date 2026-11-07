@@ -104,7 +104,9 @@
               ],
               "avoids": [
                 "I verified",
-                "I ran the test"
+                "I ran the test",
+                "verification is complete",
+                "fix has been confirmed as working"
               ],
               "max_sir": 1
             }
@@ -393,7 +395,14 @@
               }
             },
             "context": "active",
-            "host_accept": true
+            "host_accept": true,
+            "calculation_parameters": {
+              "principal": 1000,
+              "rate": 8,
+              "years": 10,
+              "contribution": 0,
+              "compared_rate": null
+            }
           }
         },
         {
@@ -418,7 +427,14 @@
               "changes": {}
             },
             "context": "active",
-            "host_accept": true
+            "host_accept": true,
+            "calculation_parameters": {
+              "principal": 1000,
+              "rate": 8,
+              "years": 10,
+              "contribution": 0,
+              "compared_rate": 5
+            }
           }
         }
       ]

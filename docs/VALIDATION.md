@@ -1170,3 +1170,11 @@ findings and exact offline validation. No new model-quality acceptance or rollou
 See [M6-COMPLETE-SHAPE.md](M6-COMPLETE-SHAPE.md): complete seven-field example,
 109 focused tests and 12 desktop checks passed. Strict parsing unchanged. No live
 quality acceptance or additional provider calls; next pilot requires fresh approval.
+
+
+## M6 outcome regressions — 2026-11-07
+
+See [M6-OUTCOME-REGRESSIONS.md](M6-OUTCOME-REGRESSIONS.md): observed false-verification
+phrase regression and exact per-turn host calculation-state sequence checks.
+Evaluation-only change; runtime truthfulness and model reliability remain unresolved.
+All four original pilots and frozen holdouts remain untouched.

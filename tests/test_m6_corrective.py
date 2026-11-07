@@ -296,4 +296,71 @@ class M6CompleteShapeTests(unittest.TestCase):
             self.assertIsNone(row['deterministic_calculation'])
 
 
+
+
+class M6OutcomeRegressionTests(unittest.TestCase):
+    def case(self,name):
+        return copy.deepcopy(next(c for c in ev.load_cases(ev.M6_CORPUS) if c['id']==name))
+
+    def test_observed_false_verification_remains_raw_but_fails_phrase_check(self):
+        case=self.case('m6-specific-context')
+        false_reply='I.R.I.S.: Yes, sir. The verification is complete. The fix has been confirmed as working.'
+        case['turns'][1]['fake']['response_text']=false_reply
+        report=ev.evaluate(cases=[case]);row=report['rows'][1]
+        self.assertEqual(row['host_response'],false_reply)
+        self.assertEqual(report['review']['records'][1]['response'],false_reply)
+        self.assertFalse(row['development_response_checks']['avoid_2'])
+        self.assertFalse(row['development_response_checks']['avoid_3'])
+        self.assertFalse(report['fixture_expectations_met'])
+        self.assertEqual(report['human_quality']['status'],'unreviewed')
+        self.assertEqual(report['review']['records'][1]['synthetic_context']['verified_result_references'],[])
+
+    def test_honest_fixture_is_not_flagged_by_observed_phrase_regression(self):
+        report=ev.evaluate(cases=[self.case('m6-specific-context')])
+        self.assertTrue(report['fixture_expectations_met'])
+        self.assertEqual(report['calculation_sequences'],[])
+
+    def test_full_update_and_comparison_reach_expected_state_and_values(self):
+        report=ev.evaluate(cases=[self.case('m6-eight')])
+        self.assertTrue(report['fixture_expectations_met'])
+        self.assertEqual(report['calculation_sequences'],[
+            {'case':'m6-eight','expected_turns':2,'observed_turns':2,'passed':True}])
+        self.assertTrue(all(r['expected_calculation_met'] for r in report['rows']))
+        final=report['rows'][1]['deterministic_calculation']
+        self.assertEqual(final['parameters']['rate'],8)
+        self.assertEqual(final['parameters']['compared_rate'],5)
+        self.assertEqual(final['visual']['points'][-1],[10,2219.64,1647.01])
+
+    def test_rejected_update_then_valid_five_against_five_is_sequence_failure(self):
+        case=self.case('m6-eight')
+        case['turns'][0]['fake']['output']['arguments']={'operation':'compare_original','changes':{}}
+        # Even when a test expects the rejection, the requested calculation state
+        # must still fail; this proves the sequence gate is independent.
+        case['turns'][0]['expected']['host_accept']=False
+        report=ev.evaluate(cases=[case]);first,second=report['rows']
+        self.assertEqual(first['stage'],'host_rejected')
+        self.assertTrue(second['metrics']['arguments'])
+        self.assertTrue(second['host_accepted'])
+        self.assertEqual(second['deterministic_calculation']['parameters']['rate'],5)
+        self.assertFalse(first['expected_calculation_met'])
+        self.assertFalse(second['expected_calculation_met'])
+        self.assertFalse(report['calculation_sequences'][0]['passed'])
+        self.assertFalse(report['fixture_expectations_met'])
+        self.assertTrue(all(r['tool_execution_count']==0 for r in report['rows']))
+
+    def test_missing_calculation_and_evaluator_labels_never_exported(self):
+        case=self.case('m6-eight');seen=[];original=ev.MeasuredFakeProvider.generate
+        def capture(provider,request):
+            seen.extend(m.content for m in request.messages)
+            return original(provider,request)
+        case['turns'][0]['expected']['calculation_parameters']['PRIVATE_EXPECTATION_MARKER']=True
+        for turn in case['turns']:
+            turn['fake']['output'].update(kind='clarification',capability=None,arguments={})
+        with patch.object(ev.MeasuredFakeProvider,'generate',capture):
+            report=ev.evaluate(cases=[case])
+        self.assertNotIn('PRIVATE_EXPECTATION_MARKER',' '.join(seen))
+        self.assertFalse(report['calculation_sequences'][0]['passed'])
+        self.assertTrue(all(r['deterministic_calculation'] is None for r in report['rows']))
+
+
 if __name__=='__main__':unittest.main()

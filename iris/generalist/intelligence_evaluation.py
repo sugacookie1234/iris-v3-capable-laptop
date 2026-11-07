@@ -443,6 +443,12 @@ def run_case(case, root, provider):
             changed = interpretation.snapshot(orchestrator) != active
             row['permission_violations'] = len(effects) + int(changed)
             row['metrics']['security_expectation'] = not effects and not changed
+        if 'calculation_parameters' in expected:
+            # Exact state after this turn, not merely an accepted operation name.
+            calculation = row['deterministic_calculation']
+            row['expected_calculation_met'] = bool(row['host_accepted'] and
+                row['capability_applied'] and row['host_response_source']=='host_compound_calculation' and
+                calculation and calculation['parameters']==expected['calculation_parameters'])
         row['expected_host_outcome_met'] = row['host_accepted'] == expected['host_accept']
         if 'execution_state' in expected:
             row['expected_execution_outcome_met'] = row.get('execution_state') == expected['execution_state']
@@ -497,6 +503,13 @@ def evaluate(*, max_calls=64, duration=120, cases=None, live_provider=None):
             'budget':{'adapter_calls':max_calls,'duration_seconds':duration,'monetary_ceiling':0 if live_provider is None else None,
                       'unknown_cost_acknowledged':live_provider is not None},
             'case_count':len(cases),'turn_count':len(rows),'metrics':aggregate(rows),
+            'calculation_sequences':[
+                {'case':case['id'],
+                 'expected_turns':sum('calculation_parameters' in turn['expected'] for turn in case['turns']),
+                 'observed_turns':sum(r['case']==case['id'] and 'expected_calculation_met' in r for r in rows),
+                 'passed':(sum(r['case']==case['id'] and r.get('expected_calculation_met',False) for r in rows)
+                           == sum('calculation_parameters' in turn['expected'] for turn in case['turns']))}
+                for case in cases if any('calculation_parameters' in turn['expected'] for turn in case['turns'])],
             'categories':{name:aggregate([r for r in rows if r['category']==name]) for name in sorted({r['category'] for r in rows})},
             'rows':rows,'attempts':attempts,'actual_adapter_calls':len(attempts),
             'actual_external_calls':0 if live_provider is None else None,'actual_cost':0 if live_provider is None else None,
@@ -511,7 +524,8 @@ def evaluate(*, max_calls=64, duration=120, cases=None, live_provider=None):
                 'observed':sum(len(row.get('development_response_checks',{})) for row in rows)},
             'outcomes':{stage:sum(r['stage']==stage for r in rows) for stage in sorted({r['stage'] for r in rows})},
             'fixture_expectations_met':all(r['expected_host_outcome_met']
-                and r.get('expected_execution_outcome_met',True) and r.get('route_expected',True)
+                and r.get('expected_execution_outcome_met',True) and r.get('expected_calculation_met',True)
+                and r.get('route_expected',True)
                 and all(r.get('development_response_checks',{}).values()) for r in rows),
             'limitations':['Offline outputs test measurement and contracts, not model intelligence.',
                 'Ordinary response routes reuse IRISBrain; selected target is identical across reasoning roles, not the owner default configuration.',
@@ -539,6 +553,10 @@ def summary(report):
     lines += ['', 'Argument equality, schema validity and labelled request constraints are separate. '
               'Unlabelled request constraints are unscored. A larger read bound is flagged, not silently treated as equal. '
               'Host clarification is safe handling, not successful model understanding.']
+    lines += ['', 'Calculation sequences (all labelled turn states must match):']
+    for sequence in report.get('calculation_sequences',[]):
+        lines.append(f"- {sequence['case']}: {'PASS' if sequence['passed'] else 'FAIL'}; "
+                     f"{sequence['observed_turns']}/{sequence['expected_turns']} labelled turns observed")
     lines += ['', 'Raw interpretation observations (diagnostic only; no admission or metric credit):']
     for row in report['rows']:
         observation = row.get('raw_interpretation_observations')
