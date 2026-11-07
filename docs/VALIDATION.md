@@ -1163,3 +1163,10 @@ Read-only raw-field diagnostics now distinguish incomplete response objects from
 partial semantic matches without changing strict parser acceptance or scores.
 See [M6-SCHEMA-DIAGNOSTICS.md](M6-SCHEMA-DIAGNOSTICS.md) for the three-pilot
 findings and exact offline validation. No new model-quality acceptance or rollout.
+
+
+## M6 complete response-shape prompt — 2026-11-07
+
+See [M6-COMPLETE-SHAPE.md](M6-COMPLETE-SHAPE.md): complete seven-field example,
+109 focused tests and 12 desktop checks passed. Strict parsing unchanged. No live
+quality acceptance or additional provider calls; next pilot requires fresh approval.

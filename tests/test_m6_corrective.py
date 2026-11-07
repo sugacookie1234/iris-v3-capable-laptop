@@ -251,4 +251,49 @@ class M6SchemaObservationTests(unittest.TestCase):
         self.assertFalse(observation['field_matches']['arguments'])
 
 
+
+
+class M6CompleteShapeTests(unittest.TestCase):
+    def example(self):
+        line=next(line for line in interpretation.PROMPT.splitlines() if line.startswith('{"version":'))
+        value=json.loads(line)
+        value['turn']='a'*32
+        value['context']={'id':'b'*32,'revision':7}
+        return value
+
+    def test_complete_example_satisfies_existing_parser_after_reference_binding(self):
+        value=self.example()
+        proposal=interpretation.parse(json.dumps(value),'a'*32)
+        self.assertEqual(proposal.arguments,{'operation':'compare_original','changes':{}})
+        self.assertEqual(proposal.context.revision,7)
+        self.assertTrue(proposal.text.strip())
+
+    def test_each_missing_top_level_field_still_rejected(self):
+        for key in self.example():
+            value=self.example();value.pop(key)
+            with self.subTest(key=key),self.assertRaises(ValueError):
+                interpretation.parse(json.dumps(value),'a'*32)
+
+    def test_missing_fields_in_actual_two_turn_path_do_not_retry_or_execute(self):
+        case=copy.deepcopy(next(c for c in ev.load_cases(ev.M6_CORPUS) if c['id']=='m6-eight'))
+        for index,missing in enumerate(('context','text')):
+            value=self.example();value['turn']='0'*31+str(index+1);value.pop(missing)
+            case['turns'][index]['fake']['raw']=json.dumps(value)
+        requests=[];original=ev.MeasuredFakeProvider.generate
+        def capture(provider,request):
+            requests.append(request)
+            return original(provider,request)
+        with patch.object(ev.MeasuredFakeProvider,'generate',capture):
+            report=ev.evaluate(cases=[case])
+        self.assertEqual(len(requests),2)
+        for request in requests:
+            self.assertIn('All seven top-level fields are mandatory',request.messages[0].content)
+            self.assertIn('"text":"Compare the current rate',request.messages[0].content)
+        for row in report['rows']:
+            self.assertEqual(row['stage'],'parse_rejected')
+            self.assertEqual(row['tool_execution_count'],0)
+            self.assertFalse(row['capability_applied'])
+            self.assertIsNone(row['deterministic_calculation'])
+
+
 if __name__=='__main__':unittest.main()
