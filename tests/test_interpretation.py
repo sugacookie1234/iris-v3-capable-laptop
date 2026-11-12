@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from iris.brain.llm import LLMResponse, LLMMessage, LLMToolCall, MessageRole
 from iris.desktop.runtime import DesktopRuntime
-from iris.generalist.interpretation import parse, apply, snapshot, scope, CLARIFICATION
+from iris.generalist.interpretation import parse, apply, snapshot, scope, CLARIFICATION, clarification
 from iris.generalist.orchestration import Orchestrator
 from iris.tools import ToolExecutor
 from iris.tools.workspace import workspace_registry
@@ -173,7 +173,7 @@ class InterpretationIntegrationTests(unittest.TestCase):
         for text,changes in [('Try eight percent',{'rate':90}),('Try eight percent',{'principal':8}),
                              ('Try eight or nine percent',{'rate':8}),('Show that',{'rate':8})]:
             with self.response('compound','update',changes):
-                self.assertEqual(self.app.chat(text)['reply'],CLARIFICATION)
+                self.assertEqual(self.app.chat(text)['reply'],clarification(text,snapshot(self.app.orchestrator)))
             self.assertEqual(self.app.orchestrator.context.skill.rate,5)
         with self.response('workspace_list'):
             self.assertEqual(self.app.chat('Try eight percent')['reply'],CLARIFICATION)

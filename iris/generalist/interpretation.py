@@ -170,6 +170,18 @@ def reply(text, *, public=False, **extras):
             'public_context': public, **extras}
 
 
+def clarification(text, context):
+    """Host guidance after an unsuccessful interpretation; never a proposal."""
+    query = normalize(text)
+    if context is not None:
+        if re.fullmatch(r'(?:please )?(?:set|make|change) (?:it|that) to (?:eight|8)', query):
+            return 'Which parameter should be eight: annual interest rate, principal, years, or monthly contribution? Please name the parameter and value.'
+        if re.search(r'\b(?:or|between)\b', query) and re.search(r'percent|%', query):
+            return 'Which single annual interest rate should I use? Please give one percentage.'
+        return CLARIFICATION
+    return CLARIFICATION
+
+
 def verification_followup(text):
     """Narrow host answer, not a claim detector or a general verification service.
 
@@ -207,7 +219,7 @@ def apply(proposal, *, turn, owner_text, orchestrator, brain, working=None):
         if guarded is not None:
             return reply(guarded,conversation_context=True,
                          response_source='host_verification_boundary',capability_applied=False)
-        return reply(proposal.text if conversational else CLARIFICATION,
+        return reply(proposal.text if conversational else clarification(owner_text, context),
                      conversation_context=conversational,
                      response_source='model_conversation' if conversational else 'host_clarification',
                      capability_applied=False)

@@ -416,6 +416,15 @@ def run_case(case, root, provider):
             row['stage'] = 'parse_rejected' if row['stage']=='provider' else 'host_rejected'
         except Exception:
             row['stage'] = 'provider_failed' if row['stage']=='provider' else 'execution_failed'
+        if case.get('mode') not in ('respond', 'plan'):
+            if row['stage'] in ('parse_rejected', 'host_rejected'):
+                row['host_response'] = interpretation.clarification(turn_case['request'], interpretation.snapshot(orchestrator))
+                row['host_response_source'] = 'host_clarification'
+            if row['host_response_source'] in ('host_clarification', 'host_verification_boundary', 'model_conversation'):
+                working.remember(turn_case['request'],source=Source.OWNER,
+                    privacy=Privacy.CONVERSATION,export=Export.REASONING)
+                working.remember(row['host_response'],source=(Source.MODEL if row['host_response_source']=='model_conversation' else Source.HOST),
+                    privacy=Privacy.CONVERSATION,export=Export.REASONING)
         if case.get('mode') != 'respond' and len(getattr(provider,'responses',[])) > before_responses:
             from types import SimpleNamespace
             from iris.brain.router import ReasoningLevel

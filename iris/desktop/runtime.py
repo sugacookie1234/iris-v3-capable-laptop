@@ -660,7 +660,7 @@ class DesktopRuntime:
 
     def _remember_conversation(self, text, answer, *, response_source='model_conversation'):
         from iris.memory.working import Source, Privacy, Export
-        response_origin = (Source.HOST if response_source == 'host_verification_boundary'
+        response_origin = (Source.HOST if response_source in ('host_verification_boundary', 'host_clarification')
                            else Source.MODEL)
         try:
             for content, source in ((text, Source.OWNER), (answer, response_origin)):
@@ -673,7 +673,7 @@ class DesktopRuntime:
         # Explicit opt-in only. Does not modify persisted owner settings.
         if not self._context_enabled():
             return None
-        from iris.generalist.interpretation import snapshot, scope, apply, reply, CLARIFICATION
+        from iris.generalist.interpretation import snapshot, scope, apply, reply, clarification
         from iris.brain.router import route_message, ReasoningLevel
         context = snapshot(self.orchestrator)
         # Keep existing deterministic window/skill lifecycle commands out of the
@@ -710,7 +710,9 @@ class DesktopRuntime:
                          working=self.working_context if working is not None else None)
         except Exception:
             # Fail closed, no model retry/paid fallback, no private error details.
-            return reply(CLARIFICATION)
+            return reply(clarification(text, snapshot(self.orchestrator)),
+                         conversation_context=True, response_source='host_clarification',
+                         capability_applied=False)
 
     def chat(self, text, mode='auto'):
         if not isinstance(text, str) or not text.strip() or len(text) > 12000:

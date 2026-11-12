@@ -591,4 +591,38 @@ class M61ConversationTests(unittest.TestCase):
             ev.evaluate(cases=[self.case()],live_provider=object())
 
 
+class M62RecoveryTests(unittest.TestCase):
+    case = M61ConversationTests.case
+    # Reuse fixture construction, not the inherited test methods.
+    def recovery(self, request, corrected, *, proposed=8, stale=False):
+        case=self.case();case['id']='m62-recovery'
+        case['turns'][1]['request']=request
+        case['turns'][1]['fake']['output']['arguments']['changes']['rate']=proposed
+        case['turns'][1]['expected'].update(host_accept=False,no_effects=True)
+        if stale:
+            case['turns'][1]['fake']['output']['context']={'id':'a'*32,'revision':0}
+        correction=copy.deepcopy(self.case()['turns'][1]);correction['request']=corrected
+        case['turns']=[case['turns'][0],case['turns'][1],correction,case['turns'][2],case['turns'][4]]
+        return case
+
+    def test_recovery_preserves_failure_and_has_one_attempt_per_turn(self):
+        for request,corrected,options,missing in [
+            ('Set it to eight.','I meant the annual interest rate. Make it 8%.',{},'parameter'),
+            ('Try eight or nine percent.','Use eight percent.',{},'single annual interest rate'),
+            ('Try eight percent.','Use eight percent.',{'proposed':9},'specify'),
+            ('Try eight percent.','Use eight percent.',{'stale':True},'specify')]:
+            with self.subTest(request=request,options=options):
+                report=ev.evaluate(cases=[self.recovery(request,corrected,**options)],max_calls=5)
+                failed=report['rows'][1];recovered=report['rows'][2]
+                self.assertEqual(failed['stage'],'host_rejected')
+                self.assertTrue(failed['metrics']['security_expectation'])
+                self.assertIn(missing,failed['host_response'])
+                self.assertEqual(failed['host_response_source'],'host_clarification')
+                self.assertTrue(recovered['expected_calculation_met'])
+                self.assertTrue(report['rows'][3]['expected_calculation_met'])
+                self.assertFalse(report['calculation_sequences'][0]['passed'])
+                self.assertEqual([row['adapter_calls'] for row in report['rows']],[1]*5)
+                self.assertTrue(all(not row['receipts'] and row['tool_execution_count']==0 for row in report['rows']))
+
+
 if __name__=='__main__':unittest.main()
