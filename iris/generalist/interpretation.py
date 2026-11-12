@@ -141,7 +141,7 @@ def _validate_change_request(text, operation, changes):
             raise ValueError('Not a display request.')
         return
     if operation == 'reset':
-        if not re.search(r'\b(?:reset|restore)\b', query):
+        if not re.fullmatch(r'(?:please |(?:can|could|would) you )?(?:reset|restore) (?:the |this )?(?:original example|original|example|it|that)(?: please)?', query):
             raise ValueError('Not a reset request.')
         return
     if operation == 'compare_original':
@@ -242,8 +242,8 @@ def apply(proposal, *, turn, owner_text, orchestrator, brain, working=None):
         return reply(text,response_source='host_tool_result',capability_applied=True)
     operation = proposal.arguments['operation']
     if operation == 'start':
-        if allowed != 'compound_start':
-            raise ValueError('An explicit compound explanation request is required.')
+        if allowed != 'compound_start' or context is not None:
+            raise ValueError('Starting requires an explicit compound explanation request and no active example.')
         orchestrator.context = ActiveContext(expires=orchestrator.clock() + orchestrator.ttl)
         if working is not None:
             working.clear()

@@ -662,4 +662,46 @@ class M62ContextTests(unittest.TestCase):
         self.assertEqual(state['verified_result_references'],[])
 
 
+class M62CapabilityTests(unittest.TestCase):
+    def test_discussion_and_unrelated_reset_cannot_mutate_active_example(self):
+        owner=Orchestrator();owner.context=ActiveContext(expires=owner.clock()+900)
+        owner.context.skill.change({'rate':8})
+        working=WorkingContextV1();turn='a'*32
+        for request,operation in [('Explain how to reset the example.','reset'),
+                                  ('Reset my password.','reset'),
+                                  ('Explain compound interest.','start')]:
+            with self.subTest(request=request):
+                before=interpretation.snapshot(owner)
+                ref=None if operation=='start' else {k:before[k] for k in ('id','revision')}
+                proposal=interpretation.parse(json.dumps(dict(version=1,turn=turn,kind='hypothetical',
+                    text='Already done.',capability='compound',arguments={'operation':operation,'changes':{}},context=ref)),turn)
+                with self.assertRaises(ValueError):
+                    interpretation.apply(proposal,turn=turn,owner_text=request,orchestrator=owner,brain=None,working=working)
+                self.assertEqual(interpretation.snapshot(owner),before)
+
+    def test_stale_revision_then_fresh_reference_recovers_in_runtime(self):
+        from tests.test_interpretation import InterpretationIntegrationTests, wire
+        from iris.brain.llm import LLMResponse
+        harness=InterpretationIntegrationTests();harness.setUp()
+        self.addCleanup(harness.doCleanups)
+        harness.start();old=interpretation.snapshot(harness.app.orchestrator)
+        with harness.response('compound','update',{'rate':8}):
+            harness.app.chat('Use eight percent.')
+        current=interpretation.snapshot(harness.app.orchestrator)
+        self.assertGreater(current['revision'],old['revision'])
+        def stale(request):
+            payload=json.loads(request.messages[-1].content)
+            return LLMResponse(wire(turn=payload['turn'],kind='hypothetical',capability='compound',
+                arguments={'operation':'update','changes':{'rate':9}},context={k:old[k] for k in ('id','revision')}),'fast','fast-model')
+        with patch.object(harness.fast,'generate',side_effect=stale) as calls:
+            answer=harness.app.chat('Use nine percent.')
+        self.assertEqual(calls.call_count,1)
+        self.assertEqual(answer['response_source'],'host_clarification')
+        self.assertEqual(interpretation.snapshot(harness.app.orchestrator),current)
+        with harness.response('compound','update',{'rate':9}):
+            answer=harness.app.chat('Use nine percent.')
+        self.assertEqual(answer['response_source'],'host_compound_calculation')
+        self.assertEqual(harness.app.orchestrator.context.skill.rate,9)
+
+
 if __name__=='__main__':unittest.main()
