@@ -374,3 +374,25 @@ See [M6-VERIFICATION-BOUNDARY.md](M6-VERIFICATION-BOUNDARY.md): experimental hos
 handling for explicit verification follow-ups, unchanged raw model review, and
 offline integration/negative tests. Default remains off; broader truthfulness and
 real-model quality remain unverified. No additional live calls or rollout.
+
+
+## M6.1 five-turn offline acceptance — 2026-11-12
+
+See [M61-CONTEXTUAL-REASONING.md](M61-CONTEXTUAL-REASONING.md). Seven new
+regressions cover full compound state, deterministic selection, stale references,
+interruption, failure followed by recovery, conversational provenance and live
+admission rejection. No production code or prompt changes.
+
+- Focused: 127 passed (16.197 seconds).
+- Full: 1201 passed, 4 skipped (169.225 seconds).
+- Desktop JavaScript: 12/12 passed.
+- Source-only disposable copy; owner configuration and credentials excluded.
+  The full run preceded a test-only strengthening of the stale-reference assertion
+  and BOM/newline cleanup. Final focused suite rerun: 127/127 passed; whitespace clean.
+- All twenty pilot artifacts, three frozen holdouts, main and `tatus -sb` preserved.
+
+Offline checks establish contracts, not real-model intelligence. No new provider
+contact, live approval, rollout or default-model change. Next: same-task phrasing
+and ambiguity coverage, then separately approved fresh live measurement.
+
+CAP-34 offline comparison: baseline 300/300, candidate 300/300; zero regressions.

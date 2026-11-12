@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "m61-five-turn-compound",
+      "category": "interpretation",
+      "offline_only": true,
+      "turns": [
+        {
+          "request": "Explain compound interest.",
+          "fake": {
+            "output": {
+              "kind": "hypothetical",
+              "text": "Synthetic proposal; the host must calculate.",
+              "capability": "compound",
+              "arguments": {
+                "operation": "start",
+                "changes": {}
+              },
+              "context": null
+            }
+          },
+          "expected": {
+            "kind": "hypothetical",
+            "capability": "compound",
+            "arguments": {
+              "operation": "start",
+              "changes": {}
+            },
+            "context": null,
+            "host_accept": true,
+            "calculation_parameters": {
+              "principal": 1000,
+              "rate": 5,
+              "years": 10,
+              "contribution": 0,
+              "compared_rate": null
+            }
+          }
+        },
+        {
+          "request": "What if the rate were eight percent?",
+          "fake": {
+            "output": {
+              "kind": "hypothetical",
+              "text": "Synthetic proposal; the host must calculate.",
+              "capability": "compound",
+              "arguments": {
+                "operation": "update",
+                "changes": {
+                  "rate": 8
+                }
+              },
+              "context": "$active"
+            }
+          },
+          "expected": {
+            "kind": "hypothetical",
+            "capability": "compound",
+            "arguments": {
+              "operation": "update",
+              "changes": {
+                "rate": 8
+              }
+            },
+            "context": "active",
+            "host_accept": true,
+            "calculation_parameters": {
+              "principal": 1000,
+              "rate": 8,
+              "years": 10,
+              "contribution": 0,
+              "compared_rate": null
+            }
+          }
+        },
+        {
+          "request": "Compare that to the original.",
+          "fake": {
+            "output": {
+              "kind": "hypothetical",
+              "text": "Synthetic proposal; the host must calculate.",
+              "capability": "compound",
+              "arguments": {
+                "operation": "compare_original",
+                "changes": {}
+              },
+              "context": "$active"
+            }
+          },
+          "expected": {
+            "kind": "hypothetical",
+            "capability": "compound",
+            "arguments": {
+              "operation": "compare_original",
+              "changes": {}
+            },
+            "context": "active",
+            "host_accept": true,
+            "calculation_parameters": {
+              "principal": 1000,
+              "rate": 8,
+              "years": 10,
+              "contribution": 0,
+              "compared_rate": 5
+            }
+          }
+        },
+        {
+          "request": "Show the difference.",
+          "fake": {
+            "output": {
+              "kind": "hypothetical",
+              "text": "Synthetic proposal; the host must calculate.",
+              "capability": "compound",
+              "arguments": {
+                "operation": "show",
+                "changes": {}
+              },
+              "context": "$active"
+            }
+          },
+          "expected": {
+            "kind": "hypothetical",
+            "capability": "compound",
+            "arguments": {
+              "operation": "show",
+              "changes": {}
+            },
+            "context": "active",
+            "host_accept": true,
+            "calculation_parameters": {
+              "principal": 1000,
+              "rate": 8,
+              "years": 10,
+              "contribution": 0,
+              "compared_rate": 5
+            }
+          }
+        },
+        {
+          "request": "Reset the example.",
+          "fake": {
+            "output": {
+              "kind": "hypothetical",
+              "text": "Synthetic proposal; the host must calculate.",
+              "capability": "compound",
+              "arguments": {
+                "operation": "reset",
+                "changes": {}
+              },
+              "context": "$active"
+            }
+          },
+          "expected": {
+            "kind": "hypothetical",
+            "capability": "compound",
+            "arguments": {
+              "operation": "reset",
+              "changes": {}
+            },
+            "context": "active",
+            "host_accept": true,
+            "calculation_parameters": {
+              "principal": 1000,
+              "rate": 5,
+              "years": 10,
+              "contribution": 0,
+              "compared_rate": null
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

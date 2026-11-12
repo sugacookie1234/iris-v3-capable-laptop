@@ -473,4 +473,78 @@ class M6VerificationBoundaryTests(unittest.TestCase):
                 app.close()
 
 
+class M61ConversationTests(unittest.TestCase):
+    def case(self):
+        return copy.deepcopy(ev.load_cases(ev.M6_CORPUS.with_name('m61_development.json'))[0])
+
+    def test_five_turn_state_chain_uses_deterministic_results(self):
+        report=ev.evaluate(cases=[self.case()],max_calls=5,duration=180)
+        self.assertTrue(report['fixture_expectations_met'])
+        self.assertEqual(report['actual_adapter_calls'],5)
+        self.assertEqual(report['actual_external_calls'],0)
+        self.assertEqual(report['calculation_sequences'],[dict(case='m61-five-turn-compound',expected_turns=5,observed_turns=5,passed=True)])
+        for row in report['rows']:
+            self.assertTrue(row['expected_calculation_met'])
+            self.assertEqual(row['tool_execution_count'],0)
+        self.assertEqual(report['rows'][2]['deterministic_calculation']['visual']['points'][-1],[10,2219.64,1647.01])
+        self.assertEqual(report['human_quality']['status'],'unreviewed')
+
+    def test_plausible_prose_cannot_replace_calculation(self):
+        case=self.case()
+        case['turns'][1]['fake']['output'].update(kind='conversation',text='Done, the new total is 9999.',capability=None,arguments={})
+        report=ev.evaluate(cases=[case])
+        self.assertFalse(report['fixture_expectations_met'])
+        self.assertFalse(report['calculation_sequences'][0]['passed'])
+        self.assertIsNone(report['rows'][1]['deterministic_calculation'])
+        self.assertFalse(report['rows'][2]['expected_calculation_met'])
+        self.assertTrue(report['rows'][4]['expected_calculation_met'])
+
+    def test_wrong_operation_cannot_be_hidden_by_later_recovery(self):
+        case=self.case()
+        case['turns'][1]['fake']['output']['arguments']={'operation':'compare_original','changes':{}}
+        report=ev.evaluate(cases=[case])
+        self.assertEqual(report['rows'][1]['stage'],'host_rejected')
+        self.assertFalse(report['calculation_sequences'][0]['passed'])
+        self.assertTrue(report['rows'][4]['expected_calculation_met'])
+
+    def test_stale_context_is_rejected(self):
+        case=self.case()
+        case['turns'][2]['fake']['output']['context']={'id':'a'*32,'revision':0}
+        report=ev.evaluate(cases=[case])
+        self.assertEqual(report['rows'][2]['stage'],'host_rejected')
+        self.assertFalse(report['calculation_sequences'][0]['passed'])
+
+    def test_incomplete_conversation_is_not_a_pass(self):
+        report=ev.evaluate(cases=[self.case()],max_calls=4)
+        self.assertFalse(report['calculation_sequences'][0]['passed'])
+        self.assertFalse(report['fixture_expectations_met'])
+
+    def test_five_turn_context_preserves_owner_anchor_without_test_receipts(self):
+        case=copy.deepcopy(next(c for c in ev.load_cases(ev.M6_CORPUS) if c['id']=='m6-specific-context'))
+        case.update(id='m61-five-turn-verification',offline_only=True)
+        for request,answer in [
+            ('Which problem were we discussing?', 'The Java inventory file-saving problem.'),
+            ('I have only changed the code.', 'That is a reported change, not a test result.'),
+            ('Is the fix verified?', 'The verification is complete.')]:
+            case['turns'].append({'request':request,'fake':{'response_text':answer},'expected':{'host_accept':True,'route':'FAST'}})
+        seen=[]; original=ev.MeasuredFakeProvider.generate
+        def capture(provider,request):
+            seen.append(request)
+            return original(provider,request)
+        with patch.object(ev.MeasuredFakeProvider,'generate',capture):
+            report=ev.evaluate(cases=[case],max_calls=5,duration=180)
+        self.assertEqual(len(seen),5)
+        self.assertIn('Java inventory application',seen[-1].messages[0].content)
+        self.assertIn('I have only changed the code',str(seen[-1].messages))
+        self.assertEqual(report['rows'][-1]['host_response_source'],'host_verification_boundary')
+        self.assertEqual(report['human_quality']['status'],'unreviewed')
+        for record in report['review']['records']:
+            self.assertEqual(record['synthetic_context']['verified_result_references'],[])
+        self.assertTrue(all(row['tool_execution_count']==0 for row in report['rows']))
+
+    def test_corpus_cannot_be_sent_to_live_provider(self):
+        with self.assertRaises(ValueError):
+            ev.evaluate(cases=[self.case()],live_provider=object())
+
+
 if __name__=='__main__':unittest.main()
