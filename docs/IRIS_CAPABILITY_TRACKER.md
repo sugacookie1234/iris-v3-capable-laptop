@@ -396,3 +396,24 @@ contact, live approval, rollout or default-model change. Next: same-task phrasin
 and ambiguity coverage, then separately approved fresh live measurement.
 
 CAP-34 offline comparison: baseline 300/300, candidate 300/300; zero regressions.
+
+
+## M6.1 phrasing and ambiguity coverage — 2026-11-12
+
+Three new parameterized regressions exercise twelve five-turn variants: three
+equivalent request sequences, six ambiguous/negated/quoted or underspecified rate
+requests, and three model values differing from the owner's requested 8%.
+Successful sequences require all five states. Rejected updates leave the rate at
+5%; a later reset cannot erase the sequence failure. No workspace tools execute.
+The scripted model supplies operations; these tests do not measure whether a real
+model selects them correctly. No production code, prompt or fixture changes.
+
+Validation: 130 focused tests passed in 15.247 seconds, including all ten M6.1
+tests; desktop JavaScript 12/12 passed; diff whitespace check clean. The full
+suite and CAP-34 results above belong to the preceding checkpoint and were not
+rerun for this test-only addition. All twenty pilot artifacts, three holdouts and
+the unrelated file retain their earlier hashes. No provider contact occurred.
+
+Next: assess clarification quality and explicit recovery after ambiguity, keeping
+host rejection distinct from task completion. Any live benchmark still requires
+fresh scope/prompt fingerprints and separate provider/privacy/billing approval.

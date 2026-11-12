@@ -542,6 +542,50 @@ class M61ConversationTests(unittest.TestCase):
             self.assertEqual(record['synthetic_context']['verified_result_references'],[])
         self.assertTrue(all(row['tool_execution_count']==0 for row in report['rows']))
 
+    def test_five_turn_phrase_variants_preserve_same_state_chain(self):
+        variants=[
+            ['Please explain compound interest.', 'Set the rate to 8 percent.', 'Contrast that with the original.', 'Explain the difference.', 'Restore the original example.'],
+            ['Could you show me how compound interest works?', 'Try eight percent as the rate.', 'Please compare that to the original.', 'Show that.', 'Please reset the example.'],
+            ['Walk me through compound interest.', 'Change the rate to 8%.', 'Compare it with the initial example.', 'Could you explain the difference?', 'Reset it.']]
+        for requests in variants:
+            with self.subTest(requests=requests):
+                case=self.case()
+                for turn,request in zip(case['turns'],requests):
+                    turn['request']=request
+                report=ev.evaluate(cases=[case],max_calls=5,duration=180)
+                self.assertTrue(report['fixture_expectations_met'])
+                self.assertTrue(report['calculation_sequences'][0]['passed'])
+                self.assertEqual(report['actual_adapter_calls'],5)
+                self.assertTrue(all(r['tool_execution_count']==0 for r in report['rows']))
+
+    def test_ambiguous_or_negated_update_cannot_change_state(self):
+        requests=['Set the rate to eight or nine percent.',
+                  'Set the rate between eight and nine percent.',
+                  'Change the rate to eight percent and the years to twelve.',
+                  'Do not change the rate to eight percent.',
+                  'Set it to eight.',
+                  'She said "set the rate to eight percent".']
+        for request in requests:
+            with self.subTest(request=request):
+                case=self.case();case['turns'][1]['request']=request
+                report=ev.evaluate(cases=[case])
+                self.assertEqual(report['rows'][1]['stage'],'host_rejected')
+                self.assertIsNone(report['rows'][1]['deterministic_calculation'])
+                self.assertEqual(report['rows'][2]['deterministic_calculation']['parameters']['rate'],5)
+                self.assertFalse(report['calculation_sequences'][0]['passed'])
+                self.assertTrue(report['rows'][4]['expected_calculation_met'])
+                self.assertTrue(all(r['tool_execution_count']==0 for r in report['rows']))
+
+    def test_model_value_cannot_override_requested_rate(self):
+        for proposed in (5,9,80):
+            with self.subTest(proposed=proposed):
+                case=self.case()
+                case['turns'][1]['fake']['output']['arguments']['changes']['rate']=proposed
+                report=ev.evaluate(cases=[case])
+                self.assertEqual(report['rows'][1]['stage'],'host_rejected')
+                self.assertEqual(report['rows'][2]['deterministic_calculation']['parameters']['rate'],5)
+                self.assertFalse(report['calculation_sequences'][0]['passed'])
+
     def test_corpus_cannot_be_sent_to_live_provider(self):
         with self.assertRaises(ValueError):
             ev.evaluate(cases=[self.case()],live_provider=object())
