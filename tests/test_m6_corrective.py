@@ -307,7 +307,9 @@ class M6OutcomeRegressionTests(unittest.TestCase):
         false_reply='I.R.I.S.: Yes, sir. The verification is complete. The fix has been confirmed as working.'
         case['turns'][1]['fake']['response_text']=false_reply
         report=ev.evaluate(cases=[case]);row=report['rows'][1]
-        self.assertEqual(row['host_response'],false_reply)
+        self.assertEqual(row['host_response_source'],'host_verification_boundary')
+        self.assertNotEqual(row['host_response'],false_reply)
+        self.assertIn('cannot independently confirm',row['host_response'])
         self.assertEqual(report['review']['records'][1]['response'],false_reply)
         self.assertFalse(row['development_response_checks']['avoid_2'])
         self.assertFalse(row['development_response_checks']['avoid_3'])
@@ -361,6 +363,114 @@ class M6OutcomeRegressionTests(unittest.TestCase):
         self.assertNotIn('PRIVATE_EXPECTATION_MARKER',' '.join(seen))
         self.assertFalse(report['calculation_sequences'][0]['passed'])
         self.assertTrue(all(r['deterministic_calculation'] is None for r in report['rows']))
+
+
+
+
+class M6VerificationBoundaryTests(unittest.TestCase):
+    def test_request_scope_excludes_quotes_negations_and_general_questions(self):
+        for text in ('Can I call it verified now?', 'Is the fix verified?', 'Has it been verified?'):
+            self.assertIsNotNone(interpretation.verification_followup(text))
+        for text in ('Say "Can I call it verified now?"', 'Do not call it verified.',
+                     'How do I verify a fix?', 'Is my account verified?', 'Explain verification.',
+                     'Can I call it verified now? Also open a file.'):
+            self.assertIsNone(interpretation.verification_followup(text))
+
+    def test_contextual_interpretation_uses_same_boundary(self):
+        owner=Orchestrator();owner.context=ActiveContext(expires=owner.clock()+900)
+        working=WorkingContextV1();turn='a'*32
+        proposal=interpretation.parse(json.dumps(dict(version=1,turn=turn,kind='conversation',
+            text='The verification is complete.',capability=None,arguments={},context=None)),turn)
+        result=interpretation.apply(proposal,turn=turn,owner_text='Can I call it verified now?',
+            orchestrator=owner,brain=None,working=working)
+        self.assertEqual(result['response_source'],'host_verification_boundary')
+        self.assertFalse(result['capability_applied'])
+        self.assertEqual(owner.context.skill.rate,5)
+
+    def test_runtime_blocks_false_claim_and_retains_only_host_reply_in_history(self):
+        self.runtime_check(True,'Can I call it verified now?',True)
+
+    def test_runtime_default_off_is_unchanged(self):
+        self.runtime_check(False,'Can I call it verified now?',False)
+
+    def test_runtime_unrelated_question_is_unchanged(self):
+        self.runtime_check(True,'Explain how software tests work.',False)
+
+    def test_semantic_host_warning_keeps_host_provenance(self):
+        import tempfile
+        from pathlib import Path
+        from iris.desktop.runtime import DesktopRuntime
+        from tests import test_brain_engine as fixtures
+
+        brain,_,_=fixtures.BrainEngineTests().make_brain()
+
+        with tempfile.TemporaryDirectory() as folder:
+            app=DesktopRuntime(settings={
+                'IRIS_PROVIDER_URL':'http://127.0.0.1:9',
+                'IRIS_MODEL':'synthetic',
+                'IRIS_AUTO_ORGANIZE_ENABLED':'false',
+                'IRIS_EXPERIMENTAL_INTERPRETATION':'true'
+            },data_dir=Path(folder)/'data',brain=brain)
+
+            try:
+                warning=interpretation.verification_followup(
+                    'Can I call it verified now?'
+                )
+
+                with patch.object(app,'_semantic_answer',return_value={
+                    'reply':warning,
+                    'route':'FAST-EXPERIMENTAL',
+                    'conversation_context':True,
+                    'response_source':'host_verification_boundary'
+                }):
+                    answer=app.chat('Can I call it verified now?')
+
+                self.assertEqual(answer['reply'],warning)
+
+                snapshot=app.working_context.snapshot(app.orchestrator)
+                refs=[
+                    r for r in snapshot['references']
+                    if r['text']==warning
+                ]
+
+                self.assertEqual(len(refs),1)
+                self.assertEqual(refs[0]['source'],Source.HOST)
+                self.assertIn('not a test receipt',prompt(snapshot))
+
+            finally:
+                app.close()
+
+    def runtime_check(self,enabled,request,guarded):
+        import tempfile
+        from pathlib import Path
+        from iris.desktop.runtime import DesktopRuntime
+        from iris.brain.llm import LLMResponse
+        from tests import test_brain_engine as fixtures
+        brain,fast,deep=fixtures.BrainEngineTests().make_brain()
+        raw='The verification is complete. The fix has been confirmed as working.'
+        with tempfile.TemporaryDirectory() as folder:
+            app=DesktopRuntime(settings={'IRIS_PROVIDER_URL':'http://127.0.0.1:9',
+                'IRIS_MODEL':'synthetic','IRIS_AUTO_ORGANIZE_ENABLED':'false',
+                'IRIS_EXPERIMENTAL_INTERPRETATION':str(enabled).lower()},
+                data_dir=Path(folder)/'data',brain=brain)
+            try:
+                with patch.object(fast,'generate',return_value=LLMResponse(raw,'fast','fast-model')) as calls:
+                    answer=app.chat(request)
+                self.assertEqual(calls.call_count,1)
+                if guarded:
+                    self.assertEqual(answer['response_source'],'host_verification_boundary')
+                    self.assertNotIn('verification is complete',answer['reply'])
+                    self.assertEqual(app.history[-1].content,answer['reply'])
+                    snapshot = app.working_context.snapshot(app.orchestrator)
+                    self.assertNotIn(raw,str(snapshot))
+                    matching = [ref for ref in snapshot['references']
+                                if ref['text'] == answer['reply']]
+                    self.assertEqual(len(matching),1)
+                    self.assertEqual(matching[0]['source'],Source.HOST)
+                else:
+                    self.assertEqual(answer['reply'],raw)
+            finally:
+                app.close()
 
 
 if __name__=='__main__':unittest.main()

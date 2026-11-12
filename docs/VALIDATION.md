@@ -1178,3 +1178,11 @@ See [M6-OUTCOME-REGRESSIONS.md](M6-OUTCOME-REGRESSIONS.md): observed false-verif
 phrase regression and exact per-turn host calculation-state sequence checks.
 Evaluation-only change; runtime truthfulness and model reliability remain unresolved.
 All four original pilots and frozen holdouts remain untouched.
+
+
+## M6 narrow verification-status boundary — 2026-11-12
+
+See [M6-VERIFICATION-BOUNDARY.md](M6-VERIFICATION-BOUNDARY.md): experimental host
+handling for explicit verification follow-ups, unchanged raw model review, and
+offline integration/negative tests. Default remains off; broader truthfulness and
+real-model quality remain unverified. No additional live calls or rollout.

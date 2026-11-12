@@ -658,10 +658,12 @@ class DesktopRuntime:
             # Context outages must not export unchecked legacy history.
             return None
 
-    def _remember_conversation(self, text, answer):
+    def _remember_conversation(self, text, answer, *, response_source='model_conversation'):
         from iris.memory.working import Source, Privacy, Export
+        response_origin = (Source.HOST if response_source == 'host_verification_boundary'
+                           else Source.MODEL)
         try:
-            for content, source in ((text, Source.OWNER), (answer, Source.MODEL)):
+            for content, source in ((text, Source.OWNER), (answer, response_origin)):
                 self.working_context.remember(content, source=source,
                     privacy=Privacy.CONVERSATION, export=Export.REASONING)
         except Exception:
@@ -762,7 +764,8 @@ class DesktopRuntime:
             if local_answer is not None:
                 self._publish_visual(local_answer)
                 if enabled and local_answer.get('conversation_context'):
-                    self._remember_conversation(text, local_answer['reply'])
+                    self._remember_conversation(text, local_answer['reply'],
+                        response_source=local_answer.get('response_source', 'model_conversation'))
                 # Receipts and local configuration must not ride along in a later
                 # model prompt. The UI still displays the complete local answer.
                 if not private_local_answer:
@@ -847,10 +850,19 @@ class DesktopRuntime:
                     result = replace(result, text="I could not confirm that action completed. "
                         + (tool_result.failure.message if tool_result.failure else "The local tool failed.")
                         + " Check the saved records before retrying.")
+                verification_guarded = False
+                if enabled and mode == 'auto' and tool_result is None and result.council is None:
+                    from iris.generalist.interpretation import verification_followup
+                    guarded = verification_followup(text)
+                    if guarded is not None:
+                        result = replace(result,text=guarded)
+                        verification_guarded = True
                 if not result.text.strip():
                     raise RuntimeError('The model returned an empty answer. Try another configured model.')
                 if enabled and tool_result is None:
-                    self._remember_conversation(text, result.text)
+                    self._remember_conversation(text, result.text,
+                        response_source=('host_verification_boundary' if verification_guarded
+                                         else 'model_conversation'))
                 if not enabled or tool_result is None:
                     self.history.extend([LLMMessage(MessageRole.USER, text),
                                          LLMMessage(MessageRole.ASSISTANT, result.text)])
@@ -858,6 +870,8 @@ class DesktopRuntime:
                 self.history = self.history[-limit:] if limit else []
                 self.last_route = result.route.reasoning.value
                 answer = {'reply': result.text, 'route': self.last_route}
+                if verification_guarded:
+                    answer['response_source'] = 'host_verification_boundary'
                 if result.council is not None:
                     council = result.council
                     answer['council'] = {

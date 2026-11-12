@@ -327,10 +327,16 @@ def run_case(case, root, provider):
                 row['host_accepted'] = True
                 row['host_response'] = result.text
                 row['host_response_source'] = 'model_conversation'
+                guarded = interpretation.verification_followup(turn_case['request']) if result.council is None else None
+                if guarded is not None:
+                    row['host_response'] = guarded
+                    row['host_response_source'] = 'host_verification_boundary'
                 row['route_expected'] = result.route.reasoning.value == expected['route']
                 working.remember(turn_case['request'],source=Source.OWNER,
                     privacy=Privacy.CONVERSATION,export=Export.REASONING)
-                working.remember(result.text,source=Source.MODEL,
+                response_origin = (Source.HOST if row['host_response_source'] == 'host_verification_boundary'
+                                   else Source.MODEL)
+                working.remember(row['host_response'],source=response_origin,
                     privacy=Privacy.CONVERSATION,export=Export.REASONING)
             elif case.get('mode') == 'plan':
                 proposal = brain.propose_plan(turn_case['request'],turn=turn,

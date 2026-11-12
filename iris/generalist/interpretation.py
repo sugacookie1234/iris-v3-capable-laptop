@@ -170,6 +170,24 @@ def reply(text, *, public=False, **extras):
             'public_context': public, **extras}
 
 
+def verification_followup(text):
+    """Narrow host answer, not a claim detector or a general verification service.
+
+    Call only at the experimental conversational boundary without tool receipts.
+    Working conversation/model text cannot establish independent test execution.
+    Exact request forms avoid treating quotes, negations or general questions as
+    an instruction. No caller-supplied prose can turn this into positive evidence.
+    """
+    query = text.strip().casefold().rstrip('?.!').strip()
+    if not re.fullmatch(r'(?:can i call (?:it|that|the fix) verified(?: now)?|'
+                        r'is (?:it|that|the fix) verified(?: now)?|'
+                        r'has (?:it|that|the fix) been verified)', query):
+        return None
+    return ("I cannot independently confirm verification from this conversation alone. "
+            "A reported fix is not a test result. If you ran a test, share what it checked "
+            "and the result; otherwise test the original problem and check that it no longer occurs.")
+
+
 def apply(proposal, *, turn, owner_text, orchestrator, brain, working=None):
     """Called under the desktop turn lock. Resolve references again before effects."""
     context = snapshot(orchestrator)
@@ -185,6 +203,10 @@ def apply(proposal, *, turn, owner_text, orchestrator, brain, working=None):
             working.resolve(proposal.context, orchestrator)
         # No generated text is a verified action receipt or public memory candidate.
         conversational = allowed in ('social_guess', 'contextual')
+        guarded = verification_followup(owner_text) if working is not None else None
+        if guarded is not None:
+            return reply(guarded,conversation_context=True,
+                         response_source='host_verification_boundary',capability_applied=False)
         return reply(proposal.text if conversational else CLARIFICATION,
                      conversation_context=conversational,
                      response_source='model_conversation' if conversational else 'host_clarification',
