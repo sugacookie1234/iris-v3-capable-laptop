@@ -434,7 +434,7 @@ class M6VerificationBoundaryTests(unittest.TestCase):
                 ]
 
                 self.assertEqual(len(refs),1)
-                self.assertEqual(refs[0]['source'],Source.HOST)
+                self.assertEqual(refs[0]['source'],Source.GUIDANCE)
                 self.assertIn('not a test receipt',prompt(snapshot))
 
             finally:
@@ -466,7 +466,7 @@ class M6VerificationBoundaryTests(unittest.TestCase):
                     matching = [ref for ref in snapshot['references']
                                 if ref['text'] == answer['reply']]
                     self.assertEqual(len(matching),1)
-                    self.assertEqual(matching[0]['source'],Source.HOST)
+                    self.assertEqual(matching[0]['source'],Source.GUIDANCE)
                 else:
                     self.assertEqual(answer['reply'],raw)
             finally:
@@ -600,7 +600,7 @@ class M62RecoveryTests(unittest.TestCase):
         case['turns'][1]['fake']['output']['arguments']['changes']['rate']=proposed
         case['turns'][1]['expected'].update(host_accept=False,no_effects=True)
         if stale:
-            case['turns'][1]['fake']['output']['context']={'id':'a'*32,'revision':0}
+            case['turns'][1]['fake']['output']['context']='$stale'
         correction=copy.deepcopy(self.case()['turns'][1]);correction['request']=corrected
         case['turns']=[case['turns'][0],case['turns'][1],correction,case['turns'][2],case['turns'][4]]
         return case
@@ -623,6 +623,43 @@ class M62RecoveryTests(unittest.TestCase):
                 self.assertFalse(report['calculation_sequences'][0]['passed'])
                 self.assertEqual([row['adapter_calls'] for row in report['rows']],[1]*5)
                 self.assertTrue(all(not row['receipts'] and row['tool_execution_count']==0 for row in report['rows']))
+
+
+class M62ContextTests(unittest.TestCase):
+    def test_rejected_turn_context_is_guidance_and_not_calculation_evidence(self):
+        case=M62RecoveryTests().recovery('Set it to eight.','Use eight percent.')
+        report=ev.evaluate(cases=[case])
+        before_recovery=report['review']['records'][2]['synthetic_context']
+        warnings=[r for r in before_recovery['references'] if r['source']==Source.GUIDANCE]
+        self.assertEqual(len(warnings),1)
+        self.assertIn('parameter',warnings[0]['text'])
+        self.assertEqual(before_recovery['scenario']['parameters']['rate'],5)
+        self.assertEqual(before_recovery['scenario']['revision'],1)
+        self.assertEqual(report['review']['records'][3]['synthetic_context']['scenario']['revision'],2)
+
+    def test_explicit_transition_clears_scenario_before_interpretation(self):
+        case=M61ConversationTests().case()
+        case['turns'][1]['request']='New topic: tell me about Java file saving.'
+        case['turns'][1]['expected'].update(host_accept=False,no_effects=True)
+        report=ev.evaluate(cases=[case])
+        self.assertIsNone(report['review']['records'][1]['synthetic_context']['scenario'])
+        self.assertFalse(report['rows'][1]['host_accepted'])
+        self.assertTrue(report['rows'][1]['metrics']['security_expectation'])
+        self.assertIsNone(report['rows'][2]['deterministic_calculation'])
+
+    def test_owner_model_guidance_and_result_remain_distinct(self):
+        clock=[0.0];working=WorkingContextV1(clock=lambda:clock[0],ttl=2)
+        owner=Orchestrator(clock=lambda:clock[0]);owner.context=ActiveContext(expires=2)
+        for text,source in [('My Java app saves files.',Source.OWNER),('The test passed.',Source.MODEL),('Please test it.',Source.GUIDANCE)]:
+            working.remember(text,source=source,privacy=Privacy.CONVERSATION,export=Export.REASONING)
+        state=working.snapshot(owner)
+        self.assertEqual([r['source'] for r in state['references']],[Source.OWNER,Source.MODEL,Source.GUIDANCE])
+        self.assertEqual(len(state['verified_result_references']),1)
+        self.assertEqual(state['verified_result_references'][0]['kind'],'compound_calculation')
+        clock[0]=3
+        state=working.snapshot(owner)
+        self.assertEqual(state['references'],[])
+        self.assertEqual(state['verified_result_references'],[])
 
 
 if __name__=='__main__':unittest.main()

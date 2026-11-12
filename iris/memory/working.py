@@ -13,6 +13,7 @@ from iris.memory.redaction import contains_secret
 class Source(StrEnum):
     OWNER = 'owner_authored'
     HOST = 'host_verified'
+    GUIDANCE = 'host_guidance'
     MODEL = 'model_inference'
     EXTERNAL = 'untrusted_retrieved'
 

@@ -660,7 +660,7 @@ class DesktopRuntime:
 
     def _remember_conversation(self, text, answer, *, response_source='model_conversation'):
         from iris.memory.working import Source, Privacy, Export
-        response_origin = (Source.HOST if response_source in ('host_verification_boundary', 'host_clarification')
+        response_origin = (Source.GUIDANCE if response_source in ('host_verification_boundary', 'host_clarification')
                            else Source.MODEL)
         try:
             for content, source in ((text, Source.OWNER), (answer, response_origin)):

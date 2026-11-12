@@ -174,6 +174,8 @@ class MeasuredFakeProvider:
                     if value.get('context') == '$active':
                         value['context'] = ({key:self.context[key] for key in ('id','revision')}
                                             if self.context else {'id':'f'*32,'revision':0})
+                    if value.get('context') == '$stale':
+                        value['context'] = {'id':self.context['id'], 'revision':max(0,self.context['revision']-1)}
                     value = json.dumps(value)
                 response = LLMResponse(value, self.name, request.model)
                 self.responses.append(value)
@@ -334,7 +336,7 @@ def run_case(case, root, provider):
                 row['route_expected'] = result.route.reasoning.value == expected['route']
                 working.remember(turn_case['request'],source=Source.OWNER,
                     privacy=Privacy.CONVERSATION,export=Export.REASONING)
-                response_origin = (Source.HOST if row['host_response_source'] == 'host_verification_boundary'
+                response_origin = (Source.GUIDANCE if row['host_response_source'] == 'host_verification_boundary'
                                    else Source.MODEL)
                 working.remember(row['host_response'],source=response_origin,
                     privacy=Privacy.CONVERSATION,export=Export.REASONING)
@@ -404,6 +406,9 @@ def run_case(case, root, provider):
                     row['deterministic_calculation'] = {'source':'host_compound_skill',
                         'parameters':orchestrator.context.skill.parameters(),
                         'visual':response.get('visual')}
+                if row['host_response_source'] == 'host_compound_calculation':
+                    # Match DesktopRuntime._publish_visual: each published visual advances revision.
+                    orchestrator.context.revision += 1
                 row['host_accepted'] = True
             row['stage'] = 'completed'
         except (BudgetExceeded,ProviderLimitError,AdmissionRefused):
@@ -423,7 +428,7 @@ def run_case(case, root, provider):
             if row['host_response_source'] in ('host_clarification', 'host_verification_boundary', 'model_conversation'):
                 working.remember(turn_case['request'],source=Source.OWNER,
                     privacy=Privacy.CONVERSATION,export=Export.REASONING)
-                working.remember(row['host_response'],source=(Source.MODEL if row['host_response_source']=='model_conversation' else Source.HOST),
+                working.remember(row['host_response'],source=(Source.MODEL if row['host_response_source']=='model_conversation' else Source.GUIDANCE),
                     privacy=Privacy.CONVERSATION,export=Export.REASONING)
         if case.get('mode') != 'respond' and len(getattr(provider,'responses',[])) > before_responses:
             from types import SimpleNamespace
